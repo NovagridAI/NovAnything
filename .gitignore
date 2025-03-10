@@ -27,3 +27,9 @@ front_end/components.d.ts
 front_end/stats.html
 front_end/version.txt
 tmp_files/
+/.env-e
+/qanything_kernel/dependent_server/pdf_parser_server/pdf_to_markdown/checkpoints
+/close.sh
+/nltk_data
+/build_images
+/qanything_kernel/dependent_server/rerank_server/rerank_model_configs_v0.0.1
