@@ -16,6 +16,10 @@ root_dir = os.path.dirname(parent_dir)
 sys.path.append(root_dir)
 
 from handler import *
+from user import *
+from dept import *
+from user_group import *
+from kb import *
 from qanything_kernel.core.local_doc_qa import LocalDocQA
 from qanything_kernel.utils.custom_log import debug_logger, qa_logger
 from sanic.worker.manager import WorkerManager
@@ -98,6 +102,36 @@ app.add_route(update_bot, "/api/local_doc_qa/update_bot", methods=['POST'])  # t
 app.add_route(get_bot_info, "/api/local_doc_qa/get_bot_info", methods=['POST'])  # tags=["获取Bot信息"]
 app.add_route(update_chunks, "/api/local_doc_qa/update_chunks", methods=['POST'])  # tags=["更新chunk"]
 app.add_route(get_file_base64, "/api/local_doc_qa/get_file_base64", methods=['POST'])  # tags=["更新chunk"]
+
+# 用户认证相关接口
+app.add_route(login, "/api/auth/login", methods=['POST'])  # tags=["用户登录"]
+app.add_route(refresh_token, "/api/auth/refresh_token", methods=['POST'])  # tags=["刷新令牌"]
+
+# 用户管理接口
+app.add_route(create_user, "/api/user/create", methods=['POST'])  # tags=["创建用户"]
+app.add_route(list_users, "/api/user/list", methods=['GET'])  # tags=["用户列表"]
+app.add_route(delete_user, "/api/user/delete", methods=['POST'])  # tags=["删除用户"]
+app.add_route(assign_user_to_department, "/api/user/assign_department", methods=['POST'])  # tags=["分配用户到部门"]
+
+# 部门管理接口
+app.add_route(create_department, "/api/department/create", methods=['POST'])  # tags=["创建部门"]
+app.add_route(list_departments, "/api/department/list", methods=['GET'])  # tags=["部门列表"]
+app.add_route(update_department, "/api/department/update", methods=['POST'])  # tags=["更新部门"]
+app.add_route(delete_department, "/api/department/delete", methods=['POST'])  # tags=["删除部门"]
+
+# 用户组管理接口
+app.add_route(create_user_group, "/api/group/create", methods=['POST'])  # tags=["创建用户组"]
+app.add_route(list_user_groups, "/api/group/list", methods=['GET'])  # tags=["用户组列表"]
+app.add_route(delete_user_group, "/api/group/delete", methods=['POST'])  # tags=["删除用户组"]
+app.add_route(add_user_to_group, "/api/group/add_user", methods=['POST'])  # tags=["添加用户到用户组"]
+app.add_route(remove_user_from_group, "/api/group/remove_user", methods=['POST'])  # tags=["从用户组移除用户"]
+app.add_route(list_group_members, "/api/group/members", methods=['GET'])  # tags=["用户组成员列表"]
+
+# 知识库权限管理接口
+app.add_route(set_kb_permission, "/api/kb/set_permission", methods=['POST'])  # tags=["设置知识库权限"]
+app.add_route(remove_kb_permission, "/api/kb/remove_permission", methods=['POST'])  # tags=["移除知识库权限"]
+app.add_route(list_kb_permissions, "/api/kb/permissions", methods=['GET'])  # tags=["知识库权限列表"]
+app.add_route(batch_set_kb_permissions, "/api/kb/batch_set_permissions", methods=['POST'])  # tags=["批量设置知识库权限"]
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=args.port, workers=args.workers, access_log=False)

@@ -93,6 +93,7 @@ def format_time_record(time_record):
 
 
 def safe_get(req: Request, attr: str, default=None):
+    debug_logger.info(f"请求为: {req.json}")
     try:
         if attr in req.form:
             return req.form.getlist(attr)[0]
@@ -360,15 +361,15 @@ def export_qalogs_to_excel(qalogs, columns, filename: str):
 
 
 def check_user_id_and_user_info(user_id, user_info):
-    if user_id is None or user_info is None:
-        msg = "fail, user_id 或 user_info 为 None"
-        return False, msg
-    if not validate_user_id(user_id):
-        msg = get_invalid_user_id_msg(user_id)
-        return False, msg
-    if not user_info.isdigit():
-        msg = "fail, user_info 必须是纯数字"
-        return False, msg
+    # if user_id is None or user_info is None:
+    #     msg = "fail, user_id 或 user_info 为 None"
+    #     return False, msg
+    # # if not validate_user_id(user_id):
+    #     # msg = get_invalid_user_id_msg(user_id)
+    #     # return False, msg
+    # if not user_info.isdigit():
+    #     msg = "fail, user_info 必须是纯数字"
+    #     return False, msg
     return True, 'success'
 
 

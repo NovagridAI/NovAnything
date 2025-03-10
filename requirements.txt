@@ -4,9 +4,9 @@ sanic==23.6.0
 sanic_ext==23.6.0
 langchain-core==0.1.50
 langchain==0.1.9
-unstructured==0.12.4
-unstructured[pptx]==0.12.4
-unstructured[md]==0.12.4
+unstructured==0.16.19
+unstructured[pptx]==0.16.19
+unstructured[md]==0.16.19
 opencv-python-headless==4.9.0.80
 python-dotenv==1.0.1
 mysql-connector-python==8.2.0
@@ -59,3 +59,5 @@ PyPDF2==3.0.1
 lxml_html_clean==0.1.1
 docx2txt==0.8
 ipython==8.26.0
+bcrypt==4.3.0
+PyJWT==2.10.1

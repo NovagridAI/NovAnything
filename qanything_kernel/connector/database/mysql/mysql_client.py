@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timedelta
 from collections import defaultdict
 from mysql.connector.errors import Error as MySQLError
+import bcrypt
 
 
 class KnowledgeBaseManager:
@@ -113,11 +114,45 @@ class KnowledgeBaseManager:
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id VARCHAR(255) UNIQUE,
                 user_name VARCHAR(255),
+                dept_id VARCHAR(255),
+                email VARCHAR(255),
+                password VARCHAR(255),
+                role VARCHAR(20) DEFAULT 'user',
+                status VARCHAR(20) DEFAULT 'active',
                 creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """
 
         self.execute_query_(query, (), commit=True)
+
+        # 检查是否已存在管理员用户
+        debug_logger.info("检查是否存在管理员用户...")
+        check_admin_query = "SELECT * FROM User WHERE role = 'admin' LIMIT 1"
+        result = self.execute_query_(check_admin_query, (), fetch=True)
+        
+        if not result:
+            debug_logger.info("未找到管理员用户，开始创建初始管理员账户...")
+            # 如果不存在管理员用户，创建一个初始管理员用户
+            admin_password = "admin@123"  # 初始密码
+            salt = bcrypt.gensalt()
+            hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), salt)
+            
+            insert_admin_query = """
+                INSERT INTO User (user_id, user_name, email, password, role)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            admin_data = (
+                str(uuid.uuid4()),
+                "admin",
+                "admin@example.com",
+                hashed_password.decode('utf-8'),
+                "admin"
+            )
+            self.execute_query_(insert_admin_query, admin_data, commit=True)
+            debug_logger.info("初始管理员用户创建成功 - 邮箱: admin@example.com, 密码: admin@123")
+        else:
+            debug_logger.info("已存在管理员用户，跳过初始管理员创建")
+
         query = """
             CREATE TABLE IF NOT EXISTS KnowledgeBase (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -252,6 +287,62 @@ class KnowledgeBaseManager:
         """
         self.execute_query_(query, (), commit=True)
 
+        # 添加部门表
+        query = """
+        CREATE TABLE IF NOT EXISTS Department (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            dept_id VARCHAR(255) UNIQUE,
+            dept_name VARCHAR(255),
+            parent_dept_id VARCHAR(255),
+            creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_parent_dept (parent_dept_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+        self.execute_query_(query, (), commit=True)
+
+        # 添加知识库权限表
+        query = """
+        CREATE TABLE IF NOT EXISTS KnowledgeBaseAccess (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            kb_id VARCHAR(255),
+            subject_id VARCHAR(255),
+            subject_type ENUM('user', 'department', 'group'),
+            permission_type ENUM('read', 'write', 'admin'),
+            granted_by VARCHAR(255),
+            granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_kb_id (kb_id),
+            INDEX idx_subject (subject_id, subject_type),
+            INDEX idx_granted_by (granted_by),
+            UNIQUE KEY unique_access (kb_id, subject_id, subject_type)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+        self.execute_query_(query, (), commit=True)
+
+        # 用户组表
+        query = """
+            CREATE TABLE IF NOT EXISTS UserGroup (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                group_id VARCHAR(255) UNIQUE,
+                group_name VARCHAR(255),
+                creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+        self.execute_query_(query, (), commit=True)
+
+        # 添加用户组成员表
+        query = """
+            CREATE TABLE IF NOT EXISTS GroupMember (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                group_id VARCHAR(255),
+                user_id VARCHAR(255),
+                creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_group_id (group_id),
+                INDEX idx_user_id (user_id),
+                UNIQUE KEY unique_member (group_id, user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+        self.execute_query_(query, (), commit=True)
+        
         # 修改索引创建方式
         index_queries = [
             "CREATE INDEX index_kb_id_deleted ON File (kb_id, deleted)",
@@ -259,6 +350,8 @@ class KnowledgeBaseManager:
             "CREATE INDEX index_bot_id ON QaLogs (bot_id)",
             "CREATE INDEX index_query ON QaLogs (query)",
             "CREATE INDEX index_timestamp ON QaLogs (timestamp)",
+            "CREATE INDEX IF NOT EXISTS idx_user_dept ON User(dept_id);",
+            "CREATE INDEX IF NOT EXISTS idx_user_email ON User(email);"
             # 如果没有的话，给QanythingBot添加一列：llm_setting VARCHAR(512)
             "ALTER TABLE QanythingBot ADD COLUMN llm_setting VARCHAR(512) DEFAULT '{}'",
             "ALTER TABLE QanythingBot DROP COLUMN model",
@@ -387,17 +480,45 @@ class KnowledgeBaseManager:
     def new_milvus_base(self, kb_id, user_id, kb_name, user_name=None):
         if not self.check_user_exist_(user_id):
             self.add_user_(user_id, user_name)
+        
+        # 创建知识库
         query = "INSERT INTO KnowledgeBase (kb_id, user_id, kb_name) VALUES (%s, %s, %s)"
         self.execute_query_(query, (kb_id, user_id, kb_name), commit=True)
+        
+        # 设置所有者权限
+        self.set_kb_access(kb_id, user_id, "user", "admin", user_id)
+        
         return kb_id, "success"
 
     # [知识库] 获取指定用户的所有知识库
     def get_knowledge_bases(self, user_id):
-        # 只获取后缀为KB_SUFFIX的知识库
+        """获取用户可访问的所有知识库"""
+        # 首先获取用户直接拥有的知识库
         query = (f"SELECT kb_id, kb_name FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND "
                  f"(kb_id LIKE '%{KB_SUFFIX}' OR kb_id LIKE '%{KB_SUFFIX}_FAQ')")
-        # query = "SELECT kb_id, kb_name FROM KnowledgeBase WHERE user_id = %s AND deleted = 0"
-        return self.execute_query_(query, (user_id,), fetch=True)
+        owned_kbs = self.execute_query_(query, (user_id,), fetch=True)
+        
+        # 获取用户通过权限可以访问的知识库
+        query = f"""
+            SELECT DISTINCT kb.kb_id, kb.kb_name 
+            FROM KnowledgeBase kb
+            JOIN KnowledgeBaseAccess kba ON kb.kb_id = kba.kb_id
+            JOIN User u ON u.user_id = %s
+            WHERE kb.deleted = 0 
+            AND kb.user_id != %s
+            AND (
+                (kba.subject_id = %s AND kba.subject_type = 'user')
+                OR (kba.subject_id = u.dept_id AND kba.subject_type = 'department')
+            )
+            AND (
+                kb.kb_id LIKE '%{KB_SUFFIX}'
+                OR kb.kb_id LIKE '%{KB_SUFFIX}_FAQ'
+            )
+        """
+        shared_kbs = self.execute_query_(query, (user_id, user_id, user_id), fetch=True)
+        
+        # 合并结果
+        return owned_kbs + shared_kbs
 
     def get_users(self):
         query = "SELECT user_id FROM User"
@@ -448,9 +569,11 @@ class KnowledgeBaseManager:
                  status="gray"):
         query = ("INSERT INTO File (file_id, user_id, kb_id, file_name, status, file_size, file_location, chunk_size, "
                  "timestamp, file_url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-        self.execute_query_(query,
-                            (file_id, user_id, kb_id, file_name, status, file_size, file_location, chunk_size, timestamp, file_url),
-                            commit=True)
+        self.execute_query_(
+            query,
+            (file_id, user_id, kb_id, file_name, status, file_size, file_location, chunk_size, timestamp, file_url),
+            commit=True
+        )
         return "success"
 
     #  更新file中的content_length
@@ -882,3 +1005,136 @@ class KnowledgeBaseManager:
         result = self.execute_query_(query, (file_id,), fetch=True)
         file_location = result[0][0] if result else None
         return file_location
+
+    def check_kb_access(self, user_id: str, kb_id: str, required_permission: str) -> bool:
+        """检查用户是否有权限访问知识库"""
+        debug_logger.info(f"正在检查用户 {user_id} 对知识库 {kb_id} 的 {required_permission} 权限")
+        
+        # 1. 检查知识库是否存在
+        query = "SELECT kb_id FROM KnowledgeBase WHERE kb_id = %s AND deleted = 0"
+        if not self.execute_query_(query, (kb_id,), fetch=True):
+            debug_logger.error(f"知识库 {kb_id} 不存在或已删除")
+            return False
+        
+        # 2. 获取用户信息
+        query = "SELECT role, dept_id FROM User WHERE user_id = %s AND status = 'active'"
+        user_info = self.execute_query_(query, (user_id,), fetch=True)
+        if not user_info:
+            debug_logger.error(f"用户 {user_id} 不存在或未激活")
+            return False
+        
+        user_role, user_dept_id = user_info[0]
+        debug_logger.info(f"用户角色: {user_role}, 部门ID: {user_dept_id}")
+        
+        # 3. 检查用户是否是知识库所有者
+        query = "SELECT user_id FROM KnowledgeBase WHERE kb_id = %s AND user_id = %s AND deleted = 0"
+        if self.execute_query_(query, (kb_id, user_id), fetch=True):
+            debug_logger.info(f"用户 {user_id} 是知识库 {kb_id} 的所有者")
+            return True
+        
+        # 4. 检查用户直接权限
+        query = """
+            SELECT permission_type 
+            FROM KnowledgeBaseAccess 
+            WHERE kb_id = %s AND subject_id = %s AND subject_type = 'user'
+        """
+        user_permission = self.execute_query_(query, (kb_id, user_id), fetch=True)
+        if user_permission:
+            debug_logger.info(f"用户 {user_id} 对知识库 {kb_id} 有直接权限: {user_permission[0][0]}")
+            if self._is_permission_sufficient(user_permission[0][0], required_permission):
+                return True
+        
+        # 5. 检查部门权限
+        if user_dept_id:
+            query = """
+                SELECT permission_type 
+                FROM KnowledgeBaseAccess 
+                WHERE kb_id = %s AND subject_id = %s AND subject_type = 'department'
+            """
+            dept_permission = self.execute_query_(query, (kb_id, user_dept_id), fetch=True)
+            if dept_permission:
+                debug_logger.info(f"用户 {user_id} 通过部门 {user_dept_id} 对知识库 {kb_id} 有权限: {dept_permission[0][0]}")
+                if self._is_permission_sufficient(dept_permission[0][0], required_permission):
+                    return True
+        
+        # 6. 检查用户组权限
+        query = """
+            SELECT kba.permission_type
+            FROM KnowledgeBaseAccess kba
+            JOIN GroupMember gm ON kba.subject_id = gm.group_id
+            WHERE kba.kb_id = %s 
+            AND gm.user_id = %s 
+            AND kba.subject_type = 'group'
+        """
+        group_permissions = self.execute_query_(query, (kb_id, user_id), fetch=True)
+        for perm in group_permissions:
+            debug_logger.info(f"用户 {user_id} 通过用户组对知识库 {kb_id} 有权限: {perm[0]}")
+            if self._is_permission_sufficient(perm[0], required_permission):
+                return True
+        
+        debug_logger.warning(f"用户 {user_id} 没有知识库 {kb_id} 的 {required_permission} 权限")
+        return False
+
+    def _is_permission_sufficient(self, granted_permission: str, required_permission: str) -> bool:
+        """检查权限是否足够"""
+        permission_levels = {
+            'read': 1,
+            'write': 2,
+            'admin': 3
+        }
+        granted_level = permission_levels.get(granted_permission, 0)
+        required_level = permission_levels.get(required_permission, 0)
+        debug_logger.info(f"权限检查: 已授权级别 {granted_permission}({granted_level}), 所需级别 {required_permission}({required_level})")
+        return granted_level >= required_level
+
+    def set_kb_access(self, kb_id: str, subject_id: str, subject_type: str, 
+                      permission_type: str, granted_by: str) -> bool:
+        """设置知识库访问权限"""
+        debug_logger.info(f"正在设置知识库权限 - 知识库: {kb_id}, 主体: {subject_id}, 类型: {subject_type}, 权限: {permission_type}, 授权者: {granted_by}")
+        
+        # 1. 验证知识库是否存在
+        query = "SELECT kb_id FROM KnowledgeBase WHERE kb_id = %s AND deleted = 0"
+        if not self.execute_query_(query, (kb_id,), fetch=True):
+            debug_logger.error(f"知识库 {kb_id} 不存在或已删除")
+            return False
+
+        # 2. 验证授权者是否存在
+        query = "SELECT user_id FROM User WHERE user_id = %s AND status = 'active'"
+        if not self.execute_query_(query, (granted_by,), fetch=True):
+            debug_logger.error(f"授权用户 {granted_by} 不存在或未激活")
+            return False
+
+        # 3. 根据subject_type验证subject是否存在
+        if subject_type == 'user':
+            query = "SELECT user_id FROM User WHERE user_id = %s AND status = 'active'"
+            debug_logger.info(f"正在验证用户 {subject_id} 是否存在")
+        elif subject_type == 'department':
+            query = "SELECT dept_id FROM Department WHERE dept_id = %s"
+            debug_logger.info(f"正在验证部门 {subject_id} 是否存在")
+        elif subject_type == 'group':
+            query = "SELECT group_id FROM UserGroup WHERE group_id = %s"
+            debug_logger.info(f"正在验证用户组 {subject_id} 是否存在")
+        else:
+            debug_logger.error(f"无效的主体类型: {subject_type}")
+            return False
+
+        if not self.execute_query_(query, (subject_id,), fetch=True):
+            debug_logger.error(f"主体 {subject_id} (类型: {subject_type}) 不存在或未激活")
+            return False
+
+        # 4. 设置或更新权限
+        query = """
+            INSERT INTO KnowledgeBaseAccess 
+            (kb_id, subject_id, subject_type, permission_type, granted_by)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+            permission_type = VALUES(permission_type),
+            granted_by = VALUES(granted_by)
+        """
+        try:
+            self.execute_query_(query, (kb_id, subject_id, subject_type, permission_type, granted_by), commit=True)
+            debug_logger.info(f"成功设置知识库权限 - 知识库: {kb_id}, 主体: {subject_id}, 类型: {subject_type}, 权限: {permission_type}")
+            return True
+        except Exception as e:
+            debug_logger.error(f"设置权限失败: {str(e)}")
+            return False

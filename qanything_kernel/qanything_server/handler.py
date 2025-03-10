@@ -1,3 +1,4 @@
+import functools
 import shutil
 
 from qanything_kernel.core.local_file import LocalFile
@@ -25,18 +26,27 @@ import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 import base64
+import jwt
+from datetime import timedelta
+import bcrypt
 
 __all__ = ["new_knowledge_base", "upload_files", "list_kbs", "list_docs", "delete_knowledge_base", "delete_docs",
            "rename_knowledge_base", "get_total_status", "clean_files_by_status", "upload_weblink", "local_doc_chat",
            "document", "upload_faqs", "get_doc_completed", "get_qa_info", "get_user_id", "get_doc",
            "get_rerank_results", "get_user_status", "health_check", "update_chunks", "get_file_base64",
-           "get_random_qa", "get_related_qa", "new_bot", "delete_bot", "update_bot", "get_bot_info"]
+           "get_random_qa", "get_related_qa", "new_bot", "delete_bot", "update_bot", "get_bot_info", "login",
+           "refresh_token"]
 
 INVALID_USER_ID = f"fail, Invalid user_id: . user_id 必须只含有字母，数字和下划线且字母开头"
 
 # 获取环境变量GATEWAY_IP
 GATEWAY_IP = os.getenv("GATEWAY_IP", "localhost")
 debug_logger.info(f"GATEWAY_IP: {GATEWAY_IP}")
+
+# JWT配置
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")  # 生产环境中应使用环境变量
+JWT_ALGORITHM = "HS256"
+JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)  # 令牌有效期
 
 # 异步包装器，用于在后台执行带有参数的同步函数
 async def run_in_background(func, *args):
@@ -58,17 +68,107 @@ def sync_function_with_args(arg1, arg2):
     import time
     time.sleep(5)
     print(f"同步函数执行完毕，参数值：arg1={arg1}, arg2={arg2}")
+    
+# 创建一个装饰器用于接口权限控制
+def auth_required(permission_level="read", check_kb_access=False):
+    """
+    权限控制装饰器
+    :param permission_level: 所需权限级别（read/write/admin）
+    :param check_kb_access: 是否检查知识库访问权限（针对特定知识库的操作）
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        async def decorated_function(req, *args, **kwargs):
+            # 获取用户ID和令牌
+            user_id = safe_get(req, 'user_id')
+            token = req.headers.get('Authorization', '').replace('Bearer ', '')
+            
+            debug_logger.info(f"权限验证开始 - 用户: {user_id}, 所需权限: {permission_level}, 检查知识库权限: {check_kb_access}")
+            
+            if not user_id:
+                debug_logger.error("未提供用户ID")
+                return response.json({"code": 401, "msg": "未提供用户ID"})
+                
+            if not token:
+                debug_logger.error(f"用户 {user_id} 未提供认证令牌")
+                return response.json({"code": 401, "msg": "未提供认证令牌"})
+                
+            # 验证令牌
+            try:
+                # 解码JWT令牌
+                payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+                
+                # 验证令牌中的用户ID与请求中的用户ID是否匹配
+                token_user_id = payload.get("user_id")
+                if token_user_id != user_id:
+                    debug_logger.error(f"令牌与用户ID不匹配 - 令牌用户: {token_user_id}, 请求用户: {user_id}")
+                    return response.json({"code": 401, "msg": "令牌与用户ID不匹配"})
+                
+                # 检查令牌是否过期
+                exp = payload.get("exp")
+                if not exp or datetime.utcfromtimestamp(exp) < datetime.utcnow():
+                    debug_logger.error(f"用户 {user_id} 的令牌已过期")
+                    return response.json({"code": 401, "msg": "令牌已过期"})
+                
+                # 检查用户角色和权限
+                user_role = payload.get("role") or get_user_role(user_id, req)
+                debug_logger.info(f"用户角色验证 - 用户: {user_id}, 角色: {user_role}, 所需权限: {permission_level}")
+                
+                # 根据角色和请求的权限级别判断是否有权限
+                if not has_permission(user_role, permission_level):
+                    debug_logger.error(f"权限不足 - 用户: {user_id}, 角色: {user_role}, 所需权限: {permission_level}")
+                    return response.json({"code": 403, "msg": f"没有{permission_level}权限执行此操作"})
+                
+                # 如果需要检查知识库访问权限
+                if check_kb_access:
+                    kb_id = safe_get(req, 'kb_id')
+                    if kb_id:
+                        local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+                        # 检查用户是否有权限访问该知识库
+                        if not local_doc_qa.milvus_summary.check_kb_access(user_id, kb_id, permission_level):
+                            debug_logger.error(f"知识库访问权限不足 - 用户: {user_id}, 知识库: {kb_id}, 所需权限: {permission_level}")
+                            return response.json({"code": 403, "msg": f"没有权限{permission_level}访问知识库 {kb_id}"})
+                    
+                    # 如果是批量操作多个知识库
+                    kb_ids = safe_get(req, 'kb_ids')
+                    if kb_ids and isinstance(kb_ids, list):
+                        local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+                        for kb_id in kb_ids:
+                            if not local_doc_qa.milvus_summary.check_kb_access(user_id, kb_id, permission_level):
+                                debug_logger.error(f"知识库访问权限不足 - 用户: {user_id}, 知识库: {kb_id}, 所需权限: {permission_level}")
+                                return response.json({"code": 403, "msg": f"没有权限{permission_level}访问知识库 {kb_id}"})
+                
+                # 将用户信息添加到请求上下文中，方便后续使用
+                req.ctx.user = {
+                    "user_id": user_id,
+                    "role": user_role
+                }
+                
+                debug_logger.info(f"权限验证通过 - 用户: {user_id}, 角色: {user_role}")
+                return await f(req, *args, **kwargs)
+            except jwt.ExpiredSignatureError:
+                debug_logger.error(f"用户 {user_id} 的令牌已过期")
+                return response.json({"code": 401, "msg": "令牌已过期"})
+            except jwt.InvalidTokenError:
+                debug_logger.error(f"用户 {user_id} 提供了无效的令牌")
+                return response.json({"code": 401, "msg": "无效的令牌"})
+            except Exception as e:
+                debug_logger.error(f"认证失败 - 用户: {user_id}, 错误: {str(e)}")
+                return response.json({"code": 401, "msg": f"认证失败: {str(e)}"})
+        return decorated_function
+    return decorator
 
 
 @get_time_async
+@auth_required("write")
 async def new_knowledge_base(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
-    user_info = safe_get(req, 'user_info', "1234")
-    passed, msg = check_user_id_and_user_info(user_id, user_info)
-    if not passed:
-        return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_info = safe_get(req, 'user_info', "1234")
+    # passed, msg = check_user_id_and_user_info(user_id, user_info)
+    # if not passed:
+        # return sanic_json({"code": 2001, "msg": msg})
+    # user_id = user_id + '__' + user_info
     debug_logger.info("new_knowledge_base %s", user_id)
     kb_name = safe_get(req, 'kb_name')
     debug_logger.info("kb_name: %s", kb_name)
@@ -102,7 +202,7 @@ async def upload_weblink(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("upload_weblink %s", user_id)
     debug_logger.info("user_info %s", user_info)
     kb_id = safe_get(req, 'kb_id')
@@ -179,6 +279,7 @@ async def upload_weblink(req: request):
 
 
 @get_time_async
+@auth_required("write", check_kb_access=True)
 async def upload_files(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
@@ -186,7 +287,7 @@ async def upload_files(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("upload_files %s", user_id)
     debug_logger.info("user_info %s", user_info)
     kb_id = safe_get(req, 'kb_id')
@@ -284,7 +385,7 @@ async def upload_faqs(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("upload_faqs %s", user_id)
     debug_logger.info("user_info %s", user_info)
     kb_id = safe_get(req, 'kb_id')
@@ -366,6 +467,7 @@ async def upload_faqs(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=False)
 async def list_kbs(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
@@ -373,7 +475,7 @@ async def list_kbs(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("list_kbs %s", user_id)
     kb_infos = local_doc_qa.milvus_summary.get_knowledge_bases(user_id)
     data = []
@@ -384,6 +486,7 @@ async def list_kbs(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def list_docs(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
@@ -391,7 +494,7 @@ async def list_docs(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("list_docs %s", user_id)
     kb_id = safe_get(req, 'kb_id')
     kb_id = correct_kb_id(kb_id)
@@ -454,6 +557,7 @@ async def list_docs(req: request):
 
 
 @get_time_async
+@auth_required("admin", check_kb_access=True)
 async def delete_knowledge_base(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     # TODO: 确认是否支持批量删除知识库
@@ -462,7 +566,7 @@ async def delete_knowledge_base(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("delete_knowledge_base %s", user_id)
     kb_ids = safe_get(req, 'kb_ids')
     kb_ids = [correct_kb_id(kb_id) for kb_id in kb_ids]
@@ -500,6 +604,7 @@ async def delete_knowledge_base(req: request):
 
 
 @get_time_async
+@auth_required("write", check_kb_access=True)
 async def rename_knowledge_base(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
@@ -507,7 +612,7 @@ async def rename_knowledge_base(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("rename_knowledge_base %s", user_id)
     kb_id = safe_get(req, 'kb_id')
     kb_id = correct_kb_id(kb_id)
@@ -520,6 +625,7 @@ async def rename_knowledge_base(req: request):
 
 
 @get_time_async
+@auth_required("write", check_kb_access=True)
 async def delete_docs(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
@@ -527,7 +633,7 @@ async def delete_docs(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("delete_docs %s", user_id)
     kb_id = safe_get(req, 'kb_id')
     kb_id = correct_kb_id(kb_id)
@@ -577,7 +683,7 @@ async def get_total_status(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info('get_total_status %s', user_id)
     by_date = safe_get(req, 'by_date', False)
     if not user_id:
@@ -612,7 +718,7 @@ async def clean_files_by_status(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info('clean_files_by_status %s', user_id)
     status = safe_get(req, 'status', default='gray')
     if status not in ['gray', 'red', 'yellow']:
@@ -650,7 +756,7 @@ async def local_doc_chat(req: request):
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
     # local_cluster = get_milvus_cluster_by_user_info(user_info)
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     # local_doc_qa.milvus_summary.update_user_cluster(user_id, [get_milvus_cluster_by_user_info(user_info)])
     debug_logger.info('local_doc_chat %s', user_id)
     debug_logger.info('user_info %s', user_info)
@@ -986,7 +1092,7 @@ async def get_doc_completed(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("get_doc_chunks %s", user_id)
     kb_id = safe_get(req, 'kb_id')
     kb_id = correct_kb_id(kb_id)
@@ -1044,7 +1150,7 @@ async def get_qa_info(req: request):
         passed, msg = check_user_id_and_user_info(user_id, user_info)
         if not passed:
             return sanic_json({"code": 2001, "msg": msg})
-        user_id = user_id + '__' + user_info
+        # user_id = user_id + '__' + user_info
         debug_logger.info("get_qa_info %s", user_id)
     query = safe_get(req, 'query')
     bot_id = safe_get(req, 'bot_id')
@@ -1225,7 +1331,7 @@ async def get_user_status(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("get_user_status %s", user_id)
     user_status = local_doc_qa.milvus_summary.get_user_status(user_id)
     if user_status is None:
@@ -1251,7 +1357,7 @@ async def get_bot_info(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     bot_id = safe_get(req, 'bot_id')
     if bot_id:
         if not local_doc_qa.milvus_summary.check_bot_is_exist(bot_id):
@@ -1288,7 +1394,7 @@ async def new_bot(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     bot_name = safe_get(req, "bot_name")
     desc = safe_get(req, "description", BOT_DESC)
     head_image = safe_get(req, "head_image", BOT_IMAGE)
@@ -1318,7 +1424,7 @@ async def delete_bot(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("delete_bot %s", user_id)
     bot_id = safe_get(req, 'bot_id')
     if not local_doc_qa.milvus_summary.check_bot_is_exist(bot_id):
@@ -1335,7 +1441,7 @@ async def update_bot(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("update_bot %s", user_id)
     bot_id = safe_get(req, 'bot_id')
     if not local_doc_qa.milvus_summary.check_bot_is_exist(bot_id):
@@ -1420,7 +1526,7 @@ async def update_chunks(req: request):
     passed, msg = check_user_id_and_user_info(user_id, user_info)
     if not passed:
         return sanic_json({"code": 2001, "msg": msg})
-    user_id = user_id + '__' + user_info
+    # user_id = user_id + '__' + user_info
     debug_logger.info("update_chunks %s", user_id)
     doc_id = safe_get(req, 'doc_id')
     debug_logger.info(f"doc_id: {doc_id}")
@@ -1461,3 +1567,159 @@ async def get_file_base64(req: request):
     with open(file_location, "rb") as f:
         file_base64 = base64.b64encode(f.read()).decode()
     return sanic_json({"code": 200, "msg": "success", "file_base64": file_base64})
+
+# 获取用户角色
+def get_user_role(user_id, req: request):
+    # 从数据库获取用户角色
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    query = "SELECT role FROM User WHERE user_id = %s"
+    result = local_doc_qa.milvus_summary.execute_query_(query, (user_id,), fetch=True)
+    if result and result[0]:
+        role = result[0][0]
+        debug_logger.info(f"获取用户角色 - 用户: {user_id}, 角色: {role}")
+        return role
+    debug_logger.warning(f"未找到用户角色，使用默认角色 'user' - 用户: {user_id}")
+    return "user"  # 默认角色
+
+# 检查用户是否有权限
+def has_permission(user_role, required_permission):
+    # 权限等级
+    permission_levels = {
+        "read": 1,
+        "write": 2,
+        "admin": 3,
+    }
+    
+    # 角色对应的权限等级
+    role_permissions = {
+        "user": 1,        # 普通用户只有读权限
+        "editor": 2,      # 编辑者有写权限
+        "admin": 3,       # 管理员有管理权限
+    }
+    
+    user_level = role_permissions.get(user_role, 0)
+    required_level = permission_levels.get(required_permission, 0)
+    has_perm = user_level >= required_level
+    
+    debug_logger.info(f"权限检查 - 用户角色: {user_role}({user_level}), 所需权限: {required_permission}({required_level}), 结果: {'通过' if has_perm else '不通过'}")
+    return has_perm
+
+@get_time_async
+async def login(req: request):
+    """用户登录接口，验证用户身份并生成JWT令牌"""
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    email = safe_get(req, 'email')
+    password = safe_get(req, 'password')
+    
+    debug_logger.info(f"用户登录 - 邮箱: {email}")
+    
+    if not email or not password:
+        debug_logger.error("登录失败 - 邮箱和密码不能为空")
+        return response.json({"code": 400, "msg": "邮箱和密码不能为空"})
+    
+    # 验证用户
+    query = "SELECT user_id, password, role, user_name, dept_id FROM User WHERE email = %s AND status = 'active'"
+    result = local_doc_qa.milvus_summary.execute_query_(query, (email,), fetch=True)
+    
+    if not result:
+        debug_logger.error(f"登录失败 - 用户不存在或未激活: {email}")
+        return response.json({"code": 401, "msg": "用户不存在或未激活"})
+    
+    user_id, stored_password, role, user_name, dept_id = result[0]
+    debug_logger.info(f"找到用户 - ID: {user_id}, 角色: {role}")
+    
+    # 验证密码
+    try:
+        # 如果存储的密码是明文（初始管理员密码）
+        if stored_password == password:
+            debug_logger.info("使用明文密码验证成功，正在升级为加密密码")
+            # 升级为加密密码
+            salt = bcrypt.gensalt()
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+            update_query = "UPDATE User SET password = %s WHERE user_id = %s"
+            local_doc_qa.milvus_summary.execute_query_(update_query, (hashed_password.decode('utf-8'), user_id), commit=True)
+            password_valid = True
+        else:
+            # 尝试验证加密密码
+            try:
+                password_valid = bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8'))
+            except Exception as e:
+                debug_logger.error(f"密码验证出错（可能是密码格式问题）: {str(e)}")
+                password_valid = False
+        
+        if not password_valid:
+            debug_logger.error(f"登录失败 - 密码错误: {email}")
+            return response.json({"code": 401, "msg": "密码错误"})
+            
+    except Exception as e:
+        debug_logger.error(f"密码验证过程出错: {str(e)}")
+        return response.json({"code": 500, "msg": "密码验证过程出错"})
+    
+    # 获取部门信息
+    dept_name = None
+    if dept_id:
+        dept_query = "SELECT dept_name FROM Department WHERE dept_id = %s"
+        dept_result = local_doc_qa.milvus_summary.execute_query_(dept_query, (dept_id,), fetch=True)
+        if dept_result:
+            dept_name = dept_result[0][0]
+    
+    # 生成JWT令牌
+    payload = {
+        "user_id": user_id,
+        "role": role,
+        "dept_id": dept_id,
+        "exp": datetime.utcnow() + JWT_ACCESS_TOKEN_EXPIRES
+    }
+    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    
+    debug_logger.info(f"登录成功 - 用户: {user_id}, 角色: {role}, 部门: {dept_name}")
+    return response.json({
+        "code": 200,
+        "msg": "登录成功",
+        "data": {
+            "token": token,
+            "user_id": user_id,
+            "user_name": user_name,
+            "role": role,
+            "dept_id": dept_id,
+            "dept_name": dept_name
+        }
+    })
+
+def verify_password(plain_password, hashed_password):
+    """验证密码是否匹配"""
+    try:
+        # 使用 bcrypt 进行密码验证
+        result = bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+        debug_logger.info(f"密码验证{'成功' if result else '失败'}")
+        return result
+    except Exception as e:
+        debug_logger.error(f"密码验证出错: {str(e)}")
+        return False
+
+@get_time_async
+@auth_required("read")  # 刷新令牌只需要基本权限
+async def refresh_token(req: request):
+    """刷新JWT令牌"""
+    user_id = req.ctx.user["user_id"]
+    role = req.ctx.user["role"]
+    
+    debug_logger.info(f"刷新令牌 - 用户: {user_id}, 角色: {role}")
+    
+    # 生成新的JWT令牌
+    payload = {
+        "user_id": user_id,
+        "role": role,
+        "exp": datetime.utcnow() + JWT_ACCESS_TOKEN_EXPIRES
+    }
+    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    
+    debug_logger.info(f"令牌刷新成功 - 用户: {user_id}")
+    return response.json({
+        "code": 200,
+        "msg": "令牌刷新成功",
+        "data": {
+            "token": token
+        }
+    })
+
