@@ -9,9 +9,9 @@
 
 <template>
   <a-layout>
-    <Head />
+    <!-- <Head /> -->
     <a-layout>
-      <a-layout-sider width="280" style="background: #fff">
+      <a-layout-sider width="220" style="background: red">
         <Sider />
       </a-layout-sider>
       <a-layout>

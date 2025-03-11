@@ -7,6 +7,7 @@ export default {
     statistics: '数据统计',
     knowledge: '知识库',
     quickStart: '快速开始',
+    account: '用户管理',
   },
   common: {
     type: 'zh',

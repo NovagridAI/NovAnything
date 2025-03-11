@@ -8,7 +8,7 @@
 -->
 
 <template>
-  <a-config-provider :locale="locale" :auto-insert-space-in-button="false">
+  <a-config-provider :hash="false" :locale="locale" :auto-insert-space-in-button="false">
     <div class="page-app">
       <router-view></router-view>
       <UserPhoneDialog />

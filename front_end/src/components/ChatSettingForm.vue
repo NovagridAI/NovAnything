@@ -1,5 +1,5 @@
 <template>
-  <a-config-provider :theme="{ token: { colorPrimary: '#5a47e5' } }">
+  <a-config-provider :theme="{ token: { colorPrimary: '#bfbfbf' } }">
     <a-form
       ref="formRef"
       :model="chatSettingForm"

@@ -1,6 +1,6 @@
 // 修改primary按钮默认背景色
 .ant-btn-primary {
-  background-color: $baseColor !important;
+  // background-color: $baseColor !important;
 
   + :not(:disabled):hover {
     //background-color: $baseColor !important;

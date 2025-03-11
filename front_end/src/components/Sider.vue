@@ -8,10 +8,21 @@
 -->
 <template>
   <div class="sider">
+    <div class="logo">NovAnything</div>
+    <div class="header-navs">
+      <div v-for="item in navList" :key="item.name"
+        :class="['nav-item', navIndex === item.value ? 'nav-item-active' : '']" @click="setNavIdx(item.value)">
+        <!--        <div :class="['item-icon', item.value === 0 ? 'knowledge-icon' : 'bot-icon']"></div>-->
+        <div :class="['item-icon']">
+          <component :is="item.icon" />
+        </div>
+        <div class="nav-item-name">{{ item.name }}</div>
+      </div>
+    </div>
     <div v-if="navIndex === 0" class="knowledge">
       <div class="add-btn">
         <!-- <AddInput @add="addKb" /> -->
-        <AddInput />
+        <!-- <AddInput /> -->
       </div>
       <div class="content">
         <SiderCard :list="knowledgeBaseList"></SiderCard>
@@ -21,9 +32,8 @@
           <template #icon>
             <img class="folder" src="../assets/home/icon-folder.png" alt="图标" />
           </template>
-          知识库管理</a-button
-        >
-      </div> -->
+知识库管理</a-button>
+</div> -->
     </div>
     <div v-else-if="navIndex === 1" class="bots">
       <div class="bots-tab" @click="changePage('/bots')">{{ getLanguage().bots.myBots }}</div>
@@ -33,19 +43,13 @@
     </div>
     <div v-else-if="navIndex === 2" class="quick-start">
       <div class="content">
-        <div
-          :class="['card-new', chatId === null ? 'active' : '', showLoading ? 'disabled' : '']"
-          @click="quickClickHandle(0)"
-        >
-          <SvgIcon name="new-chat" />
+        <div :class="['card-new', chatId === null ? 'active' : '', showLoading ? 'disabled' : '']"
+          @click="quickClickHandle(0)">
+          <PlusOutlined class="plus-icon" />
           {{ getLanguage().home.newConversationQuick }}
         </div>
-        <SiderCardItem
-          v-for="item of historyList"
-          :key="item.historyId"
-          :card-data="item"
-          @click="quickClickHandle(1, item)"
-        />
+        <SiderCardItem v-for="item of historyList" :key="item.historyId" :card-data="item"
+          @click="quickClickHandle(1, item)" />
       </div>
     </div>
     <ChatSourceDialog />
@@ -79,6 +83,7 @@ import { resultControl } from '@/utils/utils';
 import urlResquest from '@/services/urlConfig';
 import { IChatItemInfo, IFileListItem } from '@/utils/types';
 import { useUploadFiles } from '@/store/useUploadFiles';
+import { FolderOutlined, ThunderboltOutlined, RobotOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons-vue';
 // import urlResquest from '@/services/urlConfig';
 // import { pageStatus } from '@/utils/enum';
 // import { resultControl } from '@/utils/utils';
@@ -97,6 +102,58 @@ const { uploadFileListQuick } = storeToRefs(useUploadFiles());
 const { initUploadFileListQuick } = useUploadFiles();
 const { navIndex } = storeToRefs(useHeader());
 const { changePage } = routeController();
+const { setNavIndex } = useHeader();
+
+const navList = [
+  {
+    name: getLanguage().header.quickStart,
+    value: 2,
+    icon: markRaw(ThunderboltOutlined)
+  },
+  {
+    name: getLanguage().header.knowledge,
+    value: 0,
+    icon: markRaw(FolderOutlined)
+  },
+  {
+    name: 'Bots',
+    value: 1,
+    icon: markRaw(RobotOutlined)
+  },
+  {
+    name: getLanguage().header.account,
+    value: 3,
+    icon: markRaw(UserOutlined)
+  },
+];
+
+// header的item-icon选择
+const iconMap = new Map([
+  [0, 'knowledge-icon'],
+  [1, 'bot-icon'],
+  [2, 'quick-icon'],
+]);
+
+const getIcon = itemValue => {
+  return iconMap.get(itemValue);
+};
+
+const setNavIdx = value => {
+  if (navIndex.value === value) {
+    return;
+  }
+  setNavIndex(value);
+  if (value === 0) {
+    changePage('/home');
+  } else if (value === 1) {
+    changePage('/bots');
+  } else if (value === 2) {
+    changePage('/quickstart');
+  } else if (value === 3) {
+    changePage('/account');
+  }
+};
+
 
 // 快速开始逻辑
 function addQuestion(q, fileDataList: IFileListItem[]) {
@@ -186,11 +243,114 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .sider {
+  .logo {
+    cursor: pointer;
+    // width: 100%;
+    // height: 50px;
+    // background: $mainBgColor;
+    // border-radius: 12px;
+    // text-align: center;
+    // line-height: 50px;
+    margin: 12px 16px 10px 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid $lineColor;
+    background-image: linear-gradient(to right, #3b82f6 , #4f46e5);
+    color: transparent;
+    background-clip: text;
+    // color: linear-gradient(to right, #7b5ef2, #c383fe);
+    font-size: 22px;
+    font-weight: 700;
+    // color: $primaryColor;
+  }
+
+  .header-navs {
+    // height: 50px;
+    // margin: 12px 24px;
+    display: flex;
+    flex-direction: column;
+    // justify-content: flex-start;
+    align-items: left;
+    background: $mainBgColor;
+    // border-radius: 12px;
+    padding: 8px 12px;
+
+    .nav-item-active {
+      color: #fff;
+
+      // .bot-icon {
+      //   background-image: url('@/assets/header/bots-active-icon.png');
+      // }
+
+      .knowledge-icon {
+        background-image: url('@/assets/header/knowledge-active-icon.png');
+      }
+
+      .quick-icon {
+        background-image: url('@/assets/header/quick-active-icon.png');
+      }
+    }
+
+    .nav-item {
+      // height: 36px;
+      padding: 8px 12px;
+      // margin: 5px 10px;
+      display: flex;
+      // flex-direction: column;
+      align-items: center;
+      // justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      color: $textColor;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+
+      &:hover:not(.nav-item-active) {
+        background: $hoverBgColor;
+        color: $textTitleColor;
+        // box-shadow: 0 1px 4px rgba(123, 94, 242, 0.2);
+      }
+
+      span {
+        white-space: nowrap;
+        font-weight: 500;
+      }
+
+      .item-icon {
+        line-height: 18px;
+        font-size: 18px;
+        background-size: contain;
+        background-position: center;
+      }
+
+      .nav-item-name {
+        margin-left: 8px;
+      }
+    }
+
+    .nav-item-active {
+      background: $secondaryBgColor;
+      color: $textTitleColor;
+      font-weight: 700;
+      // box-shadow: 0 2px 8px rgba(123, 94, 242, 0.2);
+
+      .item-icon {
+        font-weight: 700;
+        opacity: 1;
+      }
+
+      // &:hover {
+      //   background: #fff;
+      // color: $title1;
+      // box-shadow: 0 2px 8px rgba(123, 94, 242, 0.2);
+      // }
+    }
+  }
+
   display: flex;
   flex-direction: column;
-  width: 280px;
-  height: calc(100vh - 64px);
-  background-color: #26293b;
+  width: 220px;
+  height: calc(100vh);
+  background-color: $mainBgColor;
 
   .knowledge {
     height: 100%;
@@ -204,29 +364,27 @@ onUnmounted(() => {
     flex-direction: column;
 
     .card-new {
-      width: 232px;
-      height: 48px;
+      width: 190px;
+      height: 36px;
       margin: 0 auto 16px;
       border-radius: 8px;
       display: flex;
-      justify-content: center;
+      padding: 8px 12px;
+      // justify-content: center;
       align-items: center;
-      font-size: 16px;
+      font-size: 14px;
       overflow: hidden;
       background: #333647;
       cursor: pointer;
       color: #fff;
 
-      svg {
-        width: 16px;
-        height: 16px;
-        margin-right: 4px;
-        margin-top: 2px;
+      .plus-icon {
+        margin-right: 8px;
       }
     }
 
     .active {
-      background: linear-gradient(284deg, #7b5ef2 -1%, #c383fe 97%);
+      background: $primaryColor;
     }
 
     .disabled {
@@ -305,7 +463,7 @@ onUnmounted(() => {
       width: 232px;
       height: 46px;
       border-radius: 8px;
-      background: #7261e9;
+      // background: #7261e9;
       font-family: PingFang SC;
       font-size: 16px;
       font-weight: 500;
@@ -322,5 +480,18 @@ onUnmounted(() => {
   margin-bottom: 20px;
   margin-top: 20px;
   overflow-y: scroll;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 </style>

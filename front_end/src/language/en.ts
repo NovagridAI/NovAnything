@@ -7,6 +7,7 @@ export default {
     statistics: 'Statistics',
     knowledge: 'Knowledge',
     quickStart: 'QuickStart',
+    account: 'Account',
   },
   common: {
     type: 'en',

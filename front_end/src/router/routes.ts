@@ -69,6 +69,11 @@ export const routes: RouteRecordRaw[] = [
         name: 'quickstart',
         component: () => import('@/views/QuickStart/index.vue'),
       },
+            {
+        path: '/account',
+        name: 'account',
+        component: () => import('@/views/Account/index.vue'),
+      },
     ],
   },
   {

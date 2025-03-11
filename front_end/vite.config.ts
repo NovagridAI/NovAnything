@@ -160,7 +160,7 @@ export default defineConfig(({ mode }) => {
       cors: true,
       proxy: {
         '/local_doc_qa': {
-          target: 'https://qanything-dev-gpu214.inner.youdao.com/api',
+          target: 'http://198.2.235.68:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/local_doc_qa/, '/local_doc_qa'),
         },

@@ -16,18 +16,17 @@
         @click="goDetail('https://ai.youdao.com/')"
       />
     </div>
-    <div class="header-navs">
+    <!-- <div class="header-navs">
       <div
         v-for="item in navList"
         :key="item.name"
         :class="['nav-item', navIndex === item.value ? 'nav-item-active' : '']"
         @click="setNavIdx(item.value)"
       >
-        <!--        <div :class="['item-icon', item.value === 0 ? 'knowledge-icon' : 'bot-icon']"></div>-->
         <div :class="['item-icon', getIcon(item.value)]"></div>
         <span>{{ item.name }}</span>
       </div>
-    </div>
+    </div> -->
     <ul>
       <!-- <li @click="goDetail('https://ai.youdao.com/qanything.s')">
         <img src="../assets/home/icon-home.png" alt="首页" /><span>首页</span>
@@ -185,7 +184,7 @@ onMounted(() => {
   height: 64px;
   display: flex;
   align-items: center;
-  background: #26293b;
+  background: $baseColor;
 
   .header-navs {
     //width: 234px;

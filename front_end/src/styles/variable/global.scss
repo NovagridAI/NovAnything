@@ -1,5 +1,7 @@
 //品牌色
-$baseColor: #5a47e5;
+$baseColor:  hsl(221 83% 53%);
+
+$baseBackground: #bfbfbf;
 //一级标题
 $title1: #222222;
 //二级标题
@@ -10,3 +12,21 @@ $title3: #999999;
 $lineColor: #ededed;
 //a标签
 $aColor: #4d71ff;
+
+// 主色
+$primaryColor: hsl(221 83% 53%);
+// 辅助色
+$assistColor: #2463eb;
+// 警告色
+$warningColor: #2463eb;
+
+$textTitleColor: hsl(240 5.9% 10%);
+$textColor: hsl(240 3.8% 46.1%);
+$mainBgColor: #fff;
+$secondaryBgColor: hsl(240 4.8% 95.9%);
+$hoverBgColor: hsl(240 4.8% 95.9%);
+
+
+$shadow: 0 1px 2px 0 rgb(0 0 0 / .05);
+$shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
+$box-shadow: var(0 0 #0000, 0 0 #0000), var(0 0 #0000, 0 0 #0000), var(0 1px 2px 0 rgb(0 0 0 / .05));
