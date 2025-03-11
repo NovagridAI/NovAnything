@@ -11,6 +11,6 @@ data = {
 }
 
 response = requests.post(url, headers=headers, data=json.dumps(data))
-
+print(response)
 print(response.status_code)
 print(response.text)
