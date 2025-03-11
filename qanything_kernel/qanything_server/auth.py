@@ -130,8 +130,8 @@ async def login(req: request):
         return response.json({"code": 400, "msg": "用户名和密码不能为空"})
     
     # 查询用户信息
-    query = "SELECT user_id, password, role, user_name FROM User WHERE (user_id = %s OR email = %s) AND status = 'active'"
-    user_info = local_doc_qa.milvus_summary.execute_query_(query, (username, username), fetch=True)
+    query = "SELECT user_id, password, role, user_name FROM User WHERE user_name = %s AND status = 'active'"
+    user_info = local_doc_qa.milvus_summary.execute_query_(query, (username,), fetch=True)
     
     if not user_info:
         return response.json({"code": 401, "msg": "用户不存在或已被禁用"})

@@ -138,15 +138,16 @@ class KnowledgeBaseManager:
             hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), salt)
             
             insert_admin_query = """
-                INSERT INTO User (user_id, user_name, email, password, role)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO User (user_id, user_name, email, password, role, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """
             admin_data = (
                 str(uuid.uuid4()),
                 "admin",
                 "admin@example.com",
                 hashed_password.decode('utf-8'),
-                "admin"
+                "admin",
+                "active"
             )
             self.execute_query_(insert_admin_query, admin_data, commit=True)
             debug_logger.info("初始管理员用户创建成功 - 邮箱: admin@example.com, 密码: admin@123")
@@ -324,7 +325,7 @@ class KnowledgeBaseManager:
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 group_id VARCHAR(255) UNIQUE,
                 group_name VARCHAR(255),
-                creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """
         self.execute_query_(query, (), commit=True)
@@ -351,7 +352,7 @@ class KnowledgeBaseManager:
             "CREATE INDEX index_query ON QaLogs (query)",
             "CREATE INDEX index_timestamp ON QaLogs (timestamp)",
             "CREATE INDEX IF NOT EXISTS idx_user_dept ON User(dept_id);",
-            "CREATE INDEX IF NOT EXISTS idx_user_email ON User(email);"
+            "CREATE INDEX IF NOT EXISTS idx_user_email ON User(email);",
             # 如果没有的话，给QanythingBot添加一列：llm_setting VARCHAR(512)
             "ALTER TABLE QanythingBot ADD COLUMN llm_setting VARCHAR(512) DEFAULT '{}'",
             "ALTER TABLE QanythingBot DROP COLUMN model",

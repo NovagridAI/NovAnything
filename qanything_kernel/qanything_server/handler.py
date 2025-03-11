@@ -65,8 +65,14 @@ def sync_function_with_args(arg1, arg2):
     import time
     time.sleep(5)
     print(f"同步函数执行完毕，参数值：arg1={arg1}, arg2={arg2}")
-    
 
+
+@get_time_async
+async def health_check(req: request):
+    # 实现一个服务健康检查的逻辑，正常就返回200，不正常就返回500
+    return sanic_json({"code": 200, "msg": "success"})
+
+    
 @get_time_async
 async def document(req: request):
     description = """
