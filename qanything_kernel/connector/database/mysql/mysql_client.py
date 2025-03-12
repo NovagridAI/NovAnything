@@ -126,12 +126,12 @@ class KnowledgeBaseManager:
         self.execute_query_(query, (), commit=True)
 
         # 检查是否已存在管理员用户
-        debug_logger.info("检查是否存在管理员用户...")
-        check_admin_query = "SELECT * FROM User WHERE role = 'admin' LIMIT 1"
+        debug_logger.info("检查是否存在超级管理员用户...")
+        check_admin_query = "SELECT * FROM User WHERE role = 'superadmin' LIMIT 1"
         result = self.execute_query_(check_admin_query, (), fetch=True)
         
         if not result:
-            debug_logger.info("未找到管理员用户，开始创建初始管理员账户...")
+            debug_logger.info("未找到超级管理员用户，开始创建初始超级管理员账户...")
             # 如果不存在管理员用户，创建一个初始管理员用户
             admin_password = "admin@123"  # 初始密码
             salt = bcrypt.gensalt()
@@ -146,13 +146,13 @@ class KnowledgeBaseManager:
                 "admin",
                 "admin@example.com",
                 hashed_password.decode('utf-8'),
-                "admin",
+                "superadmin",
                 "active"
             )
             self.execute_query_(insert_admin_query, admin_data, commit=True)
-            debug_logger.info("初始管理员用户创建成功 - 邮箱: admin@example.com, 密码: admin@123")
+            debug_logger.info("初始超级管理员用户创建成功 - 邮箱: admin@example.com, 密码: admin@123")
         else:
-            debug_logger.info("已存在管理员用户，跳过初始管理员创建")
+            debug_logger.info("已存在超级管理员用户，跳过初始超级管理员创建")
 
         query = """
             CREATE TABLE IF NOT EXISTS KnowledgeBase (

@@ -77,7 +77,7 @@ def _get_subject_name(local_doc_qa, subject_type, subject_id):
 def _get_user_permission(local_doc_qa, kb_id, user_id, role, dept_id, owner_id):
     """获取用户对知识库的权限"""
     # 如果用户是管理员或知识库所有者，直接授予所有权限
-    if role == "admin" or user_id == owner_id:
+    if role == "superadmin" or role == "admin" or user_id == owner_id:
         return True, "admin", "admin_role" if role == "admin" else "owner"
     
     # 获取用户所在的所有用户组
@@ -253,21 +253,30 @@ async def get_kb_access_list(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')  # 当前操作用户
     kb_id = safe_get(req, 'kb_id')  # 知识库ID
-
+    
+    debug_logger.info(f"获取知识库访问权限列表 - 操作用户: {user_id}, 知识库ID: {kb_id}")
+    
+    # 检查参数
     if not kb_id:
+        debug_logger.warning(f"获取知识库访问权限列表失败 - 知识库ID为空")
         return sanic_json({"code": 400, "msg": "知识库ID不能为空"})
 
     # 检查知识库是否存在
     query = "SELECT kb_id, kb_name, user_id FROM KnowledgeBase WHERE kb_id = %s AND deleted = 0"
+    debug_logger.info(f"执行查询: {query} 参数: {kb_id}")
     kb_info = local_doc_qa.milvus_summary.execute_query_(query, (kb_id,), fetch=True)
+    
     if not kb_info:
+        debug_logger.warning(f"获取知识库访问权限列表失败 - 知识库 {kb_id} 不存在")
         return sanic_json({"code": 404, "msg": "知识库不存在"})
 
     kb_name = kb_info[0][1]
     owner_id = kb_info[0][2]  # 使用user_id作为owner_id
+    debug_logger.info(f"知识库信息 - 名称: {kb_name}, 所有者ID: {owner_id}")
 
     # 获取所有者信息
     owner_name = _get_subject_name(local_doc_qa, 'user', owner_id)
+    debug_logger.info(f"知识库所有者: {owner_name} (ID: {owner_id})")
 
     # 获取所有权限记录
     query = """
@@ -276,13 +285,18 @@ async def get_kb_access_list(req: request):
         WHERE kb_id = %s
         ORDER BY subject_type, permission_type
     """
+    debug_logger.info(f"查询知识库权限记录: {query} 参数: {kb_id}")
     access_records = local_doc_qa.milvus_summary.execute_query_(query, (kb_id,), fetch=True)
+    debug_logger.info(f"找到 {len(access_records) if access_records else 0} 条权限记录")
 
     # 处理权限记录
     access_list = []
     for record in access_records:
         access_id, subject_type, subject_id, access_level = record
+        debug_logger.info(f"处理权限记录 - ID: {access_id}, 类型: {subject_type}, 主体ID: {subject_id}, 权限级别: {access_level}")
+        
         subject_name = _get_subject_name(local_doc_qa, subject_type, subject_id)
+        debug_logger.info(f"主体名称: {subject_name}")
 
         access_list.append({
             "access_id": access_id,
@@ -300,7 +314,8 @@ async def get_kb_access_list(req: request):
         "owner_name": owner_name,
         "access_list": access_list
     }
-
+    
+    debug_logger.info(f"获取知识库访问权限列表成功 - 知识库: {kb_name} (ID: {kb_id}), 权限记录数: {len(access_list)}")
     return sanic_json({"code": 200, "msg": "获取知识库访问权限列表成功", "data": result})
 
 
@@ -350,7 +365,7 @@ async def check_kb_permission(req: request):
 @auth_required("admin")
 async def batch_set_kb_access(req: request):
     """批量设置知识库访问权限"""
-    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    local_doc_qa: LocalDocQA = req.app.ctx.access_listlocal_doc_qa
     user_id = safe_get(req, 'user_id')  # 当前操作用户
     kb_id = safe_get(req, 'kb_id')  # 知识库ID
     access_list = safe_get(req, 'access_list', [])  # 权限列表，格式为[{subject_type, subject_id, access_level}]
@@ -501,31 +516,14 @@ async def get_kb_detail(req: request):
     if not has_access:
         return sanic_json({"code": 403, "msg": "您没有权限访问此知识库"})
 
-    # 获取知识库文档数量
-    query = "SELECT COUNT(*) FROM Document WHERE kb_id = %s"
-    doc_count_result = local_doc_qa.milvus_summary.execute_query_(query, (kb_id,), fetch=True)
-    doc_count = doc_count_result[0][0] if doc_count_result else 0
-
-    # 获取知识库最近更新的文档
-    query = """
-        SELECT doc_id, doc_name, update_time 
-        FROM Document 
-        WHERE kb_id = %s 
-        ORDER BY update_time DESC 
-        LIMIT 5
-    """
-    recent_docs = local_doc_qa.milvus_summary.execute_query_(query, (kb_id,), fetch=True)
-    recent_docs_list = []
-    for doc in recent_docs:
-        recent_docs_list.append({
-            "doc_id": doc[0],
-            "doc_name": doc[1],
-            "update_time": doc[2].strftime("%Y-%m-%d %H:%M:%S") if doc[2] else None
-        })
+    # 获取知识库文件数量
+    query = "SELECT COUNT(*) FROM File WHERE kb_id = %s"
+    file_count_result = local_doc_qa.milvus_summary.execute_query_(query, (kb_id,), fetch=True)
+    file_count = file_count_result[0][0] if file_count_result else 0
 
     # 如果用户是管理员或知识库所有者，获取知识库的访问权限列表
     access_list = []
-    if role == "admin" or user_id == owner_id:
+    if role == "superadmin" or role == "admin" or user_id == owner_id:
         query = """
             SELECT a.id, a.subject_type, a.subject_id, a.permission_type
             FROM KnowledgeBaseAccess a
@@ -555,13 +553,12 @@ async def get_kb_detail(req: request):
         "latest_qa_time": kb[3].strftime("%Y-%m-%d %H:%M:%S") if kb[3] else None,
         "latest_insert_time": kb[4].strftime("%Y-%m-%d %H:%M:%S") if kb[4] else None,
         "deleted": kb[5],
-        "doc_count": doc_count,
-        "recent_docs": recent_docs_list,
+        "file_count": file_count,
         "user_access": {
             "access_level": access_level,
             "access_source": access_source,
             "is_owner": user_id == owner_id,
-            "is_admin": role == "admin"
+            "is_admin": role == "admin" or role == "superadmin"
         }
     }
 
@@ -573,7 +570,7 @@ async def get_kb_detail(req: request):
 
 
 @get_time_async
-@auth_required("admin")
+@auth_required(check_kb_access=True)
 async def transfer_kb_ownership(req: request):
     """转移知识库所有权"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
@@ -702,7 +699,7 @@ async def rename_knowledge_base(req: request):
         return sanic_json({"code": 400, "msg": "知识库ID和新名称不能为空"})
 
     # 检查知识库是否存在
-    query = "SELECT kb_id, owner_id FROM KnowledgeBase WHERE kb_id = %s"
+    query = "SELECT kb_id, user_id FROM KnowledgeBase WHERE kb_id = %s"
     kb_info = local_doc_qa.milvus_summary.execute_query_(query, (kb_id,), fetch=True)
     if not kb_info:
         return sanic_json({"code": 404, "msg": "知识库不存在"})
@@ -735,8 +732,7 @@ async def rename_knowledge_base(req: request):
 
     # 更新知识库名称
     try:
-        update_query = "UPDATE KnowledgeBase SET kb_name = %s, update_time = NOW() WHERE kb_id = %s"
-        local_doc_qa.milvus_summary.execute_query_(update_query, (new_name, kb_id), commit=True)
+        update_query = local_doc_qa.milvus_summary.rename_knowledge_base(user_id, kb_id, new_name)
         return sanic_json({"code": 200, "msg": "知识库重命名成功"})
     except Exception as e:
         debug_logger.error(f"重命名知识库失败: {str(e)}")
@@ -1264,13 +1260,6 @@ async def delete_knowledge_base(req: request):
 
     # 获取请求参数
     user_id = safe_get(req, 'user_id')
-    user_info = safe_get(req, 'user_info', "1234")
-
-    # 验证用户信息
-    passed, msg = check_user_id_and_user_info(user_id, user_info)
-    if not passed:
-        return sanic_json({"code": 2001, "msg": msg})
-
     debug_logger.info("delete_knowledge_base %s", user_id)
 
     # 获取并处理知识库ID
@@ -1325,6 +1314,7 @@ async def delete_knowledge_base(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_total_status(req: request):
     """获取知识库文件状态统计"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
@@ -1376,6 +1366,7 @@ async def get_total_status(req: request):
 
 
 @get_time_async
+@auth_required("admin", check_kb_access=True)
 async def clean_files_by_status(req: request):
     """根据状态清理文件"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
@@ -1429,6 +1420,7 @@ async def clean_files_by_status(req: request):
     
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def local_doc_chat(req: request):
     """基于知识库的文档问答"""
     preprocess_start = time.perf_counter()
@@ -1436,10 +1428,6 @@ async def local_doc_chat(req: request):
 
     # 获取并验证用户信息
     user_id = safe_get(req, 'user_id')
-    user_info = safe_get(req, 'user_info', "1234")
-    passed, msg = check_user_id_and_user_info(user_id, user_info)
-    if not passed:
-        return sanic_json({"code": 2001, "msg": msg})
 
     debug_logger.info('local_doc_chat %s', user_id)
     debug_logger.info('user_info %s', user_info)
@@ -1806,17 +1794,13 @@ async def local_doc_chat(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_doc_completed(req: request):
     """获取文档的分块内容"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
 
     # 获取并验证用户信息
     user_id = safe_get(req, 'user_id')
-    user_info = safe_get(req, 'user_info', "1234")
-    passed, msg = check_user_id_and_user_info(user_id, user_info)
-    if not passed:
-        return sanic_json({"code": 2001, "msg": msg})
-
     debug_logger.info("get_doc_chunks %s", user_id)
 
     # 获取知识库ID和文件ID
@@ -1882,6 +1866,7 @@ async def get_doc_completed(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_qa_info(req: request):
     """获取问答记录信息"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
@@ -2024,6 +2009,7 @@ async def get_qa_info(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_random_qa(req: request):
     """获取随机问答记录"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
@@ -2072,6 +2058,7 @@ async def get_random_qa(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_related_qa(req: request):
     """获取相关问答记录"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
@@ -2151,6 +2138,7 @@ async def get_related_qa(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_user_id(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     kb_id = safe_get(req, 'kb_id')
@@ -2164,6 +2152,7 @@ async def get_user_id(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_doc(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     doc_id = safe_get(req, 'doc_id')
@@ -2175,6 +2164,7 @@ async def get_doc(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_rerank_results(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     query = safe_get(req, 'query')
@@ -2193,6 +2183,7 @@ async def get_rerank_results(req: request):
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_user_status(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
@@ -2208,38 +2199,78 @@ async def get_user_status(req: request):
 
 
 @get_time_async
+@auth_required("write", check_kb_access=True)
 async def update_chunks(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
     debug_logger.info("update_chunks %s", user_id)
     doc_id = safe_get(req, 'doc_id')
     debug_logger.info(f"doc_id: {doc_id}")
+    
+    # 检查是否有正在处理的文件
     yellow_files = local_doc_qa.milvus_summary.get_files_by_status("yellow")
     if len(yellow_files) > 0:
         return sanic_json({"code": 2002,
                            "msg": f"fail, currently, there are {len(yellow_files)} files being parsed, please wait for all files to finish parsing before updating the chunk."})
+    
+    # 获取更新内容和分块大小
     update_content = safe_get(req, 'update_content')
     debug_logger.info(f"update_content: {update_content}")
     chunk_size = safe_get(req, 'chunk_size', DEFAULT_PARENT_CHUNK_SIZE)
     debug_logger.info(f"chunk_size: {chunk_size}")
+    
+    # 检查内容长度
     update_content_tokens = num_tokens_embed(update_content)
     if update_content_tokens > chunk_size:
         return sanic_json({"code": 2003, "msg": f"fail, update_content too long, please reduce the length, "
                                                 f"your update_content tokens is {update_content_tokens}, "
                                                 f"the max tokens is {chunk_size}"})
+    
+    # 获取文档信息
     doc_json = local_doc_qa.milvus_summary.get_document_by_doc_id(doc_id)
     if not doc_json:
         return sanic_json({"code": 2004, "msg": "fail, DocId {} not found".format(doc_id)})
+    
+    # 创建新文档对象
     doc = Document(page_content=update_content, metadata=doc_json['kwargs']['metadata'])
     doc.metadata['doc_id'] = doc_id
+    
+    # 更新数据库中的文档
     local_doc_qa.milvus_summary.update_document(doc_id, update_content)
-    expr = f'doc_id == "{doc_id}"'
-    local_doc_qa.milvus_kb.delete_expr(expr)
-    await local_doc_qa.retriever.insert_documents([doc], chunk_size, True)
+    
+    # 从向量库中删除旧文档
+    try:
+        expr = f'doc_id == "{doc_id}"'
+        debug_logger.info(f"删除向量库中的文档，表达式: {expr}")
+        
+        # 检查milvus_kb是否已初始化
+        if not hasattr(local_doc_qa, 'milvus_kb') or local_doc_qa.milvus_kb is None:
+            debug_logger.error("milvus_kb未初始化")
+            return sanic_json({"code": 5000, "msg": "Internal error: milvus_kb not initialized"})
+        
+        # 尝试获取匹配的文档
+        chunks = local_doc_qa.milvus_kb.get_local_chunks(expr)
+        if chunks is None:
+            debug_logger.warning(f"未找到匹配表达式 '{expr}' 的文档")
+        else:
+            debug_logger.info(f"找到 {len(chunks)} 个匹配的文档")
+            local_doc_qa.milvus_kb.delete_expr(expr)
+    except Exception as e:
+        debug_logger.error(f"删除向量库文档时出错: {str(e)}")
+        # 继续执行，不中断流程
+    
+    # 插入新文档到向量库
+    try:
+        await local_doc_qa.retriever.insert_documents([doc], chunk_size, True)
+    except Exception as e:
+        debug_logger.error(f"插入新文档到向量库时出错: {str(e)}")
+        return sanic_json({"code": 5000, "msg": f"Failed to insert document: {str(e)}"})
+    
     return sanic_json({"code": 200, "msg": "success update doc_id {}".format(doc_id)})
 
 
 @get_time_async
+@auth_required("read", check_kb_access=True)
 async def get_file_base64(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     file_id = safe_get(req, 'file_id')
