@@ -611,7 +611,7 @@ async def get_accessible_kbs(req: request):
     dept_id = req.ctx.user.get("dept_id")  # 用户部门
     
     # 如果是管理员，返回所有知识库
-    if role == "admin":
+    if role == "superadmin":
         query = """
             SELECT kb_id, kb_name, user_id, latest_qa_time, latest_insert_time, deleted
             FROM KnowledgeBase
