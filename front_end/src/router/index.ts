@@ -12,6 +12,7 @@ import { routes } from './routes';
 // 导入进度条
 import { start, close } from '@/utils/nporgress';
 import { checkVersion } from '@/utils/version';
+import Cookies from 'js-cookie';
 
 //是否隐藏NavBar
 
@@ -23,6 +24,17 @@ router.beforeEach((to, from, next) => {
   start();
   checkVersion();
   next();
+});
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = Cookies.get('token'); // 判断是否已登录
+
+  if (to.path !== '/login' && !isAuthenticated) {
+    next('/login');
+  } else {
+    next();
+  }
 });
 
 router.afterEach(() => {

@@ -169,12 +169,17 @@ const list = computed(() => {
   overflow: hidden;
   position: relative;
   height: 48px;
-  margin: 0 auto 16px;
+  margin: 0 auto 10px;
   border-radius: 8px;
-  background: #333647;
+  background: #fff;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 1px solid $borderColor;
+  // border: 1px solid transparent;
   user-select: none;
+
+  &:hover {
+    background: rgba(22, 119, 255, 0.1) !important;
+  }
 
   .title {
     display: flex;
@@ -191,7 +196,7 @@ const list = computed(() => {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        color: #ffffff;
+        color: $textTitleColor;
       }
     }
 
@@ -228,8 +233,8 @@ const list = computed(() => {
 
       :deep(.ant-input) {
         color: #999999;
-        background: #1e212f;
-        border-color: #7261e9;
+        background: $secondaryBgColor;
+        border-color: $borderColor;
       }
     }
   }
@@ -245,12 +250,48 @@ const list = computed(() => {
 }
 
 .active {
-  background: linear-gradient(284deg, #7b5ef2 -1%, #c383fe 97%);
+  background: #FFFFFF;
+  color: #1677ff ;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(5, 145, 255, 0.1);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 3px;
+    background: #1677ff;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .tool-name {
+    color: #1677ff !important;
+  }
 }
 
 // 切到这个知识库管理
 .card-option-active {
-  border: 2px solid #d9d9d9;
+  background: rgba(22, 119, 255, 0.04);
+  border: 1px solid rgba(22, 119, 255, 0.3);
+  position: relative;
+  
+
+  .title {
+    .normal {
+      .title-text {
+        color: #1677ff;
+        font-weight: 500;
+      }
+    }
+  }
+
+  &:hover {
+    background: rgba(22, 119, 255, 0.08) !important;
+    border-color: rgba(22, 119, 255, 0.45);
+  }
 }
 
 .fade-enter-active {
@@ -274,7 +315,8 @@ const list = computed(() => {
 }
 
 .tools-box {
-  background: #333647;
+  background: #FFFFFF;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
 
   ul {
     width: 100%;
@@ -291,10 +333,10 @@ const list = computed(() => {
       font-size: 14px;
       font-weight: normal;
       line-height: 22px;
-      color: #c0c0c0;
+      color: rgba(0, 0, 0, 0.88);
 
       .tool-name {
-        color: #c0c0c0;
+        color: rgba(0, 0, 0, 0.88);
       }
 
       svg {
@@ -304,12 +346,12 @@ const list = computed(() => {
       }
 
       &:hover {
-        background: #1e212f;
-        color: #fff;
-        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.04);
+        color: #1677ff;
+        border-radius: 4px;
 
         .tool-name {
-          color: #fff;
+          color: #1677ff;
         }
       }
     }
@@ -324,8 +366,8 @@ const list = computed(() => {
   .ant-popover-content {
     .ant-popover-inner {
       transform: translateY(10px);
-      background: #333647;
-      box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.2);
+      background: #FFFFFF;
+      box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
       padding: 10px;
     }
   }

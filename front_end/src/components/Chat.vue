@@ -900,7 +900,7 @@ $avatar-width: 96px;
   // margin-top: 65px;
 
   &.showSider {
-    height: calc(100vh - 64px - 64px);
+    height: calc(100vh - 64px);
   }
 }
 
@@ -913,7 +913,7 @@ $avatar-width: 96px;
   //border-top-color: #26293b;
   display: flex;
   flex-direction: column;
-  background: #f3f6fd;
+  background: $mainBgColor;
   overflow: hidden;
 }
 
@@ -934,7 +934,7 @@ $avatar-width: 96px;
     //padding-bottom: 20px;
     display: flex;
     flex-direction: column;
-    background: #f3f6fd;
+    background: $mainBgColor;
     overflow: hidden;
   }
 
@@ -961,7 +961,7 @@ $avatar-width: 96px;
       font-weight: normal;
       line-height: 22px;
       color: #222222;
-      background: #e9e1ff;
+      background: lighten($baseColor, 35%);
       border-radius: 12px;
       word-wrap: break-word;
     }
@@ -1245,7 +1245,7 @@ $avatar-width: 96px;
         &:hover {
           //border: 1px solid #5a47e5;
           background-color: #e5e5e5;
-          color: #5a47e5;
+          color: $baseColor;
         }
 
         svg {
@@ -1262,7 +1262,7 @@ $avatar-width: 96px;
         display: flex;
         justify-content: center;
         align-items: center;
-        background: linear-gradient(300deg, #7b5ef2 1%, #c383fe 97%);
+        background: $baseColor;
       }
 
       :deep(.ant-btn-primary:disabled) {
@@ -1270,7 +1270,7 @@ $avatar-width: 96px;
         display: flex;
         justify-content: center;
         align-items: center;
-        background: linear-gradient(300deg, #7b5ef2 1%, #c383fe 97%);
+        background: $baseColor;
         color: #fff !important;
         border-color: transparent !important;
       }

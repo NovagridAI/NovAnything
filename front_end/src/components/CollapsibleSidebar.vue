@@ -2,15 +2,17 @@
   <div class="sidebar-wrapper">
     <!-- 侧边栏切换按钮 -->
     <div class="sidebar-toggle" :class="{ 'collapsed': isCollapsed }" @click="toggleSidebar">
-        <RightOutlined  v-if="isCollapsed" />
-        <LeftOutlined v-else />
+      <RightOutlined v-if="isCollapsed" />
+      <LeftOutlined v-else />
     </div>
 
     <!-- 侧边栏 -->
     <div class="sidebar" :class="{ 'sidebar-collapsed': isCollapsed }">
       <div class="sidebar-content">
-        <!-- <AddInput /> -->
-         知识库Bar
+        <AddInput />
+        <div class="content" style="margin-top: 20px;">
+          <SiderCard :list="knowledgeBaseList"></SiderCard>
+        </div>
         <slot></slot>
       </div>
     </div>
@@ -19,11 +21,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import SvgIcon from './SvgIcon.vue';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue';
 import AddInput from '@/components/AddInput.vue';
+import { useKnowledgeBase } from '@/store/useKnowledgeBase';
+import SiderCard from '@/components/SiderCard.vue';
 
 const isCollapsed = ref(false);
+const { knowledgeBaseList, currentKbName } = storeToRefs(useKnowledgeBase());
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;
@@ -45,7 +49,7 @@ defineExpose({
 .sidebar-toggle {
   position: absolute;
   left: 240px;
-  top: 20px;
+  top: 50%;
   z-index: 100;
   width: 32px;
   height: 32px;
@@ -59,7 +63,8 @@ defineExpose({
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
   &:hover {
-    background: #7B5EF2;
+    background: $baseColor;
+    color: #fff;
     transform: scale(1.05);
   }
 
@@ -76,7 +81,7 @@ defineExpose({
 
 .sidebar {
   width: 260px;
-  background: $secondaryBgColor;
+  background: #fff;
   height: 100%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -90,7 +95,7 @@ defineExpose({
   &-content {
     width: 260px;
     height: 100%;
-    padding: 20px;
+    padding: 10px;
     overflow-y: auto;
 
     &::-webkit-scrollbar {
@@ -119,4 +124,4 @@ defineExpose({
     position: fixed;
   }
 }
-</style> 
+</style>

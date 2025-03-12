@@ -1,5 +1,5 @@
 <template>
-  <a-config-provider :theme="{ token: { colorPrimary: '#5a47e5' } }">
+  <a-config-provider>
     <div class="container">
       <Head />
       <div class="page">

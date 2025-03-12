@@ -9,7 +9,7 @@
 <template>
   <div class="upload-box">
     <div class="tips" @click="upload">
-      <img class="icon-file" src="../assets/home/icon-file.png" alt="图标" />
+      <upload-outlined class="upload-icon" />
       <p class="title">{{ home.startDec }}</p>
       <div class="desc-content">
         <p class="desc">{{ home.updesc2 }}</p>
@@ -20,6 +20,7 @@
 </template>
 <script lang="ts" setup>
 import { getLanguage } from '@/language/index';
+import { UploadOutlined } from '@ant-design/icons-vue';
 
 const home = getLanguage().home;
 // const props = defineProps({
@@ -69,6 +70,7 @@ const upload = () => {
   width: 100%;
   height: 100%;
   position: absolute;
+  cursor: pointer;
   z-index: 10;
   top: 0;
   left: 0;
@@ -77,9 +79,9 @@ const upload = () => {
   align-items: center;
   justify-content: center;
 
-  .icon-file {
-    width: 110px;
-    height: 110px;
+  .upload-icon {
+    font-size: 60px;
+    color: $baseColor;
   }
 
   .titie {

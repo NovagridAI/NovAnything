@@ -121,7 +121,7 @@ const update = async () => {
     }
 
     .color {
-      color: #5a47e5;
+      color: $baseColor;
     }
   }
 

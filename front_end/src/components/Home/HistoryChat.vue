@@ -203,7 +203,7 @@ function resetObserve() {
 <style lang="scss" scoped>
 .history-chat {
   height: 64px;
-  background: #f3f6fd;
+  background: $mainBgColor;
   border-bottom: 1px solid #dedede;
   padding: 0 40px;
   border-radius: 12px 0 0 0;
@@ -256,7 +256,7 @@ function resetObserve() {
     }
 
     .new-active {
-      color: #5a47e5;
+      color: $baseColor;
     }
 
     .chat-item {
@@ -299,7 +299,7 @@ function resetObserve() {
 
     .item-active {
       span {
-        color: #5a47e5;
+        color: $baseColor;
       }
     }
   }

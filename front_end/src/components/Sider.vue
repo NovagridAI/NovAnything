@@ -24,9 +24,9 @@
         <!-- <AddInput @add="addKb" /> -->
         <!-- <AddInput /> -->
       </div>
-      <div class="content">
+      <!-- <div class="content">
         <SiderCard :list="knowledgeBaseList"></SiderCard>
-      </div>
+      </div> -->
       <!-- <div class="bottom-btn-box">
         <a-button class="manage" @click="goManage">
           <template #icon>

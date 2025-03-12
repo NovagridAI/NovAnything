@@ -8,19 +8,34 @@
 -->
 <template>
   <a-config-provider :theme="{ token: { colorPrimary: '#5a47e5' } }">
-    <a-input v-model:value="kb_name" class="add-input" :placeholder="common.newPlaceholder">
-      <template #prefix>
-        <a-select v-model:value="addType" size="small">
-          <a-select-option value="0">文档集</a-select-option>
-          <a-select-option value="1">问答集</a-select-option>
-        </a-select>
-      </template>
-      <template #suffix>
-        <div class="add-button" @click="addKb">{{ common.new }}</div>
-        <!--        <PlusCircleOutlined />-->
-        <!--        <a-button shape="circle" size="small" :icon="h(CheckOutlined)" />-->
-      </template>
-    </a-input>
+    <div class="input-wrapper">
+      <a-input 
+        v-model:value="kb_name" 
+        class="add-input" 
+        :placeholder="common.newPlaceholder"
+      >
+        <template #prefix>
+          <a-select 
+            v-model:value="addType" 
+            size="small"
+            class="type-select"
+            :bordered="false"
+          >
+            <a-select-option value="0">文档集</a-select-option>
+            <a-select-option value="1">问答集</a-select-option>
+          </a-select>
+        </template>
+        <template #suffix>
+          <a-button 
+            type="primary" 
+            class="add-button" 
+            @click="addKb"
+          >
+            {{ common.new }}
+          </a-button>
+        </template>
+      </a-input>
+    </div>
   </a-config-provider>
 </template>
 <script lang="ts" setup>
@@ -79,16 +94,44 @@ const addKb = async () => {
 </script>
 
 <style lang="scss" scoped>
-.add-button {
-  cursor: pointer;
-  width: 48px;
-  height: 24px;
-  border-radius: 4px;
-  background: #5a47e5;
-  font-size: 14px;
-  //font-weight: 500;
-  line-height: 24px;
-  text-align: center;
-  color: #fff;
+.input-wrapper {
+  .add-input {
+    border-radius: 8px;
+    padding-right: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    
+    :deep(.ant-input) {
+      height: 40px;
+    }
+    
+    :deep(.ant-select) {
+      .ant-select-selector {
+        padding: 0;
+        border: none;
+      }
+    }
+  }
+
+  .type-select {
+    min-width: 60px;
+    width: 60px;
+    margin-right: 8px;
+    
+    :deep(.ant-select-selection-item) {
+      text-align: center;
+    }
+  }
+
+  .add-button {
+    height: 40px;
+    border-radius: 6px;
+    font-size: 14px;
+    padding: 0 16px;
+    
+    &:hover {
+      opacity: 0.9;
+    }
+  }
 }
 </style>

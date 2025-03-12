@@ -39,6 +39,7 @@ enum EUrlKey {
   getKbInfo = 'getKbInfo',
   getTags = 'getTags',
   updateTags = 'updateTags',
+  login = 'login',
 }
 
 interface IUrlValueConfig {
@@ -58,7 +59,7 @@ type IUrlConfig = Record<EUrlKey, IUrlValueConfig>;
 
 import services from '.';
 
-export const userId = 'user';
+export const userId = localUserInfo.userId;
 export const userPhone = localUserInfo.phoneNumber;
 
 //ajax请求接口
@@ -67,6 +68,15 @@ const urlConfig: IUrlConfig = {
     type: EUrlType.GET,
     url: '/checkLogin.s',
   },
+  login: {
+    type: EUrlType.POST,
+    url: '/auth/login',
+    showLoading: true,
+    param: {
+      username: '',
+      password: ''
+    }
+  },
   getLoginInfo: {
     type: EUrlType.POST,
     url: '/j_spring_security_check',
@@ -74,7 +84,7 @@ const urlConfig: IUrlConfig = {
   // 获取知识库列表
   kbList: {
     type: EUrlType.POST,
-    url: '/local_doc_qa/list_knowledge_base',
+    url: 'http://198.2.235.68:8777/api/user/list_knowledge_base',
     showLoading: true,
     param: {
       user_id: userId,

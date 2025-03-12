@@ -1,5 +1,5 @@
 <template>
-  <a-config-provider :theme="{ token: { colorPrimary: '#bfbfbf' } }">
+  <a-config-provider>
     <a-form
       ref="formRef"
       :model="chatSettingForm"
@@ -519,7 +519,7 @@ onBeforeMount(() => {
 
 :deep(.ant-select-item-option-selected) {
   background: #eeecfc !important;
-  color: #5a47e5 !important;
+  color: $baseColor !important;
 }
 
 :deep(.ant-btn-primary) {
@@ -528,7 +528,7 @@ onBeforeMount(() => {
 
 :deep(.ant-slider-track) {
   height: 8px;
-  background: #8868f1;
+  background: $baseColor;
   border-radius: 30px;
 }
 
@@ -542,10 +542,21 @@ onBeforeMount(() => {
   display: none;
 }
 
-:deep(.ant-slider-handle) {
-  &::after {
-    box-shadow: 0 0 0 2px #8868f1;
-    inset-block-start: 1px;
+:deep(.ant-slider) {
+  .ant-slider-handle {
+    &::after {
+      box-shadow: 0 0 0 2px $baseColor;
+      inset-block-start: 2px;
+      transition: inset-inline-start 0.2s, inset-block-start 0.2s, width 0.2s, height 0.2s, box-shadow 0.2s;
+    }
+  }
+
+  .ant-slider-handle:hover {
+    &::after {
+      inset-block-start: 1px;
+      box-shadow: 0 0 0 3px $baseColor;
+      border-color: lighten($baseColor, 10%) !important;
+    }
   }
 }
 
@@ -555,68 +566,48 @@ onBeforeMount(() => {
   font-size: 14px;
 }
 
-////hover
-//:deep(
-//    :where(.css-dev-only-do-not-override-19iuou).ant-checkbox-wrapper:not(
-//        .ant-checkbox-wrapper-disabled
-//      ):hover
-//      .ant-checkbox-inner,
-//    :where(.css-dev-only-do-not-override-19iuou).ant-checkbox:not(.ant-checkbox-disabled):hover
-//      .ant-checkbox-inner
-//  ) {
-//  border-color: #5a47e5 !important;
-//}
-//
-//// 选中hover
-//:deep(
-//    :where(.css-dev-only-do-not-override-19iuou).ant-checkbox-wrapper:not(
-//        .ant-checkbox-wrapper-disabled
-//      ):hover
-//      .ant-checkbox-checked:not(.ant-checkbox-disabled)
-//      .ant-checkbox-inner
-//  ) {
-//  background-color: #5a47e5;
-//  border-color: #5a47e5 !important;
-//}
-//
-//// 选中外圈hover
-//:deep(
-//    :where(.css-dev-only-do-not-override-19iuou).ant-checkbox-wrapper:not(
-//        .ant-checkbox-wrapper-disabled
-//      ):hover
-//      .ant-checkbox-checked:not(.ant-checkbox-disabled):after
-//  ) {
-//  border-color: #5a47e5 !important;
-//}
-//
-//// 选中正常
-//:deep(:where(.css-dev-only-do-not-override-19iuou).ant-checkbox-checked .ant-checkbox-inner) {
-//  background-color: #5a47e5;
-//  border-color: #5a47e5 !important;
-//}
-//
-//:deep(
-//    :where(.css-dev-only-do-not-override-19iuou).ant-checkbox-checked:not(
-//        .ant-checkbox-disabled
-//      ):hover
-//      .ant-checkbox-inner
-//  ) {
-//  background-color: #5a47e5 !important;
-//}
-//
-////background-color: #5a47e5;
-////border-color: #5a47e5 !important;
-//
-:deep(.ant-slider-handle:hover::after) {
-  box-shadow: 0 0 0 4px #5a47e5;
+:deep(.ant-checkbox-wrapper) {
+  // hover状态
+  &:hover .ant-checkbox-inner {
+    border-color: $baseColor !important;
+  }
+
+  // 选中状态
+  .ant-checkbox-checked {
+    .ant-checkbox-inner {
+      background-color: $baseColor !important;
+      border-color: $baseColor !important;
+    }
+
+    &::after {
+      border-color: $baseColor !important;
+    }
+  }
+
+  // hover时的选中状态
+  &:hover .ant-checkbox-checked:not(.ant-checkbox-disabled) .ant-checkbox-inner {
+    background-color: lighten($baseColor, 10%) !important;
+    border-color: lighten($baseColor, 10%) !important;
+  }
 }
 
-//:deep(.ant-slider-handle::after) {
-//  box-shadow: 0 0 0 4px #5a47e5;
-//}
+// 修改hover效果的写法
+:deep(.ant-checkbox-inner:hover) {
+  border-color: $baseColor !important;
+}
 
-:deep(.ant-slider:hover .ant-slider-track) {
-  background-color: #5a47e5;
+:deep(.ant-checkbox-checked:hover .ant-checkbox-inner) {
+  background-color: lighten($baseColor, 10%) !important;
+  border-color: lighten($baseColor, 10%) !important;
+}
+
+// 确保禁用状态不受影响
+:deep(.ant-checkbox-wrapper-disabled) {
+  &:hover .ant-checkbox-inner,
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #f5f5f5 !important;
+    border-color: #d9d9d9 !important;
+  }
 }
 
 .ollama-token {
@@ -660,6 +651,34 @@ onBeforeMount(() => {
         .ant-form-item-control:first-child:not([class^="'ant-col-'"]):not([class*="' ant-col-'"])
     ) {
     padding-left: 16px;
+  }
+}
+
+// Select组件样式
+:deep(.ant-select) {
+  &:hover .ant-select-selector {
+    border-color: $baseColor !important;
+  }
+
+  &.ant-select-focused {
+    .ant-select-selector {
+      border-color: $baseColor !important;
+      box-shadow: 0 0 0 2px rgba($baseColor, 0.2) !important;
+    }
+  }
+}
+
+// 下拉选项hover和选中状态
+:deep(.ant-select-dropdown) {
+  .ant-select-item-option {
+    &-active:not(.ant-select-item-option-disabled) {
+      background-color: #eeecfc !important;
+    }
+
+    &-selected:not(.ant-select-item-option-disabled) {
+      background-color: #eeecfc !important;
+      color: $baseColor !important;
+    }
   }
 }
 </style>

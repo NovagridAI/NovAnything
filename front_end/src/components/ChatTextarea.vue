@@ -357,7 +357,7 @@ watch(
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(300deg, #7b5ef2 1%, #c383fe 97%);
+    background: $baseColor;
   }
 
   :deep(.ant-btn-primary:disabled) {
@@ -365,7 +365,7 @@ watch(
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(300deg, #7b5ef2 1%, #c383fe 97%);
+    background: $secondaryBgColor;
     color: #fff !important;
     border-color: transparent !important;
   }

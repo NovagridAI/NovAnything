@@ -13,12 +13,14 @@ export const useUser = defineStore(
     const userInfo = ref({
       token: '',
       phoneNumber: '1',
+      userId: '',
     });
 
     const userPhoneDialogOpen = ref(false);
 
     const setUserInfo = info => {
       userInfo.value.token = info.token;
+      userInfo.value.userId = info.userId;
     };
 
     const getCachePhone = () => {

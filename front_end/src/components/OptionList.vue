@@ -11,42 +11,16 @@
     <div class="list-page">
       <div class="content">
         <div class="options">
-          <div class="to-chat" @click="goChat">
-            <img src="../assets/home/icon-back.png" alt="back" />
+          <a-button type="primary" class="to-chat" @click="goChat">
+            <LeftOutlined class="back-icon" />
             <span>{{ home.conversation }}</span>
-          </div>
+          </a-button>
           <p class="kb-name">
             <span class="name">
               {{ currentKbName.slice(0, 15) }}
             </span>
             <span class="id"> {{ home.knowledgeID }} {{ currentId }} </span>
           </p>
-          <div v-if="navIndex === 0" class="kb-tag">
-            <a-popover trigger="click" placement="leftBottom">
-              <template #content>
-                <TagsInput
-                  @confirm-tag="
-                    newTags => {
-                      tagConfirm('kb', currentId, newTags);
-                    }
-                  "
-                />
-              </template>
-              <a-button type="primary" style="margin-right: 10px">所有文件一键添加tag</a-button>
-            </a-popover>
-            <a-popover trigger="click" placement="leftBottom">
-              <template #content>
-                <TagsInput
-                  @confirm-tag="
-                    newTags => {
-                      tagConfirm('fileBatch', [...selectedKeys.keys()], newTags);
-                    }
-                  "
-                />
-              </template>
-              <a-button>批量添加tag</a-button>
-            </a-popover>
-          </div>
         </div>
         <div class="nav-info">
           <div class="navs">
@@ -58,6 +32,7 @@
             <UploadProgress :data-source="dataSource" />
           </div>
           <div class="handle-btn">
+
             <a-button v-if="navIndex === 0" danger class="clear-upload" @click="clearUpload">
               {{ home.clearAllFile }}
             </a-button>
@@ -70,34 +45,44 @@
             <a-button v-if="navIndex === 1" class="upload" @click="showEditQaSet">
               {{ home.inputQa }}
             </a-button>
+            <a-popover v-if="navIndex === 0" trigger="click" placement="top">
+              <template #content>
+                <TagsInput @confirm-tag="
+                  newTags => {
+                    tagConfirm('kb', currentId, newTags);
+                  }
+                " />
+              </template>
+              <a-button type="primary" style="margin: 0px 10px; height: 40px">所有文件一键添加tag</a-button>
+            </a-popover>
+            <a-popover v-if="navIndex === 0" trigger="click" placement="top">
+              <template #content>
+                <TagsInput @confirm-tag="
+                  newTags => {
+                    tagConfirm('fileBatch', [...selectedKeys.keys()], newTags);
+                  }
+                " />
+              </template>
+              <a-button type="primary" style="height: 40px">批量添加tag</a-button>
+            </a-popover>
           </div>
         </div>
         <div class="table">
-          <a-table
-            v-if="navIndex === 0"
-            :data-source="dataSource"
-            :columns="columns"
-            :pagination="kbPaginationConfig"
-            :locale="{ emptyText: home.emptyText }"
-            :hide-on-single-page="true"
-            :show-size-changer="false"
-            :row-selection="{ selectedRowKeys: [...selectedKeys.keys()], onSelect, onSelectAll }"
-            @change="kbOnChange"
-          >
+          <a-table v-if="navIndex === 0" :data-source="dataSource" :columns="columns" :pagination="kbPaginationConfig"
+            :locale="{ emptyText: home.emptyText }" :hide-on-single-page="true" :show-size-changer="false"
+            :row-selection="{ selectedRowKeys: [...selectedKeys.keys()], onSelect, onSelectAll }" @change="kbOnChange">
             <template #headerCell="{ column }">
               <!--            fileIdName-->
               <template v-if="column.key === 'status'">
-                <span>{{ home.documentStatus }}</span>
-                <a-tooltip color="#5a47e5">
-                  <template #title>
-                    {{ home.documentStatusNode }}
-                  </template>
-                  <img
-                    src="@/assets/home/icon-question.png"
-                    style="width: 18px; margin-left: 5px"
-                    alt="&copy"
-                  />
-                </a-tooltip>
+                <span style="display: flex; align-items: center;">
+                  {{ home.documentStatus }}
+                  <a-tooltip color="#5a47e5">
+                    <template #title>
+                      {{ home.documentStatusNode }}
+                    </template>
+                    <QuestionCircleOutlined style="margin-left: 5px; font-size: 16px; color: #999;" />
+                  </a-tooltip>
+                </span>
               </template>
             </template>
 
@@ -111,33 +96,21 @@
                 </a-tooltip>
               </template>
               <template v-else-if="column.key === 'fileTag'">
-                <Tags
-                  v-if="record.status === 'green'"
-                  :tags="record.fileTag"
-                  @update:tags="
-                    newTags => {
-                      record.fileTag = newTags;
-                    }
-                  "
-                  @confirm-tag="
-                    newTags => {
-                      tagConfirm('file', [record.fileId], newTags);
-                    }
-                  "
-                />
+                <Tags v-if="record.status === 'green'" :tags="record.fileTag" @update:tags="
+                  newTags => {
+                    record.fileTag = newTags;
+                  }
+                " @confirm-tag="
+                  newTags => {
+                    tagConfirm('file', [record.fileId], newTags);
+                  }
+                " />
               </template>
               <template v-else-if="column.key === 'status'">
                 <div class="status-box">
                   <span class="icon-file-status">
-                    <LoadingImg
-                      v-if="record.status === 'gray' || record.status === 'yellow'"
-                      class="file-status"
-                    />
-                    <SvgIcon
-                      v-else
-                      class="file-status"
-                      :name="record.status === 'green' ? 'success' : 'error'"
-                    />
+                    <LoadingImg v-if="record.status === 'gray' || record.status === 'yellow'" class="file-status" />
+                    <SvgIcon v-else class="file-status" :name="record.status === 'green' ? 'success' : 'error'" />
                   </span>
                   <span> {{ parseStatus(record.status) }}</span>
                 </div>
@@ -151,74 +124,40 @@
                 </div>
               </template>
               <template v-else-if="column.key === 'options'">
-                <a-popconfirm
-                  overlay-class-name="del-pop"
-                  placement="topRight"
-                  :title="common.deleteTitle"
-                  :ok-text="common.confirm"
-                  :cancel-text="common.cancel"
-                  @confirm="confirm"
-                >
+                <a-popconfirm overlay-class-name="del-pop" placement="topRight" :title="common.deleteTitle"
+                  :ok-text="common.confirm" :cancel-text="common.cancel" @confirm="confirm">
                   <!-- :disabled="record.status == 'gray' || record.status === 'yellow'" -->
                   <a-button type="text" class="delete-item" @click="deleteItem(record)">
                     {{ common.delete }}
                   </a-button>
                 </a-popconfirm>
-                <a-button
-                  type="text"
-                  class="view-item"
-                  :disabled="!(record.status === 'green')"
-                  @click="viewItem(record)"
-                >
+                <a-button type="text" class="view-item" :disabled="!(record.status === 'green')"
+                  @click="viewItem(record)">
                   {{ common.view }}
                 </a-button>
               </template>
             </template>
           </a-table>
-          <a-table
-            v-else
-            :data-source="faqList"
-            :columns="qaColumns"
-            :locale="{ emptyText: home.emptyText }"
-            :loading="loading"
-            :pagination="paginationConfig"
-            @change="onChange"
-          >
+          <a-table v-else :data-source="faqList" :columns="qaColumns" :locale="{ emptyText: home.emptyText }"
+            :loading="loading" :pagination="paginationConfig" @change="onChange">
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
                 <div class="status-box">
                   <span class="icon-file-status">
-                    <LoadingImg
-                      v-if="record.status === 'gray' || record.status === 'yellow'"
-                      class="file-status"
-                    />
-                    <SvgIcon
-                      v-else
-                      class="file-status"
-                      :name="record.status === 'green' ? 'success' : 'error'"
-                    />
+                    <LoadingImg v-if="record.status === 'gray' || record.status === 'yellow'" class="file-status" />
+                    <SvgIcon v-else class="file-status" :name="record.status === 'green' ? 'success' : 'error'" />
                   </span>
                   <span> {{ parseFaqStatus(record.status) }}</span>
                 </div>
               </template>
               <template v-else-if="column.key === 'options'">
                 <div class="options">
-                  <a-button
-                    class="edit-item"
-                    type="link"
-                    :disabled="record.status !== 'green'"
-                    @click="editQaItem(record)"
-                  >
+                  <a-button class="edit-item" type="link" :disabled="record.status !== 'green'"
+                    @click="editQaItem(record)">
                     {{ bots.edit }}
                   </a-button>
-                  <a-popconfirm
-                    overlay-class-name="qa-del-pop"
-                    placement="topRight"
-                    :title="home.deleteQaSetText"
-                    :ok-text="common.confirm"
-                    :cancel-text="common.cancel"
-                    @confirm="qaConfirm"
-                  >
+                  <a-popconfirm overlay-class-name="qa-del-pop" placement="topRight" :title="home.deleteQaSetText"
+                    :ok-text="common.confirm" :cancel-text="common.cancel" @confirm="qaConfirm">
                     <a-button class="delete-item" danger type="link" @click="deleteQaItem(record)">
                       {{ common.delete }}
                     </a-button>
@@ -248,7 +187,7 @@ import LoadingImg from '@/components/LoadingImg.vue';
 import UploadProgress from '@/components/UploadProgress.vue';
 import ChunkViewDialog from '@/components/ChunkViewDialog.vue';
 import FileUploadDialog from '@/components/FileUploadDialog.vue';
-// import { PlusOutlined } from '@ant-design/icons-vue';
+import { LeftOutlined, QuestionCircleOutlined } from '@ant-design/icons-vue';
 import Tags from '@/components/Tags.vue';
 import TagsInput from '@/components/TagsInput.vue';
 
@@ -284,17 +223,6 @@ const common = getLanguage().common;
 const bots = getLanguage().bots;
 
 const navIndex = computed(() => computedKbType.value);
-
-// const navList = [
-//   {
-//     name: home.docSet,
-//     value: 0,
-//   },
-//   {
-//     name: home.qaSet,
-//     value: 1,
-//   },
-// ];
 
 const computedKbType = computed(() => {
   if (currentId.value.endsWith('_FAQ')) {
@@ -402,13 +330,11 @@ const qaColumns = [
   },
 ];
 
-// 新增 / 删除 标签调用
 const tagConfirm = async (
   type: 'file' | 'fileBatch' | 'kb',
   id: string[] | string,
   newTags: Array<string>
 ) => {
-  // TODO 调用接口
   if (type === 'file') {
     console.log(type, id, newTags);
     await resultControl(
@@ -444,30 +370,18 @@ const tagConfirm = async (
   }
 };
 
-// 知识库tag
-// const kbTag = ref([
-//   '阿斯蒂芬规划局快乐美女吧v冲洗着',
-//   '阿a蒂芬规划局快乐美女吧v冲洗着',
-//   '阿斯大三蒂芬规划局快乐美女吧v冲洗着',
-//   '阿斯大三蒂芬规对对对局快乐美女吧v冲洗着',
-//   '阿斯大三蒂芬vvv规划局快乐美女吧v冲洗着',
-//   '阿斯大三蒂芬啊撒大声地规划局快乐美女吧v冲洗着',
-// ]);
-
-// 知识库的分页参数
 const kbPaginationConfig = computed(() => ({
-  current: kbPageNum.value, // 当前页码
-  pageSize: kbPageSize.value, // 每页条数
-  total: kbTotal.value, // 数据总数
+  current: kbPageNum.value,
+  pageSize: kbPageSize.value,
+  total: kbTotal.value,
   showSizeChanger: false,
   showTotal: total => `共 ${total} 条`,
 }));
 
-// faq的分页参数
 const paginationConfig = computed(() => ({
-  current: pageNum.value, // 当前页码
-  pageSize: pageSize.value, // 每页条数
-  total: total.value, // 数据总数
+  current: pageNum.value,
+  pageSize: pageSize.value,
+  total: total.value,
   showSizeChanger: false,
   showTotal: total => `共 ${total} 条`,
 }));
@@ -478,13 +392,11 @@ const deleteItem = item => {
   optionItem = item;
 };
 
-// 预览chunks
 const fileId = ref('');
 const fileIdName = ref('');
 const viewItem = async item => {
   fileId.value = item.fileId;
   fileIdName.value = item.fileIdName;
-  // 打开弹窗
   showChunkModel.value = true;
 };
 
@@ -561,7 +473,6 @@ const clearUpload = () => {
     maskClosable: true,
     okText: common.confirm,
     okType: 'danger',
-    // cancelText: common.cancel,
     async onOk() {
       try {
         await resultControl(await urlResquest.clearUpload({ status: 'gray', kb_ids: [] }));
@@ -611,54 +522,6 @@ const parseFaqStatus = status => {
   return str;
 };
 
-// const checkKbIsCreate = async () => {
-//   try {
-//     const res: any = await resultControl(await urlResquest.kbList());
-//     if (res.find(item => item.kb_id === `${currentId.value}_FAQ`)) {
-//       return true;
-//     }
-//   } catch (e) {
-//     message.error(e.msg || common.error);
-//     return true;
-//   }
-//   return false;
-// };
-
-// const addKnowledge = async () => {
-//   const isCreate = await checkKbIsCreate();
-//   if (isCreate) {
-//     return;
-//   }
-//   //获取到知识库id后  赋值给newId
-//   try {
-//     await resultControl(
-//       await urlResquest.createKb({
-//         kb_name: `${currentKbName.value}_FAQ`,
-//         kb_id: `${currentId.value}_FAQ`,
-//         // faq: true,
-//       })
-//     );
-//   } catch (e) {
-//     message.error(e.msg || common.error);
-//     return false;
-//   }
-//   return true;
-// };
-
-// const navClick = value => {
-//   navIndex.value = value;
-//   if (value === 0) {
-//     setKbPageNum(1);
-//     clearTimeout(faqTimer.value);
-//     getDetails();
-//   } else {
-//     setPageNum(1);
-//     clearTimeout(timer.value);
-//     getFaqList();
-//     addKnowledge();
-//   }
-// };
-
 const onChange = pagination => {
   const { current } = pagination;
   setPageNum(current);
@@ -670,10 +533,8 @@ const kbOnChange = pagination => {
   getDetails();
 };
 
-// 多选
 const selectedKeys = ref<Map<string, string>>(new Map());
 
-// 点击多选框
 const onSelect = (selectedRow: any) => {
   const key = selectedRow.fileId;
   const fileIdName = selectedRow.fileIdName;
@@ -684,7 +545,6 @@ const onSelect = (selectedRow: any) => {
   }
 };
 
-// 点击全选框
 const onSelectAll = (...args) => {
   const changeRows = args[2];
   changeRows.map(item => {
@@ -701,7 +561,6 @@ const onSelectAll = (...args) => {
 watch(
   currentId,
   () => {
-    // navIndex.value = 0;
     setKbPageNum(1);
     setPageNum(1);
     getDetails();
@@ -727,10 +586,9 @@ onBeforeUnmount(() => {
   font-family: PingFang SC;
 
   .content {
-    height: calc(100vh - 64px);
-    // margin-top: 16px;
+    height: calc(100vh);
     padding: 24px 32px;
-    background: #f3f6fd;
+    background: $mainBgColor;
     border-radius: 12px 0 0 0;
   }
 }
@@ -738,39 +596,30 @@ onBeforeUnmount(() => {
 .options {
   display: flex;
   align-items: center;
+  margin-bottom: 20px;
 
   .to-chat {
-    cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
     height: 40px;
-    background: #5a47e5;
-    border-radius: 6px;
     padding: 8px 20px;
+    font-size: 16px;
 
-    img {
-      margin-right: 4px;
-      width: 20px;
-      height: 20px;
+    .back-icon {
+      font-size: 16px;
     }
 
     span {
-      white-space: nowrap;
-      overflow: hidden;
       font-size: 16px;
       font-weight: 500;
-      line-height: 24px;
       color: #ffffff;
     }
   }
 
   .kb-name {
-    margin-left: 20px;
-    margin-right: 30px;
+    margin: 0 20px 0 30px;
     font-size: 24px;
     font-weight: 500;
-    line-height: 32px;
     color: #222222;
 
     .name {
@@ -802,7 +651,7 @@ onBeforeUnmount(() => {
     height: 40px;
     padding: 4px;
     border-radius: 8px;
-    background: #e4e9f4;
+    background: $secondaryBgColor;
     display: flex;
 
     .nav-item {
@@ -814,22 +663,19 @@ onBeforeUnmount(() => {
       border-radius: 6px;
       text-align: center;
       line-height: 32px;
-      //cursor: pointer;
     }
 
     .nav-item-active {
       background: #fff;
       font-weight: 500;
-      color: #5a47e5;
+      color: $baseColor;
     }
   }
 
   .nav-progress {
     width: 40%;
     margin: 0 10px 50px;
-    //margin-right: 50px;
     display: flex;
-    //flex: 1;
     align-items: center;
   }
 
@@ -837,7 +683,6 @@ onBeforeUnmount(() => {
     display: flex;
 
     .clear-upload {
-      //width: 100px;
       height: 40px;
       margin-right: 10px;
     }
@@ -847,11 +692,17 @@ onBeforeUnmount(() => {
       height: 40px;
       padding: 8px 20px;
       border-radius: 4px;
-      background: #5a47e5;
       font-size: 16px;
       font-weight: 500;
       line-height: 24px;
       color: #ffffff;
+      border: 1px solid $baseColor;
+      color: $baseColor;
+
+      &:hover {
+        border: 1px solid lighten($baseColor, 20%);
+        color: lighten($baseColor, 20%);
+      }
     }
 
     .add-link {
@@ -861,17 +712,22 @@ onBeforeUnmount(() => {
       padding: 8px 20px;
       border-radius: 4px;
       background: #ffffff;
-      border: 1px solid #5a47e5;
+      border: 1px solid $baseColor;
+      color: $baseColor;
       font-size: 16px;
       font-weight: 500;
       line-height: 24px;
-      color: #5a47e5;
+
+      &:hover {
+        border: 1px solid lighten($baseColor, 20%);
+        color: lighten($baseColor, 20%);
+      }
     }
   }
 }
 
 .table {
-  height: calc(100% - 120px);
+  height: 100%;
   margin-bottom: 32px;
   overflow: auto;
   border-radius: 12px;
@@ -893,7 +749,6 @@ onBeforeUnmount(() => {
     font-weight: normal;
     line-height: 22px;
     margin-right: 5px;
-    /* 错误颜色 */
     color: #ff524c;
   }
 
@@ -935,24 +790,15 @@ onBeforeUnmount(() => {
       }
     }
   }
-
-  //:deep(.ant-table-cell-ellipsis[colstart='2']) {
-  //  //display: flex;
-  //  //align-items: center;
-  //  //img {
-  //  //  margin-top: 5px;
-  //  //}
-  //}
 }
 
 :deep(.ant-table-wrapper .ant-table-thead > tr > th) {
-  font-size: 16px !important;
+  font-size: 14px !important;
   font-weight: 500 !important;
   line-height: 24px !important;
   padding: 15px 0 15px 36px !important;
-
   color: #222222 !important;
-  background-color: #e9edf7;
+  background-color: lighten($baseColor, 45%);
 
   .small {
     font-size: 12px !important;
@@ -977,12 +823,6 @@ onBeforeUnmount(() => {
     background-color: rgba(233, 237, 247, 0.3);
   }
 }
-
-// :deep(.ant-pagination-item-link) {
-//   border-radius: 4px !important;
-//   box-sizing: border-box !important;
-//   border: 1px solid #dde2ec !important;
-// }
 
 :deep(.ant-pagination) {
   margin: 16px 20px !important;
@@ -1033,12 +873,6 @@ onBeforeUnmount(() => {
       }
     }
 
-    .ant-btn-primary {
-      background-color: rgba(90, 71, 229, 1) !important;
-      color: #ffffff;
-      padding: 1px 8px;
-    }
-
     .ant-popover-inner {
       padding: 12px 16px;
       transform: translateX(44px);
@@ -1070,12 +904,6 @@ onBeforeUnmount(() => {
 
   .ant-popconfirm-buttons {
     margin-top: 16px;
-  }
-
-  .ant-btn-primary {
-    background-color: rgba(90, 71, 229, 1) !important;
-    color: #ffffff;
-    padding: 1px 8px;
   }
 
   .ant-btn-sm {

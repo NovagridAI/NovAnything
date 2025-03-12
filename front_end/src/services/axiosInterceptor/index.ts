@@ -9,16 +9,29 @@
 
 import axios from 'axios';
 import interceptors from './interceptors/index';
+import Cookies from 'js-cookie';
 axios.defaults.withCredentials = false;
 function isInterceptor(config: any, name: string) {
   return config[name];
 }
+
+const tokenInterceptor = {
+  request: (config) => {
+    const token = Cookies.get('token'); // 从localStorage获取token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`; // 添加token到请求头
+    }
+    return config;
+  }
+};
+
 function getInterceptors() {
   return {
     ...interceptors,
+    token: tokenInterceptor,
   };
 }
-const alwaysOpen = ['errorToast', 'rdLoginReqToken'];
+const alwaysOpen = ['errorToast', 'rdLoginReqToken', 'token'];
 function runInterceptors(instance: any) {
   if (!instance) return;
   const allInterceptor = getInterceptors() as any;
@@ -83,4 +96,5 @@ const http = axios.create({
   headers: {},
 });
 runInterceptors(http);
+
 export default http;
