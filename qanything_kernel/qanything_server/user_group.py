@@ -56,18 +56,47 @@ async def list_groups(req: request):
                COUNT(gm.user_id) as member_count
         FROM UserGroup g
         LEFT JOIN GroupMember gm ON g.group_id = gm.group_id
-        GROUP BY g.group_id
+        GROUP BY g.group_id, g.group_name, g.creation_time
         ORDER BY g.creation_time
     """
     groups = local_doc_qa.milvus_summary.execute_query_(query, (), fetch=True)
     
     result = []
     for group in groups:
+        group_id = group[0]
+        
+        # 查询用户组的知识库权限
+        kb_access_query = """
+            SELECT kb.kb_id, kb.kb_name, kba.permission_type, 
+                   kba.granted_by, u.user_name as granted_by_name,
+                   kba.granted_at
+            FROM KnowledgeBaseAccess kba
+            JOIN KnowledgeBase kb ON kba.kb_id = kb.kb_id
+            LEFT JOIN User u ON kba.granted_by = u.user_id
+            WHERE kba.subject_type = 'group'
+            AND kba.subject_id = %s
+            AND kb.deleted = 0
+            ORDER BY kba.granted_at DESC
+        """
+        kb_access = local_doc_qa.milvus_summary.execute_query_(kb_access_query, (group_id,), fetch=True)
+        
         result.append({
             "group_id": group[0],
             "group_name": group[1],
             "creation_time": group[2].strftime("%Y-%m-%d %H:%M:%S") if group[2] else None,
-            "member_count": group[3]
+            "member_count": group[3],
+            "permissions": [
+                {
+                    "kb_id": acc[0],
+                    "kb_name": acc[1],
+                    "permission_type": acc[2],
+                    "granted_by": {
+                        "user_id": acc[3],
+                        "user_name": acc[4]
+                    },
+                    "granted_at": acc[5].strftime("%Y-%m-%d %H:%M:%S") if acc[5] else None
+                } for acc in kb_access
+            ]
         })
     
     return sanic_json({"code": 200, "msg": "获取用户组列表成功", "data": result})
@@ -101,10 +130,6 @@ async def update_group(req: request):
             return sanic_json({"code": 400, "msg": "该用户组名称已被其他用户组使用"})
         update_fields.append("group_name = %s")
         params.append(group_name)
-    
-    if description is not None:  # 允许设置为空字符串
-        update_fields.append("description = %s")
-        params.append(description)
     
     if not update_fields:
         return sanic_json({"code": 400, "msg": "没有提供要更新的字段"})
@@ -160,38 +185,67 @@ async def delete_group(req: request):
 @get_time_async
 @auth_required("admin")
 async def add_user_to_group(req: request):
-    """将用户添加到用户组"""
+    """批量将用户添加到用户组"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')  # 当前操作用户
-    target_user_id = safe_get(req, 'target_user_id')  # 要添加的用户ID
+    target_user_ids = safe_get(req, 'target_user_ids', [])  # 要添加的用户ID列表
     group_id = safe_get(req, 'group_id')  # 用户组ID
     
-    if not target_user_id or not group_id:
-        return sanic_json({"code": 400, "msg": "用户ID和用户组ID不能为空"})
+    if not target_user_ids or not group_id:
+        return sanic_json({"code": 400, "msg": "用户ID列表和用户组ID不能为空"})
     
-    # 检查用户是否存在
-    query = "SELECT user_id FROM User WHERE user_id = %s AND status = 'active'"
-    if not local_doc_qa.milvus_summary.execute_query_(query, (target_user_id,), fetch=True):
-        return sanic_json({"code": 404, "msg": "用户不存在或已被禁用"})
+    if not isinstance(target_user_ids, list):
+        return sanic_json({"code": 400, "msg": "target_user_ids必须是一个列表"})
     
     # 检查用户组是否存在
     query = "SELECT group_id FROM UserGroup WHERE group_id = %s"
     if not local_doc_qa.milvus_summary.execute_query_(query, (group_id,), fetch=True):
         return sanic_json({"code": 404, "msg": "用户组不存在"})
     
-    # 检查用户是否已在用户组中
-    query = "SELECT user_id FROM GroupMember WHERE user_id = %s AND group_id = %s"
-    if local_doc_qa.milvus_summary.execute_query_(query, (target_user_id, group_id), fetch=True):
-        return sanic_json({"code": 400, "msg": "用户已在该用户组中"})
+    success_count = 0
+    failed_list = []
     
-    # 添加用户到用户组
-    query = "INSERT INTO GroupMember (user_id, group_id) VALUES (%s, %s)"
-    try:
-        local_doc_qa.milvus_summary.execute_query_(query, (target_user_id, group_id), commit=True)
-        return sanic_json({"code": 200, "msg": "用户添加到用户组成功"})
-    except Exception as e:
-        debug_logger.error(f"添加用户到用户组失败: {str(e)}")
-        return sanic_json({"code": 500, "msg": f"添加用户到用户组失败: {str(e)}"})
+    for target_user_id in target_user_ids:
+        try:
+            # 检查用户是否存在
+            query = "SELECT user_id FROM User WHERE user_id = %s AND status = 'active'"
+            if not local_doc_qa.milvus_summary.execute_query_(query, (target_user_id,), fetch=True):
+                failed_list.append({
+                    "user_id": target_user_id,
+                    "reason": "用户不存在或已被禁用"
+                })
+                continue
+            
+            # 检查用户是否已在用户组中
+            query = "SELECT user_id FROM GroupMember WHERE user_id = %s AND group_id = %s"
+            if local_doc_qa.milvus_summary.execute_query_(query, (target_user_id, group_id), fetch=True):
+                failed_list.append({
+                    "user_id": target_user_id,
+                    "reason": "用户已在该用户组中"
+                })
+                continue
+            
+            # 添加用户到用户组
+            query = "INSERT INTO GroupMember (user_id, group_id) VALUES (%s, %s)"
+            local_doc_qa.milvus_summary.execute_query_(query, (target_user_id, group_id), commit=True)
+            success_count += 1
+            
+        except Exception as e:
+            debug_logger.error(f"添加用户 {target_user_id} 到用户组失败: {str(e)}")
+            failed_list.append({
+                "user_id": target_user_id,
+                "reason": f"添加失败: {str(e)}"
+            })
+    
+    return sanic_json({
+        "code": 200,
+        "msg": f"批量添加用户完成，成功: {success_count}，失败: {len(failed_list)}",
+        "data": {
+            "success_count": success_count,
+            "failed_count": len(failed_list),
+            "failed_list": failed_list
+        }
+    })
 
 
 @get_time_async

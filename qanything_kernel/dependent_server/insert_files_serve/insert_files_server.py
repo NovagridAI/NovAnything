@@ -139,73 +139,85 @@ async def process_data(retriever, milvus_kb, mysql_client, file_info, time_recor
 async def check_and_process(pool):
     process_type = 'MainProcess' if 'SANIC_WORKER_NAME' not in os.environ else os.environ['SANIC_WORKER_NAME']
     worker_id = int(process_type.split('-')[-2])
-    insert_logger.info(f"{os.getpid()} worker_id is {worker_id}")
+    insert_logger.info(f"{os.getpid()} worker_id is {worker_id}, 开始初始化服务")
     mysql_client = KnowledgeBaseManager()
     milvus_kb = VectorStoreMilvusClient()
     es_client = StoreElasticSearchClient()
     retriever = ParentRetriever(milvus_kb, mysql_client, es_client)
+    insert_logger.info(f"Worker {worker_id} 初始化完成，开始处理文件")
+    
     while True:
         sleep_time = 3
         # worker_id 根据时间变化，每x分钟变一次，获取当前时间的分钟数
         minutes = int(int(time.strftime("%M", time.localtime())) / INSERT_WORKERS)
         dynamic_worker_id = (worker_id + minutes) % INSERT_WORKERS
+        insert_logger.info(f"Worker {worker_id} 当前动态ID: {dynamic_worker_id}, 分钟数: {minutes}")
         id = None
         try:
             async with pool.acquire() as conn:  # 获取连接
+                insert_logger.info(f"Worker {worker_id} 成功获取数据库连接")
                 async with conn.cursor() as cur:  # 创建游标
                     query = f"""
                         SELECT id, timestamp, file_id, file_name FROM File
                         WHERE status = 'gray' AND MOD(id, %s) = %s AND deleted = 0
                         ORDER BY timestamp ASC LIMIT 1;
                     """
-
+                    insert_logger.info(f"Worker {worker_id} 执行查询: {query} 参数: ({INSERT_WORKERS}, {dynamic_worker_id})")
                     await cur.execute(query, (INSERT_WORKERS, dynamic_worker_id))
 
                     file_to_update = await cur.fetchone()
 
                     if file_to_update:
-                        insert_logger.info(f"{worker_id}, file_to_update: {file_to_update}")
+                        insert_logger.info(f"Worker {worker_id} 找到待处理文件: {file_to_update}")
                         # 把files_to_update按照timestamp排序, 获取时间最早的那条记录的id
                         # file_to_update = sorted(files_to_update, key=lambda x: x[1])[0]
 
                         id, timestamp, file_id, file_name = file_to_update
                         # 更新这条记录的状态
+                        insert_logger.info(f"Worker {worker_id} 开始处理文件 ID: {id}, 文件名: {file_name}")
                         await cur.execute("""
                             UPDATE File SET status='yellow'
                             WHERE id=%s;
                         """, (id,))
                         await conn.commit()
-                        insert_logger.info(f"UPDATE FILE: {timestamp}, {file_id}, {file_name}, yellow")
+                        insert_logger.info(f"Worker {worker_id} 更新文件状态为yellow: {timestamp}, {file_id}, {file_name}")
 
                         await cur.execute(
                             "SELECT id, file_id, user_id, file_name, kb_id, file_location, file_size, file_url, "
                             "chunk_size FROM File WHERE id=%s", (id,))
                         file_info = await cur.fetchone()
+                        insert_logger.info(f"Worker {worker_id} 获取文件详细信息: {file_info}")
 
                         time_record = {}
                         # 现在处理数据
+                        insert_logger.info(f"Worker {worker_id} 开始处理文件内容: {file_id}")
                         status, content_length, chunks_number, msg = await process_data(retriever, milvus_kb,
                                                                                         mysql_client,
                                                                                         file_info, time_record)
-
-                        insert_logger.info('time_record: ' + json.dumps(time_record, ensure_ascii=False))
+                        insert_logger.info(f"Worker {worker_id} 文件处理完成: 状态={status}, 内容长度={content_length}, 块数={chunks_number}")
+                        insert_logger.info(f"Worker {worker_id} 处理时间记录: {json.dumps(time_record, ensure_ascii=False)}")
+                        
                         # 更新文件处理后的状态和相关信息
+                        insert_logger.info(f"Worker {worker_id} 更新文件最终状态: {status}")
                         await cur.execute(
                             "UPDATE File SET status=%s, content_length=%s, chunks_number=%s, msg=%s WHERE id=%s",
                             (status, content_length, chunks_number, msg, file_info[0]))
                         await conn.commit()
-                        insert_logger.info(f"UPDATE FILE: {timestamp}, {file_id}, {file_name}, {status}")
+                        insert_logger.info(f"Worker {worker_id} 文件处理完成并更新数据库: {timestamp}, {file_id}, {file_name}, 状态={status}")
                         sleep_time = 0.1
                     else:
+                        insert_logger.info(f"Worker {worker_id} 没有找到需要处理的文件")
                         await conn.commit()
         except Exception as e:
-            insert_logger.error('MySQL或Milvus 连接异常：' + str(e))
+            insert_logger.error(f"Worker {worker_id} MySQL或Milvus连接异常: {str(e)}")
+            insert_logger.error(f"Worker {worker_id} 异常详情: {traceback.format_exc()}")
             try:
                 async with pool.acquire() as conn:
                     async with conn.cursor() as cur:
-                        insert_logger.error(f"process_files Error {traceback.format_exc()}")
+                        insert_logger.error(f"Worker {worker_id} 处理文件过程中出错: {traceback.format_exc()}")
                         # 如果file的status是yellow，就改为red
                         if id is not None:
+                            insert_logger.info(f"Worker {worker_id} 将文件状态从yellow更新为red: {id}")
                             await cur.execute("UPDATE File SET status='red' WHERE id=%s AND status='yellow'", (id,))
                             await conn.commit()
 
@@ -213,13 +225,17 @@ async def check_and_process(pool):
                                 "SELECT id, file_id, user_id, file_name, kb_id, file_location, file_size FROM File WHERE id=%s",
                                 (id,))
                             file_info = await cur.fetchone()
-
-                            insert_logger.info(f"UPDATE FILE: {timestamp}, {file_id}, {file_name}, yellow2red")
-                            _, file_id, user_id, file_name, kb_id, file_location, file_size = file_info
-                            # await post_data(user_id=user_id, charsize=-1, docid=file_id, status='red', msg="Milvus service exception")
+                            if file_info:
+                                insert_logger.info(f"Worker {worker_id} 文件状态已更新为red: {timestamp}, {file_id}, {file_name}")
+                                _, file_id, user_id, file_name, kb_id, file_location, file_size = file_info
+                                # await post_data(user_id=user_id, charsize=-1, docid=file_id, status='red', msg="Milvus service exception")
+                            else:
+                                insert_logger.error(f"Worker {worker_id} 无法获取文件信息: {id}")
             except Exception as e:
-                insert_logger.error('MySQL 二次连接异常：' + str(e))
+                insert_logger.error(f"Worker {worker_id} MySQL二次连接异常: {str(e)}")
+                insert_logger.error(f"Worker {worker_id} 二次连接异常详情: {traceback.format_exc()}")
         finally:
+            insert_logger.debug(f"Worker {worker_id} 本轮处理完成，休眠 {sleep_time} 秒")
             await asyncio.sleep(sleep_time)
 
 

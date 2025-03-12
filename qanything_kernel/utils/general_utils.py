@@ -93,21 +93,48 @@ def format_time_record(time_record):
 
 
 def safe_get(req: Request, attr: str, default=None):
-    debug_logger.info(f"请求为: {req.json}")
     try:
+        # 首先检查请求的 Content-Type
+        content_type = req.headers.get('content-type', '')
+        
+        # 记录请求信息，但避免直接访问 req.json
+        if 'application/json' in content_type:
+            debug_logger.info(f"请求为JSON: {req.json}")
+        else:
+            debug_logger.info(f"请求Content-Type: {content_type}")
+            if req.form:
+                debug_logger.info(f"表单数据: {dict(req.form)}")
+            if req.args:
+                debug_logger.info(f"查询参数: {dict(req.args)}")
+        
+        # 定义需要特殊处理的参数（总是返回单个值的参数）
+        single_value_params = ['user_id', 'kb_id', 'file_id', 'doc_id', 'subject_id']
+        
+        # 按优先级获取参数
         if attr in req.form:
-            return req.form.getlist(attr)[0]
+            form_values = req.form.getlist(attr)
+            # 对于特定参数，始终返回第一个值
+            if attr in single_value_params or len(form_values) == 1:
+                return form_values[0] if form_values else default
+            # 对于其他参数，如果请求了列表，则返回列表
+            return form_values if form_values else default
+            
         if attr in req.args:
-            return req.args[attr]
-        if attr in req.json:
-            return req.json[attr]
-        # if value := req.form.get(attr):
-        #     return value
-        # if value := req.args.get(attr):
-        #     return value
-        # """req.json执行时不校验content-type，body字段可能不能被正确解析为json"""
-        # if value := req.json.get(attr):
-        #     return value
+            param = req.args[attr]
+            # 对于特定参数，始终返回第一个值
+            if attr in single_value_params or len(param) == 1:
+                return param[0] if param else default
+            # 对于其他参数，如果请求了列表，则返回列表
+            return param if param else default
+            
+        # 只有当Content-Type为application/json时才尝试从json中获取
+        if 'application/json' in content_type and attr in req.json:
+            json_value = req.json[attr]
+            # 对于特定参数，如果是列表，则返回第一个元素
+            if attr in single_value_params and isinstance(json_value, list) and json_value:
+                return json_value[0]
+            return json_value
+            
     except BadRequest:
         logging.warning(f"missing {attr} in request")
     except Exception as e:

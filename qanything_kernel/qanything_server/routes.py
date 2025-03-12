@@ -68,6 +68,7 @@ dept_bp.add_route(dept.create_department, "/create", methods=['POST'])  # tags=[
 dept_bp.add_route(dept.list_departments, "/list", methods=['GET'])  # tags=["部门列表"]
 dept_bp.add_route(dept.update_department, "/update", methods=['POST'])  # tags=["更新部门"]
 dept_bp.add_route(dept.delete_department, "/delete", methods=['POST'])  # tags=["删除部门"]
+dept_bp.add_route(dept.add_users_to_dept, "/add_user", methods=['POST'])  # tags=["添加用户到部门"]
 
 # 用户组管理路由
 group_bp.add_route(user_group.create_group, "/create", methods=['POST'])  # tags=["创建用户组"]

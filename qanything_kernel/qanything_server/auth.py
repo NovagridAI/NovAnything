@@ -24,12 +24,12 @@ def get_user_role(user_id, req):
 
 def has_permission(role, required_permission):
     """检查角色是否有所需权限"""
-    # 权限层级: admin > write > read
-    if role == 'admin':
+    # 权限层级: superadmin > admin > user
+    if role == 'superadmin':
         return True
-    if role == 'write' and required_permission in ['write', 'read']:
+    if role == 'admin' and required_permission in ['write', 'read']:
         return True
-    if role == 'read' and required_permission == 'read':
+    if role == 'user' and required_permission == 'read':
         return True
     return False
 
@@ -44,6 +44,9 @@ def auth_required(permission_level="read", check_kb_access=False):
         async def decorated_function(req, *args, **kwargs):
             # 获取用户ID和令牌
             user_id = safe_get(req, 'user_id')
+            # 如果user_id是列表，取第一个元素
+            if isinstance(user_id, list) and user_id:
+                user_id = user_id[0]
             token = req.headers.get('Authorization', '').replace('Bearer ', '')
             
             debug_logger.info(f"权限验证开始 - 用户: {user_id}, 所需权限: {permission_level}, 检查知识库权限: {check_kb_access}")
