@@ -1027,6 +1027,11 @@ class KnowledgeBaseManager:
         user_role, user_dept_id = user_info[0]
         debug_logger.info(f"用户角色: {user_role}, 部门ID: {user_dept_id}")
         
+        # 如果用户是超级管理员，直接放开所有权限
+        if user_role == 'superadmin':
+            debug_logger.info(f"用户 {user_id} 是超级管理员，拥有所有权限")
+            return True
+        
         # 3. 检查用户是否是知识库所有者
         query = "SELECT user_id FROM KnowledgeBase WHERE kb_id = %s AND user_id = %s AND deleted = 0"
         if self.execute_query_(query, (kb_id, user_id), fetch=True):
@@ -1041,8 +1046,15 @@ class KnowledgeBaseManager:
         """
         user_permission = self.execute_query_(query, (kb_id, user_id), fetch=True)
         if user_permission:
-            debug_logger.info(f"用户 {user_id} 对知识库 {kb_id} 有直接权限: {user_permission[0][0]}")
-            if self._is_permission_sufficient(user_permission[0][0], required_permission):
+            permission_type = user_permission[0][0]
+            debug_logger.info(f"用户 {user_id} 对知识库 {kb_id} 有直接权限: {permission_type}")
+            
+            # 如果用户是该知识库的admin，放开该知识库的权限
+            if permission_type == 'admin':
+                debug_logger.info(f"用户 {user_id} 是知识库 {kb_id} 的管理员，拥有所有权限")
+                return True
+                
+            if self._is_permission_sufficient(permission_type, required_permission):
                 return True
         
         # 5. 检查部门权限
@@ -1072,9 +1084,6 @@ class KnowledgeBaseManager:
             debug_logger.info(f"用户 {user_id} 通过用户组对知识库 {kb_id} 有权限: {perm[0]}")
             if self._is_permission_sufficient(perm[0], required_permission):
                 return True
-        
-        debug_logger.warning(f"用户 {user_id} 没有知识库 {kb_id} 的 {required_permission} 权限")
-        return False
 
     def _is_permission_sufficient(self, granted_permission: str, required_permission: str) -> bool:
         """检查权限是否足够"""
