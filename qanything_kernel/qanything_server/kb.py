@@ -1430,7 +1430,6 @@ async def local_doc_chat(req: request):
     user_id = safe_get(req, 'user_id')
 
     debug_logger.info('local_doc_chat %s', user_id)
-    debug_logger.info('user_info %s', user_info)
 
     # 处理机器人配置
     bot_id = safe_get(req, 'bot_id')
