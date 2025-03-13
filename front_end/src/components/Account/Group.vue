@@ -7,6 +7,7 @@
         position: ['bottomRight']
       }"
       style="height: 100%;"
+      :loading="tableLoading"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'action'">
@@ -43,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   MoreOutlined,
   EditOutlined,
@@ -51,6 +52,8 @@ import {
   SwapOutlined,
   DeleteOutlined
 } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
+import urlResquest from '@/services/urlConfig'
 
 const columns = [
   {
@@ -95,6 +98,34 @@ const groupData = ref([
     members: ''
   }
 ])
+
+const tableLoading = ref(false)
+
+const getGroupList = async () => {
+  tableLoading.value = true
+  try {
+    const res = await urlResquest.groupList()
+    if (res.code === 200) {
+      groupData.value = res.data.map(item => ({
+        key: item.id,
+        groupName: item.name,
+        owner: item.owner,
+        members: item.members || ''
+      }))
+    } else {
+      message.error(res.msg || '获取群组列表失败')
+    }
+  } catch (error) {
+    console.error('获取群组列表失败:', error)
+    message.error('获取群组列表失败')
+  } finally {
+    tableLoading.value = false
+  }
+}
+
+onMounted(() => {
+  getGroupList()
+})
 
 const editGroup = (record) => {
   console.log('编辑群组:', record)

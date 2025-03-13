@@ -1,6 +1,6 @@
 <template>
   <div v-if="dataSource.length !== 0" class="container">
-    <span class="title">{{ progress.uploadTotalProgress }}：</span>
+    <!-- <span class="title">{{ progress.uploadTotalProgress }}：</span> -->
     <a-tooltip
       :title="`${progress.putStorage}: ${progressPercentCount.green},
       ${progress.inLine}: ${progressPercentCount.gray},

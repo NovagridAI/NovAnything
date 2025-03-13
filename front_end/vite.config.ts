@@ -159,6 +159,21 @@ export default defineConfig(({ mode }) => {
       },
       cors: true,
       proxy: {
+        '/custom': {
+          target: 'http://198.2.235.68:8777/api',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/custom/, ''),
+        },
+        '/department': {
+          target: 'http://198.2.235.68:8777/api',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/department/, '/department'),
+        },
+        '/user': {
+          target: 'http://198.2.235.68:8777/api',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/user/, '/user'),
+        },
         '/auth': {
           target: 'http://198.2.235.68:8777/api',
           changeOrigin: true,

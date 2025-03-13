@@ -558,6 +558,16 @@ onBeforeMount(() => {
       border-color: lighten($baseColor, 10%) !important;
     }
   }
+
+  // 添加 hover 时轨道的颜色变化
+  &:hover {
+    .ant-slider-rail {
+      background-color: #e1e1e1;
+    }
+    .ant-slider-track {
+      background-color: lighten($baseColor, 10%);
+    }
+  }
 }
 
 :deep(.ant-slider-mark-text) {

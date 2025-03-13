@@ -34,6 +34,7 @@ export const useOptiionList = defineStore(
   () => {
     const dataSource = ref<IDataSource[]>([]);
     const setDataSource = (array: []) => {
+      console.log(array, 'setDataSource');
       dataSource.value = array;
     };
 
@@ -103,6 +104,7 @@ export const useOptiionList = defineStore(
     const timer = ref(null);
 
     const getDetails = async () => {
+      console.log('getDetails START');
       // try {
       if (timer.value) {
         clearTimeout(timer.value);

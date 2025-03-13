@@ -40,6 +40,11 @@ enum EUrlKey {
   getTags = 'getTags',
   updateTags = 'updateTags',
   login = 'login',
+  userList = 'userList',
+  departmentList = 'departmentList',
+  createDepartment = 'createDepartment',
+  groupList = 'groupList',
+  createUser = 'createUser',
 }
 
 interface IUrlValueConfig {
@@ -107,7 +112,7 @@ const urlConfig: IUrlConfig = {
     url: '/local_doc_qa/upload_files',
     param: {
       user_id: userId,
-      user_info: userPhone,
+      // user_info: userPhone,
     },
   },
   // 删除知识库
@@ -282,6 +287,51 @@ const urlConfig: IUrlConfig = {
   updateTags: {
     type: EUrlType.POST,
     url: '/local_doc_qa/update_tags',
+    param: {
+      user_id: userId,
+      user_info: userPhone,
+    },
+  },
+  // 获取用户列表
+  userList: {
+    type: EUrlType.GET,
+    url: '/user/list',
+    showLoading: false,
+    param: {
+      user_id: userId,
+    }
+  },
+  // 获取部门列表
+  departmentList: {
+    type: EUrlType.GET,
+    url: '/department/list',
+    showLoading: false,
+    param: {
+      user_id: userId,
+    }
+  },
+  // 创建部门
+  createDepartment: {
+    type: EUrlType.POST,
+    url: '/department/create',
+    showLoading: false,
+    param: {
+      name: '',
+      description: '',
+      parent_id: ''
+    }
+  },
+  groupList: {
+    type: EUrlType.GET,
+    url: '/custom/group/list',
+    showLoading: false,
+    param: {
+      user_id: userId
+    }
+  },
+  createUser: {
+    type: EUrlType.POST,
+    url: '/custom/user/create',
     param: {
       user_id: userId,
       user_info: userPhone,

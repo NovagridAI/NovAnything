@@ -253,7 +253,7 @@ const list = computed(() => {
   background: #FFFFFF;
   color: #1677ff ;
   border-radius: 4px;
-  box-shadow: 0 2px 0 rgba(5, 145, 255, 0.1);
+  // box-shadow: 0 2px 0 rgba(5, 145, 255, 0.1);
   position: relative;
 
   &::after {
@@ -316,7 +316,7 @@ const list = computed(() => {
 
 .tools-box {
   background: #FFFFFF;
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
+  // box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
 
   ul {
     width: 100%;
@@ -367,9 +367,14 @@ const list = computed(() => {
     .ant-popover-inner {
       transform: translateY(10px);
       background: #FFFFFF;
-      box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
       padding: 10px;
+      // box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
     }
+  }
+
+  .ant-popover-inner-content {
+    background: #FFFFFF;
+    padding: 0;
   }
 }
 </style>

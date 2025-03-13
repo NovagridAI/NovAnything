@@ -1,11 +1,5 @@
 <template>
-  <a-modal
-    v-model:open="userPhoneDialogOpen"
-    title="请填写手机号"
-    :mask-closable="false"
-    :keyboard="false"
-    destroy-on-close
-  >
+  <a-modal :open="false" title="请填写手机号" :mask-closable="false" :keyboard="false" destroy-on-close>
     <div class="inner">
       <div style="color: red; margin-bottom: 10px">仅做用户标识作用，不会对用户信息做任何收集</div>
       <a-input v-model:value="phone" size="small" style="width: 50%" :status="phoneStatus">

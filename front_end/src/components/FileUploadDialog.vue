@@ -110,6 +110,7 @@ import { userId, userPhone } from '@/services/urlConfig';
 import { getLanguage } from '@/language/index';
 import { useUploadFiles } from '@/store/useUploadFiles';
 import { useChatSetting } from '@/store/useChatSetting';
+import Cookies from 'js-cookie';
 // import { useLanguage } from '@/store/useLanguage';
 
 // const { language } = storeToRefs(useLanguage());
@@ -267,7 +268,7 @@ const uplolad = async () => {
   }
   formData.append('kb_id', currentId.value);
   formData.append('user_id', userId);
-  formData.append('user_info', userPhone);
+  // formData.append('user_info', userPhone);
   formData.append('chunk_size', chatSettingFormActive.value.chunkSize.toString());
   // 上传模式，soft：文件名重复的文件不再上传，strong：文件名重复的文件强制上传
   formData.append('mode', 'soft');
@@ -275,6 +276,10 @@ const uplolad = async () => {
   fetch(apiBase + '/local_doc_qa/upload_files', {
     method: 'POST',
     body: formData,
+    credentials: 'include',
+    headers: {
+      'Authorization': `Bearer ${Cookies.get('token')}`
+    }
   })
     .then(response => {
       if (response.ok) {
@@ -453,7 +458,7 @@ onBeforeUnmount(() => {
     }
 
     .blue {
-      color: #5a47e5;
+      color: $baseColor;
       cursor: pointer;
     }
   }
@@ -552,7 +557,7 @@ onBeforeUnmount(() => {
 }
 
 .upload-btn {
-  background: #5147e5 !important;
+  background: $baseColor !important;
 }
 </style>
 <style lang="scss">

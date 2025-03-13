@@ -63,7 +63,7 @@
       <div class="tab-panel">
         <transition name="fade" mode="out-in">
           <div class="tab-inner" v-if="activeTab === 'member'">
-            <Member />
+            <Member :userList="userList" />
           </div>
           <div class="tab-inner" v-else-if="activeTab === 'department'">
             <Department />
@@ -77,17 +77,34 @@
         </transition>
       </div>
     </div>
+
+    <!-- 添加邀请成员弹窗 -->
+    <a-modal
+      v-model:visible="inviteModalVisible"
+      title="邀请成员"
+      @ok="handleInviteConfirm"
+      @cancel="handleInviteCancel"
+      :confirmLoading="inviteLoading"
+    >
+      <a-form :model="inviteForm">
+        <a-form-item label="用户名" name="username">
+          <a-input v-model:value="inviteForm.username" placeholder="请输入用户名" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { UserAddOutlined, PlusOutlined } from '@ant-design/icons-vue';
-import { Input, Button } from 'ant-design-vue';
-import CollapsibleSidebar from '@/components/CollapsibleSidebar.vue';
 import Member from '@/components/Account/Member.vue';
 import Department from '@/components/Account/Department.vue';
 import Group from '@/components/Account/Group.vue';
 import Permission from '@/components/Account/Permission.vue';
+import { ref, onMounted } from 'vue';
+import urlResquest from '@/services/urlConfig';
+import { resultControl } from '@/utils/utils';
+import { message } from 'ant-design-vue';
 
 const tabs = [
   {
@@ -118,8 +135,51 @@ const onSearch = (value: string) => {
   console.log('搜索:', value);
 };
 
+// 邀请成员相关状态
+const inviteModalVisible = ref(false);
+const inviteLoading = ref(false);
+const inviteForm = ref({
+  username: ''
+});
+
+// 打开邀请弹窗
 const inviteMember = () => {
-  console.log('邀请成员');
+  inviteModalVisible.value = true;
+};
+
+// 取消邀请
+const handleInviteCancel = () => {
+  inviteModalVisible.value = false;
+  inviteForm.value.username = '';
+};
+
+// 确认邀请
+const handleInviteConfirm = async () => {
+  if (!inviteForm.value.username) {
+    message.warning('请输入用户名');
+    return;
+  }
+
+  inviteLoading.value = true;
+  try {
+    const result: any = await urlResquest.createUser({
+      user_name: inviteForm.value.username,
+      password: '123456',
+    });
+    
+    // 使用 resultControl 统一处理响应
+    // const result = await resultControl(res);
+    message.success('邀请成功');
+    inviteModalVisible.value = false;
+    inviteForm.value.username = '';
+    // 刷新用户列表
+    getUserList();
+  } catch (error) {
+    console.error('邀请失败:', error);
+    message.error(error.msg || '邀请失败');
+  } finally {
+    inviteLoading.value = false;
+  }
 };
 
 const createGroup = () => {
@@ -129,6 +189,30 @@ const createGroup = () => {
 const addPermission = () => {
   console.log('添加权限');
 };
+
+// 用户列表数据
+const userList = ref([]);
+
+// 获取用户列表
+const getUserList = async () => {
+  try {
+    const res: any = await urlResquest.userList();
+    console.log(res);
+    if(res.code === 200) {
+      userList.value = res.data;
+    } else {
+      message.error(res.msg || '获取用户列表失败');
+    }
+  } catch (error) {
+    console.error('获取用户列表失败:', error);
+    message.error('获取用户列表失败');
+  }
+};
+
+// 在组件挂载时获取数据
+onMounted(() => {
+  getUserList();
+});
 </script>
 
 <style scoped lang="scss">

@@ -81,6 +81,7 @@ const formState = reactive({
 });
 
 const onFinish = async (values: any) => {
+  console.log(values);
   try {
     const res = await urlRequest.login({
       username: values.username,

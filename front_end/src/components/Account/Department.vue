@@ -6,7 +6,7 @@
         <a-button type="primary" @click="showCreateModal">创建部门</a-button>
       </div> -->
 
-      <a-table :columns="columns" :data-source="dataSource" :pagination="false">
+      <a-table :columns="columns" :data-source="dataSource" :pagination="false" :loading="tableLoading">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'name'">
             <a @click="enterDepartment(record)">{{ record.name }}</a>
@@ -23,7 +23,7 @@
       </div>
       
       <div class="sidebar-content">
-        <a-button type="primary" block @click="showCreateModal">
+        <a-button type="primary" block @click="showCreateModal" :loading="createLoading">
           <plus-outlined />创建子部门
         </a-button>
         
@@ -38,7 +38,7 @@
             <swap-outlined />
             <span>移动部门</span>
           </a-menu-item>
-          <a-menu-item key="delete" @click="showDeleteConfirm">
+          <a-menu-item key="delete" @click="showDeleteConfirm" :disabled="deleteLoading">
             <delete-outlined />
             <span>删除部门</span>
           </a-menu-item>
@@ -54,7 +54,7 @@
       @cancel="handleCreateCancel"
     >
       <a-form :model="createForm">
-        <a-form-item label="头像 & 名称">
+        <a-form-item label="名称">
           <a-input v-model:value="createForm.name" placeholder="部门名称" />
         </a-form-item>
         <a-form-item label="介绍">
@@ -99,136 +99,170 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { 
   PlusOutlined, 
   TeamOutlined, 
   SwapOutlined, 
   DeleteOutlined 
 } from '@ant-design/icons-vue'
-import { Modal } from 'ant-design-vue'
+import { Modal, message } from 'ant-design-vue'
+import urlResquest from '@/services/urlConfig'
 
-export default defineComponent({
-  components: {
-    PlusOutlined,
-    TeamOutlined,
-    SwapOutlined,
-    DeleteOutlined
-  },
-  setup() {
-    const currentDepartment = ref('o5Ljw6jYZ7 Team')
-    const columns = [
-      {
-        title: '名称',
-        dataIndex: 'name',
-        key: 'name',
-      },
-    ]
+const currentDepartment = ref('o5Ljw6jYZ7 Team')
+const createModalVisible = ref(false)
+const manageMembersVisible = ref(false)
+const moveModalVisible = ref(false)
+const searchMember = ref('')
+const selectedMembers = ref([])
+const selectedDepartments = ref([])
 
-    const dataSource = ref([
+const dataSource = ref([])
+const createForm = ref({
+  name: '',
+  description: ''
+})
+
+const columns = [
+  {
+    title: '名称',
+    dataIndex: 'name',
+    key: 'name',
+  }
+]
+
+const memberColumns = [
+  {
+    title: '用户名',
+    dataIndex: 'username',
+  }
+]
+
+const memberList = ref([
+  {
+    key: '1',
+    username: 'Member',
+  }
+])
+
+const departmentTree = ref([
+  {
+    title: 'o5Ljw6jYZ7 Team',
+    key: '1',
+    children: [
       {
-        key: '1',
-        name: 'o5Ljw6jYZ7 Team',
-      },
-      {
+        title: '222',
         key: '2',
-        name: '222',
       },
-    ])
+    ],
+  }
+])
 
-    // 创建部门相关
-    const createModalVisible = ref(false)
-    const createForm = ref({
-      name: '',
-      description: '',
-    })
+// 添加 loading 状态
+const tableLoading = ref(false)
+const createLoading = ref(false)
+const deleteLoading = ref(false)
 
-    // 管理成员相关
-    const manageMembersVisible = ref(false)
-    const searchMember = ref('')
-    const selectedMembers = ref([])
-    const memberColumns = [
-      {
-        title: '用户名',
-        dataIndex: 'username',
-      },
-    ]
-    const memberList = ref([
-      {
-        key: '1',
-        username: 'Member',
-      },
-    ])
-
-    // 移动部门相关
-    const moveModalVisible = ref(false)
-    const selectedDepartments = ref([])
-    const departmentTree = ref([
-      {
-        title: 'o5Ljw6jYZ7 Team',
-        key: '1',
-        children: [
-          {
-            title: '222',
-            key: '2',
-          },
-        ],
-      },
-    ])
-
-    const showCreateModal = () => {
-      createModalVisible.value = true
+// 获取部门列表
+const getDepartmentList = async () => {
+  tableLoading.value = true
+  try {
+    const res = await urlResquest.departmentList()
+    if (res.code === 200) {
+      dataSource.value = res.data.map(item => ({
+        key: item.id,
+        name: item.name
+      }))
+    } else {
+      message.error(res.msg || '获取部门列表失败')
     }
+  } catch (error) {
+    console.error('获取部门列表失败:', error)
+    message.error('获取部门列表失败')
+  } finally {
+    tableLoading.value = false
+  }
+}
 
-    const showManageMembers = () => {
-      manageMembersVisible.value = true
+// 创建部门
+const handleCreateOk = async () => {
+  createLoading.value = true
+  try {
+    const params: any = {
+      name: createForm.value.name,
+      description: createForm.value.description,
+      user_id: localStorage.getItem('userId')
     }
+    
+    // if (currentDepartment.value !== 'o5Ljw6jYZ7 Team') {
+    //   params.parent_id = currentDepartment.value
+    // }
 
-    const showMoveModal = () => {
-      moveModalVisible.value = true
+    const res = await urlResquest.createDepartment(params)
+    if (res.code === 200) {
+      message.success('创建部门成功')
+      createModalVisible.value = false
+      createForm.value = {
+        name: '',
+        description: ''
+      }
+      getDepartmentList()
+    } else {
+      message.error(res.msg || '创建部门失败')
     }
+  } catch (error) {
+    console.error('创建部门失败:', error)
+    message.error('创建部门失败')
+  } finally {
+    createLoading.value = false
+  }
+}
 
-    const showDeleteConfirm = () => {
-      // 使用 ant design vue 的确认对话框
-      Modal.confirm({
-        title: '删除警告',
-        content: '确认删除该部门？',
-        okText: '确认',
-        cancelText: '取消',
-        okType: 'danger',
-        onOk() {
-          // 处理删除逻辑
-        },
-      })
-    }
+const handleCreateCancel = () => {
+  createModalVisible.value = false
+  createForm.value = {
+    name: '',
+    description: ''
+  }
+}
 
-    const enterDepartment = (record) => {
-      // 处理进入部门逻辑
-      console.log('进入部门:', record)
-    }
+const showCreateModal = () => {
+  createModalVisible.value = true
+}
 
-    return {
-      currentDepartment,
-      columns,
-      dataSource,
-      createModalVisible,
-      createForm,
-      manageMembersVisible,
-      searchMember,
-      selectedMembers,
-      memberColumns,
-      memberList,
-      moveModalVisible,
-      selectedDepartments,
-      departmentTree,
-      showCreateModal,
-      showManageMembers,
-      showMoveModal,
-      showDeleteConfirm,
-      enterDepartment,
-    }
-  },
+const showManageMembers = () => {
+  manageMembersVisible.value = true
+}
+
+const showMoveModal = () => {
+  moveModalVisible.value = true
+}
+
+const showDeleteConfirm = () => {
+  Modal.confirm({
+    title: '删除警告',
+    content: '确认删除该部门？',
+    okText: '确认',
+    cancelText: '取消',
+    okType: 'danger',
+    onOk: async () => {
+      deleteLoading.value = true
+      try {
+        // 处理删除逻辑
+      } finally {
+        deleteLoading.value = false
+      }
+    },
+  })
+}
+
+const enterDepartment = (record) => {
+  console.log('进入部门:', record)
+}
+
+onMounted(() => {
+  getDepartmentList()
 })
 </script>
 

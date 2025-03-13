@@ -11,7 +11,7 @@
   <a-config-provider :hash="false" :locale="locale" :auto-insert-space-in-button="false">
     <div class="page-app">
       <router-view></router-view>
-      <UserPhoneDialog />
+      <!-- <UserPhoneDialog /> -->
     </div>
   </a-config-provider>
 </template>

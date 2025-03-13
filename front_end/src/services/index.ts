@@ -43,7 +43,7 @@ export default {
     };
 
     // 判断 userNumber
-    if (!checkPhone()) return {};
+    // if (!checkPhone()) return {};
 
     const data = axios.request(options).then(
       res => (getResponseHeader ? res : res.data),
@@ -73,7 +73,7 @@ export default {
     };
 
     // 判断 userNumber
-    if (!checkPhone()) return {};
+    // if (!checkPhone()) return {};
 
     const resData = axios.request(options).then(
       res => (getResponseHeader ? res : res.data),

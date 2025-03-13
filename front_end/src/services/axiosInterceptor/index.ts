@@ -14,12 +14,16 @@ axios.defaults.withCredentials = false;
 function isInterceptor(config: any, name: string) {
   return config[name];
 }
+const whiteList = ['/auth/login']; // 添加不需要token的接口白名单
 
 const tokenInterceptor = {
   request: (config) => {
-    const token = Cookies.get('token'); // 从localStorage获取token
+    if (whiteList.includes(config.url)) {
+      return config;
+    }
+    const token = Cookies.get('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`; // 添加token到请求头
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   }

@@ -2,7 +2,7 @@
 .ant-btn-primary {
   background-color: $baseColor !important;
 
-  + :not(:disabled):hover {
+  &:not(:disabled):hover {
     background-color: lighten($baseColor, 10%) !important;
   }
 }

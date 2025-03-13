@@ -20,7 +20,7 @@
               <p class="question-text">{{ item.question }}</p>
             </div>
             <div v-else class="ai">
-              <img class="avatar" src="../assets/home/ai-avatar.png" alt="头像" />
+              <img class="avatar" src="../assets/home/novLogo.png" alt="头像" />
               <div class="ai-content">
                 <div class="ai-right">
                   <p
@@ -238,6 +238,7 @@ import ChatInfoPanel from '@/components/ChatInfoPanel.vue';
 import { useBots } from '@/store/useBots';
 import CopyUrlDialog from '@/components/Bots/CopyUrlDialog.vue';
 import ChatTextarea from '@/components/ChatTextarea.vue';
+import Cookies from 'js-cookie'
 
 const common = getLanguage().common;
 
@@ -472,7 +473,7 @@ const getMentionOptions = async () => {
 watch(
   () => selectList,
   () => {
-    getMentionOptions();
+    // getMentionOptions();
   },
   {
     immediate: true,
@@ -579,6 +580,7 @@ const send = async () => {
       headers: {
         'Content-Type': 'application/json',
         Accept: ['text/event-stream', 'application/json'],
+        Authorization: `Bearer ${Cookies.get('token')}`
       },
       openWhenHidden: true,
       body: JSON.stringify({
@@ -951,7 +953,7 @@ $avatar-width: 96px;
     margin-bottom: 16px;
 
     .avatar {
-      margin: 0 0 0 16px;
+      margin: 9px 0 0 16px;
     }
 
     .question-text {
@@ -968,8 +970,12 @@ $avatar-width: 96px;
   }
 
   .ai {
-    margin: 16px 0 28px 0;
+    margin: 16px 0px 28px 0;
     display: flex;
+
+    img {
+      margin-top: 10px;
+    }
 
     .ai-content {
       display: flex;
@@ -978,13 +984,13 @@ $avatar-width: 96px;
       min-width: 20%;
 
       .question-text {
+        background: darken($secondaryBgColor, 5%);
         flex: 1;
         padding: 13px 20px;
         font-size: 14px;
         font-weight: normal;
         line-height: 22px;
         color: $title1;
-        background: #fff;
         border-radius: 12px 12px 0 0;
         word-wrap: break-word;
       }
@@ -1095,7 +1101,7 @@ $avatar-width: 96px;
         cursor: pointer;
         align-items: center;
         margin-right: auto;
-        color: #5a47e5;
+        color: $baseColor;
 
         .reload-text {
           height: 22px;

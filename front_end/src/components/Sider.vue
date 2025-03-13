@@ -115,11 +115,11 @@ const navList = [
     value: 0,
     icon: markRaw(FolderOutlined)
   },
-  {
-    name: 'Bots',
-    value: 1,
-    icon: markRaw(RobotOutlined)
-  },
+  // {
+  //   name: 'Bots',
+  //   value: 1,
+  //   icon: markRaw(RobotOutlined)
+  // },
   {
     name: getLanguage().header.account,
     value: 3,

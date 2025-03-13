@@ -45,7 +45,7 @@
             <a-button v-if="navIndex === 1" class="upload" @click="showEditQaSet">
               {{ home.inputQa }}
             </a-button>
-            <a-popover v-if="navIndex === 0" trigger="click" placement="top">
+            <!-- <a-popover v-if="navIndex === 0" trigger="click" placement="top">
               <template #content>
                 <TagsInput @confirm-tag="
                   newTags => {
@@ -64,7 +64,7 @@
                 " />
               </template>
               <a-button type="primary" style="height: 40px">批量添加tag</a-button>
-            </a-popover>
+            </a-popover> -->
           </div>
         </div>
         <div class="table">
@@ -96,7 +96,7 @@
                 </a-tooltip>
               </template>
               <template v-else-if="column.key === 'fileTag'">
-                <Tags v-if="record.status === 'green'" :tags="record.fileTag" @update:tags="
+                <!-- <Tags v-if="record.status === 'green'" :tags="record.fileTag" @update:tags="
                   newTags => {
                     record.fileTag = newTags;
                   }
@@ -104,7 +104,7 @@
                   newTags => {
                     tagConfirm('file', [record.fileId], newTags);
                   }
-                " />
+                " /> -->
               </template>
               <template v-else-if="column.key === 'status'">
                 <div class="status-box">
@@ -218,6 +218,7 @@ const {
   kbPageSize,
 } = storeToRefs(useOptiionList());
 
+console.log(dataSource.value);
 const home = getLanguage().home;
 const common = getLanguage().common;
 const bots = getLanguage().bots;

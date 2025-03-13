@@ -14,7 +14,7 @@
         class="add-input" 
         :placeholder="common.newPlaceholder"
       >
-        <template #prefix>
+        <!-- <template #prefix>
           <a-select 
             v-model:value="addType" 
             size="small"
@@ -24,7 +24,7 @@
             <a-select-option value="0">文档集</a-select-option>
             <a-select-option value="1">问答集</a-select-option>
           </a-select>
-        </template>
+        </template> -->
         <template #suffix>
           <a-button 
             type="primary" 
