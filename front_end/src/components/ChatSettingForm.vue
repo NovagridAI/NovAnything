@@ -145,7 +145,7 @@
           />
         </a-form-item>
       </div>
-      <div class="form-item-inline">
+      <!-- <div class="form-item-inline">
         <a-form-item ref="chunkSize" name="chunkSize">
           <template #label>
             <a-popover placement="topLeft">
@@ -172,7 +172,7 @@
             :controls="false"
           />
         </a-form-item>
-      </div>
+      </div> -->
       <div class="form-item-inline">
         <a-form-item ref="temperature" name="temperature">
           <template #label>
@@ -259,7 +259,7 @@
           :tip-formatter="sliderFormatter"
         />
       </a-form-item>
-      <a-form-item :label="common.capabilitiesLabel" name="capabilities">
+      <!-- <a-form-item :label="common.capabilitiesLabel" name="capabilities">
         <a-checkbox-group v-model:value="capabilitiesOptionsState" style="width: 100%">
           <a-row>
             <a-col v-for="key in Object.keys(chatSettingForm.capabilities)" :key="key" :span="6">
@@ -272,7 +272,7 @@
             </a-col>
           </a-row>
         </a-checkbox-group>
-      </a-form-item>
+      </a-form-item> -->
       <a-form-item
         v-if="chatSettingForm.modelType === '自定义模型配置'"
         :wrapper-col="{ span: 24 }"

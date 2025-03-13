@@ -42,6 +42,10 @@
             <a-button v-if="navIndex === 0" class="add-link" @click="showUrlUpload">
               {{ home.addUrl }}
             </a-button>
+            <a-button v-if="navIndex === 0" class="manage-members" @click="showManageMembers">
+              <TeamOutlined />
+              管理成员
+            </a-button>
             <a-button v-if="navIndex === 1" class="upload" @click="showEditQaSet">
               {{ home.inputQa }}
             </a-button>
@@ -171,6 +175,81 @@
     </div>
     <ChunkViewDialog :kb-id="currentId" :file-id="fileId" :file-name="fileIdName" />
     <FileUploadDialog :dialog-type="0" />
+    <a-modal
+      v-model:visible="manageMembersVisible"
+      title="管理知识库成员权限"
+      width="800px"
+      @ok="handleManageMembersOk"
+      @cancel="handleManageMembersCancel"
+      :footer="null"
+    >
+      <div class="filter-container" style="margin-bottom: 16px">
+        <a-select
+          v-model:value="selectedSubjectType"
+          style="width: 120px"
+          @change="handleSubjectTypeChange"
+        >
+          <a-select-option value="user">用户</a-select-option>
+          <a-select-option value="department">部门</a-select-option>
+          <a-select-option value="group">用户组</a-select-option>
+        </a-select>
+      </div>
+      
+      <div class="members-container">
+        <div class="members-column">
+          <div class="column-header">可添加{{ subjectTypeLabel }}</div>
+          <a-spin :spinning="membersLoading">
+            <div class="members-list">
+              <div 
+                v-for="item in filteredAllSubjects" 
+                :key="item.id"
+                :class="['member-item', { disabled: item.disabled }]"
+                @click="!item.disabled && addSubjectToKnowledgeBase(item.id)"
+              >
+                <div class="member-avatar">
+                  <UserOutlined v-if="selectedSubjectType === 'user'" />
+                  <TeamOutlined v-else-if="selectedSubjectType === 'department'" />
+                  <UsergroupAddOutlined v-else-if="selectedSubjectType === 'group'" />
+                </div>
+                <div class="member-name">{{ item.name }}</div>
+                <div class="member-action" v-if="!item.disabled">
+                  <PlusOutlined />
+                  <span class="action-text">添加</span>
+                </div>
+                <div class="member-status" v-if="item.disabled">
+                  <a-tag color="default">已有权限</a-tag>
+                </div>
+              </div>
+            </div>
+          </a-spin>
+        </div>
+        
+        <div class="members-column">
+          <div class="column-header">知识库{{ subjectTypeLabel }}</div>
+          <a-spin :spinning="membersLoading">
+            <div class="members-list">
+              <div 
+                v-for="item in filteredKnowledgeBaseSubjects" 
+                :key="item.id"
+                class="member-item"
+                @click="removeSubjectFromKnowledgeBase(item.id)"
+              >
+                <div class="member-avatar">
+                  <UserOutlined v-if="selectedSubjectType === 'user'" />
+                  <TeamOutlined v-else-if="selectedSubjectType === 'department'" />
+                  <UsergroupAddOutlined v-else-if="selectedSubjectType === 'group'" />
+                </div>
+                <div class="member-name">{{ item.name }}</div>
+                <div class="member-action remove">
+                  <MinusOutlined />
+                  <span class="action-text">移除</span>
+                </div>
+              </div>
+            </div>
+          </a-spin>
+        </div>
+      </div>
+    </a-modal>
   </a-config-provider>
 </template>
 <script lang="ts" setup>
@@ -187,7 +266,7 @@ import LoadingImg from '@/components/LoadingImg.vue';
 import UploadProgress from '@/components/UploadProgress.vue';
 import ChunkViewDialog from '@/components/ChunkViewDialog.vue';
 import FileUploadDialog from '@/components/FileUploadDialog.vue';
-import { LeftOutlined, QuestionCircleOutlined } from '@ant-design/icons-vue';
+import { LeftOutlined, QuestionCircleOutlined, UserOutlined, PlusOutlined, MinusOutlined, TeamOutlined, UsergroupAddOutlined } from '@ant-design/icons-vue';
 import Tags from '@/components/Tags.vue';
 import TagsInput from '@/components/TagsInput.vue';
 
@@ -577,6 +656,257 @@ onBeforeUnmount(() => {
   setKbPageNum(1);
   setPageNum(1);
 });
+
+// 添加成员管理相关的状态
+const manageMembersVisible = ref(false);
+const searchMember = ref('');
+const membersLoading = ref(false);
+const allSubjects = ref([]);
+
+// 添加主体类型选择
+const selectedSubjectType = ref('user');
+
+// 根据选择的主体类型返回对应的标签文本
+const subjectTypeLabel = computed(() => {
+  switch (selectedSubjectType.value) {
+    case 'user': return '成员';
+    case 'department': return '部门';
+    case 'group': return '用户组';
+    default: return '成员';
+  }
+});
+
+// 处理主体类型变更
+const handleSubjectTypeChange = (value) => {
+  selectedSubjectType.value = value;
+  getSubjectList();
+};
+
+// 获取主体列表（用户/部门/用户组）
+const getSubjectList = async () => {
+  membersLoading.value = true;
+  try {
+    let res;
+    
+    switch (selectedSubjectType.value) {
+      case 'user':
+        res = await urlResquest.userList();
+        if (res.code === 200) {
+          allSubjects.value = res.data.map(user => ({
+            id: user.user_id,
+            name: user.user_name,
+            permissions: user.permissions,
+            role: user.role
+          }));
+        }
+        break;
+        
+      case 'department':
+        res = await urlResquest.departmentList();
+        if (res.code === 200) {
+          allSubjects.value = res.data.map(dept => ({
+            id: dept.dept_id,
+            name: dept.dept_name,
+            permissions: dept.permissions || {}
+          }));
+        }
+        break;
+        
+      case 'group':
+        res = await urlResquest.groupList();
+        if (res.code === 200) {
+          allSubjects.value = res.data.map(group => ({
+            id: group.group_id,
+            name: group.group_name,
+            permissions: group.permissions || {}
+          }));
+        }
+        break;
+    }
+    
+    if (res.code !== 200) {
+      message.error(res.msg || `获取${subjectTypeLabel.value}列表失败`);
+    }
+  } catch (error) {
+    console.error(`获取${subjectTypeLabel.value}列表失败:`, error);
+    message.error(`获取${subjectTypeLabel.value}列表失败`);
+  } finally {
+    membersLoading.value = false;
+  }
+};
+
+// 检查主体是否对指定知识库有权限
+const checkSubjectHasPermission = (subject, kbId) => {
+  if (!subject || !subject.permissions) return false;
+  
+  // 根据不同主体类型检查权限
+  switch (selectedSubjectType.value) {
+    case 'user':
+      // 检查用户拥有的知识库
+      if (subject.permissions.owned_kbs && 
+          subject.permissions.owned_kbs.some(kb => kb.kb_id === kbId)) {
+        return true;
+      }
+      
+      // 检查用户直接访问权限
+      if (subject.permissions.direct_access && 
+          subject.permissions.direct_access.some(access => access.kb_id === kbId)) {
+        return true;
+      }
+      
+      // 检查部门访问权限
+      if (subject.permissions.department_access) {
+        if (Array.isArray(subject.permissions.department_access) && 
+            subject.permissions.department_access.some(access => access.kb_id === kbId)) {
+          return true;
+        }
+      }
+      
+      // 检查群组访问权限
+      if (subject.permissions.group_access) {
+        if (Array.isArray(subject.permissions.group_access) && 
+            subject.permissions.group_access.some(access => access.kb_id === kbId)) {
+          return true;
+        }
+      }
+      break;
+      
+    case 'department':
+    case 'group':
+      // 检查部门或群组的直接权限
+      if (subject.permissions.direct_access && 
+          subject.permissions.direct_access.some(access => access.kb_id === kbId)) {
+        return true;
+      }
+      break;
+  }
+  
+  return false;
+};
+
+// 过滤主体列表
+const filteredAllSubjects = computed(() => {
+  // 排除 superadmin 角色的用户
+  let filteredList = allSubjects.value;
+  
+  if (selectedSubjectType.value === 'user') {
+    filteredList = filteredList.filter(subject => subject.role !== 'superadmin');
+  }
+  
+  return filteredList.filter(subject => {
+    // 检查主体是否对当前知识库有权限
+    const hasPermission = checkSubjectHasPermission(subject, currentId.value);
+    
+    subject.disabled = hasPermission;
+    
+    return !hasPermission;
+  });
+});
+
+const filteredKnowledgeBaseSubjects = computed(() => {
+  // 过滤出有权限的主体，排除 superadmin
+  let filteredList = allSubjects.value;
+  
+  if (selectedSubjectType.value === 'user') {
+    filteredList = filteredList.filter(subject => subject.role !== 'superadmin');
+  }
+  
+  return filteredList.filter(subject => 
+    checkSubjectHasPermission(subject, currentId.value)
+  );
+});
+
+// 打开成员管理弹窗
+const showManageMembers = () => {
+  manageMembersVisible.value = true;
+  getSubjectList();
+};
+
+// 添加主体到知识库
+const addSubjectToKnowledgeBase = async (subjectId) => {
+  const subject = allSubjects.value.find(s => s.id === subjectId);
+  if (subject) {
+    try {
+      // 调用 grant_access API 添加权限
+      const res = await urlResquest.grantKbAccess({ 
+        kb_id: currentId.value,
+        user_id: localStorage.getItem('userId'),
+        subject_type: selectedSubjectType.value,
+        subject_id: subjectId,
+        permission_type: 'read' // 或其他权限类型
+      });
+      
+      if (res.code === 200) {
+        message.success(`已添加${subjectTypeLabel.value}: ${subject.name}`);
+        // 重新获取列表以更新权限
+        await getSubjectList();
+      } else {
+        message.error(res.msg || `添加${subjectTypeLabel.value}失败`);
+      }
+    } catch (error) {
+      console.error(`添加${subjectTypeLabel.value}失败:`, error);
+      message.error(`添加${subjectTypeLabel.value}失败`);
+    }
+  }
+};
+
+// 从知识库移除主体
+const removeSubjectFromKnowledgeBase = async (subjectId) => {
+  const subject = allSubjects.value.find(s => s.id === subjectId);
+  if (subject) {
+    try {
+      // 调用 revoke_access API 移除权限
+      const res = await urlResquest.revokeKbAccess({ 
+        kb_id: currentId.value,
+        user_id: localStorage.getItem('userId'),
+        subject_type: selectedSubjectType.value,
+        subject_id: subjectId
+      });
+      
+      if (res.code === 200) {
+        message.success(`已移除${subjectTypeLabel.value}: ${subject.name}`);
+        // 重新获取列表以更新权限
+        await getSubjectList();
+      } else {
+        message.error(res.msg || `移除${subjectTypeLabel.value}失败`);
+      }
+    } catch (error) {
+      console.error(`移除${subjectTypeLabel.value}失败:`, error);
+      message.error(`移除${subjectTypeLabel.value}失败`);
+    }
+  }
+};
+
+// 处理成员管理确认
+const handleManageMembersOk = () => {
+  manageMembersVisible.value = false;
+};
+
+// 处理成员管理取消
+const handleManageMembersCancel = () => {
+  manageMembersVisible.value = false;
+};
+
+// 在页面挂载时获取用户列表
+onMounted(() => {
+  // 保留原有的onMounted逻辑
+  if (computedKbType.value === 0) {
+    getDetails();
+    clearInterval(timer.value);
+    timer.value = setInterval(() => {
+      getDetails();
+    }, 5000);
+  } else {
+    getFaqList();
+    clearInterval(faqTimer.value);
+    faqTimer.value = setInterval(() => {
+      getFaqList();
+    }, 5000);
+  }
+  
+  // 获取主体列表
+  getSubjectList();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -707,6 +1037,25 @@ onBeforeUnmount(() => {
     }
 
     .add-link {
+      cursor: pointer;
+      height: 40px;
+      margin-left: 16px;
+      padding: 8px 20px;
+      border-radius: 4px;
+      background: #ffffff;
+      border: 1px solid $baseColor;
+      color: $baseColor;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 24px;
+
+      &:hover {
+        border: 1px solid lighten($baseColor, 20%);
+        color: lighten($baseColor, 20%);
+      }
+    }
+
+    .manage-members {
       cursor: pointer;
       height: 40px;
       margin-left: 16px;
@@ -857,6 +1206,166 @@ onBeforeUnmount(() => {
 
 :deep(.ant-table-empty .ant-table-placeholder .ant-table-cell) {
   color: #999999 !important;
+}
+
+/* 修改成员管理弹窗样式 */
+.members-container {
+  display: flex;
+  gap: 20px;
+  height: 400px;
+}
+
+.members-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.column-header {
+  padding: 12px 16px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+  color: #333;
+  flex-shrink: 0; /* 防止标题被压缩 */
+  font-size: 16px; /* 增加标题文字大小 */
+}
+
+.members-list {
+  flex: 1;
+  overflow-y: auto; /* 允许垂直滚动 */
+  padding: 8px;
+  max-height: calc(400px - 45px); /* 减去标题高度 */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent; /* Firefox */
+}
+
+/* 自定义滚动条样式 (Webkit浏览器) */
+.members-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.members-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.members-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: all 0.3s;
+  background-color: #fff;
+  border: 1px solid #f0f0f0;
+  font-size: 16px; /* 增加成员项文字大小 */
+}
+
+.member-item:hover {
+  background-color: #f6f6f6;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+.member-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #fafafa;
+}
+
+.member-item.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e6f7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: #1890ff;
+}
+
+.member-name {
+  flex: 1;
+  font-size: 16px; /* 增加成员名称文字大小 */
+}
+
+.member-action {
+  display: flex;
+  align-items: center;
+  color: #1890ff;
+  font-size: 16px; /* 增加操作按钮文字大小 */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.member-item:hover .member-action {
+  opacity: 1;
+}
+
+.member-action.remove {
+  color: #ff4d4f;
+}
+
+.action-text {
+  margin-left: 4px;
+  font-size: 16px; /* 增加操作文字大小 */
+}
+
+.member-status {
+  font-size: 16px; /* 增加状态文字大小 */
+}
+
+.manage-members {
+  cursor: pointer;
+  height: 40px;
+  margin-left: 16px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid $baseColor;
+  color: $baseColor;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+
+  &:hover {
+    border: 1px solid lighten($baseColor, 20%);
+    color: lighten($baseColor, 20%);
+  }
+}
+
+/* 修改按钮文字大小 */
+.filter-container {
+  .ant-select {
+    font-size: 16px;
+  }
+}
+
+/* 确保下拉菜单中的文字也是16px */
+:deep(.ant-select-dropdown) {
+  .ant-select-item {
+    font-size: 16px;
+  }
+}
+
+/* 确保弹窗标题也是16px */
+:deep(.ant-modal-title) {
+  font-size: 18px; /* 弹窗标题稍大一点 */
 }
 </style>
 

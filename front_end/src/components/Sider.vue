@@ -41,7 +41,7 @@
       <SelectKnowledgeDialog />
       <CopyUrlDialog />
     </div>
-    <div v-else-if="navIndex === 2" class="quick-start">
+    <div v-else-if="navIndex === 2" class="quick-start" style="display: none;">
       <div class="content">
         <div :class="['card-new', chatId === null ? 'active' : '', showLoading ? 'disabled' : '']"
           @click="quickClickHandle(0)">
@@ -50,6 +50,12 @@
         </div>
         <SiderCardItem v-for="item of historyList" :key="item.historyId" :card-data="item"
           @click="quickClickHandle(1, item)" />
+      </div>
+    </div>
+    <div class="account">
+      <div class="logout-btn" @click="handleLogout">
+        <LogoutOutlined class="logout-icon" />
+        {{ '退出登录' }}
       </div>
     </div>
     <ChatSourceDialog />
@@ -83,7 +89,8 @@ import { resultControl } from '@/utils/utils';
 import urlResquest from '@/services/urlConfig';
 import { IChatItemInfo, IFileListItem } from '@/utils/types';
 import { useUploadFiles } from '@/store/useUploadFiles';
-import { FolderOutlined, ThunderboltOutlined, RobotOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons-vue';
+import { FolderOutlined, ThunderboltOutlined, RobotOutlined, UserOutlined, PlusOutlined, LogoutOutlined } from '@ant-design/icons-vue';
+import { message } from 'ant-design-vue';
 // import urlResquest from '@/services/urlConfig';
 // import { pageStatus } from '@/utils/enum';
 // import { resultControl } from '@/utils/utils';
@@ -234,6 +241,16 @@ const quickClickHandle = async (type: 0 | 1, cardData?: IHistoryList) => {
   }
 };
 
+// 退出登录
+const handleLogout = () => {
+  // 清除token
+  localStorage.removeItem('token');
+  // 可能需要清除其他用户相关信息
+  message.success(getLanguage().account.logoutSuccess || '退出成功');
+  // 跳转到登录页面
+  changePage('/login');
+};
+
 onUnmounted(() => {
   QA_List.value = [];
   chatId.value = null;
@@ -293,6 +310,7 @@ onUnmounted(() => {
     .nav-item {
       // height: 36px;
       padding: 8px 12px;
+      margin-bottom: 8px;
       // margin: 5px 10px;
       display: flex;
       // flex-direction: column;
@@ -400,6 +418,30 @@ onUnmounted(() => {
 
       .close-icon:hover {
         background: transparent !important;
+      }
+    }
+  }
+
+  .account {
+    padding: 20px;
+    
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+      background: $secondaryBgColor;
+      border-radius: 8px;
+      color: $textTitleColor;
+      cursor: pointer;
+      transition: all 0.3s;
+      
+      &:hover {
+        background: $hoverBgColor;
+      }
+      
+      .logout-icon {
+        margin-right: 8px;
+        font-size: 16px;
       }
     }
   }

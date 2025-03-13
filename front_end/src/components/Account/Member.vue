@@ -1,28 +1,30 @@
 <template>
   <div>
     <!-- <h1>Member</h1> -->
-    <a-table :columns="columns" :data-source="props.userList" :pagination="false">
+    <a-table :columns="columns" :loading="props.loading" :data-source="props.userList" :pagination="false">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'operation'">
           <a-space :size="16">
-            <a-tooltip :title="record.status === 1 ? '停用用户' : '启用用户'">
+            <!-- <a-tooltip :title="record.status === 1 ? '停用用户' : '启用用户'">
               <stop-outlined 
                 :class="{ 'disabled': record.status === 0 }"
                 @click="handleStatus(record)" 
               />
-            </a-tooltip>
+            </a-tooltip> -->
             <a-tooltip title="升级为管理员">
               <user-switch-outlined 
-                :class="{ 'disabled': record.role === 'admin' }"
+                :class="{ 'disabled': record.role === 'admin' || record.role === 'superadmin' }"
                 @click="handleUpgrade(record)" 
               />
             </a-tooltip>
-            <a-tooltip title="删除用户">
-              <delete-outlined 
-                class="delete-icon" 
-                @click="handleDelete(record)" 
-              />
-            </a-tooltip>
+            <a-popconfirm
+              title="确定要删除该用户吗？"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="handleDeleteConfirm(record)"
+            >
+              <delete-outlined class="delete-icon" />
+            </a-popconfirm>
           </a-space>
         </template>
       </template>
@@ -45,9 +47,10 @@ import { StopOutlined, UserSwitchOutlined, DeleteOutlined } from '@ant-design/ic
 import { ref } from 'vue';
 import { message } from 'ant-design-vue';
 import type { TableColumnType } from 'ant-design-vue';
+import urlResquest from '@/services/urlConfig';
 
 interface UserType {
-  id: string;
+  user_id: string;
   username: string;
   loginType: string;
   department: string;
@@ -60,6 +63,10 @@ const props = defineProps({
   userList: {
     type: Array as () => UserType[],
     default: () => [],
+  },
+  loading: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -128,15 +135,22 @@ const handleUpgrade = (record: UserType) => {
   modalVisible.value = true;
 };
 
-// 处理删除用户
-const handleDelete = (record: UserType) => {
-  modalConfig.value = {
-    title: '删除用户',
-    content: '确定要删除该用户吗？此操作不可恢复。',
-    action: 'delete',
-    record,
-  };
-  modalVisible.value = true;
+// 修改删除处理函数
+const handleDeleteConfirm = async (record: UserType) => {
+  try {
+    const res = await urlResquest.deleteUser({  
+      target_user_id: record.user_id
+    });
+    if (res.code === 200) {
+      message.success('删除成功');
+      emit('refresh'); // 通知父组件刷新列表
+    } else {
+      message.error(res.msg || '删除失败');
+    }
+  } catch (error) {
+    console.error('删除用户失败:', error);
+    message.error(error.msg || '删除失败');
+  }
 };
 
 // 处理模态框确认

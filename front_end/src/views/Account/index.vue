@@ -63,13 +63,13 @@
       <div class="tab-panel">
         <transition name="fade" mode="out-in">
           <div class="tab-inner" v-if="activeTab === 'member'">
-            <Member :userList="userList" />
+            <Member :userList="userList" :loading="tableLoading" @refresh="getUserList" />
           </div>
           <div class="tab-inner" v-else-if="activeTab === 'department'">
             <Department />
           </div>
           <div class="tab-inner" v-else-if="activeTab === 'group'">
-            <Group />
+            <Group ref="groupRef" />
           </div>
           <div class="tab-inner" v-else-if="activeTab === 'permission'">
             <Permission />
@@ -85,9 +85,11 @@
       @ok="handleInviteConfirm"
       @cancel="handleInviteCancel"
       :confirmLoading="inviteLoading"
+      class="invite-modal"
+      :closable="false"
     >
       <a-form :model="inviteForm">
-        <a-form-item label="用户名" name="username">
+        <a-form-item name="username">
           <a-input v-model:value="inviteForm.username" placeholder="请输入用户名" />
         </a-form-item>
       </a-form>
@@ -122,11 +124,11 @@ const tabs = [
     name: '群组',
     icon: 'bell'
   },
-  {
-    id: 'permission',
-    name: '权限',
-    icon: 'credit-card'
-  }
+  // {
+  //   id: 'permission',
+  //   name: '权限',
+  //   icon: 'credit-card'
+  // }
 ];
 
 const activeTab = ref('member');
@@ -182,9 +184,11 @@ const handleInviteConfirm = async () => {
   }
 };
 
+const groupRef = ref(null)
+
 const createGroup = () => {
-  console.log('创建群组');
-};
+  groupRef.value.showCreateModal()
+}
 
 const addPermission = () => {
   console.log('添加权限');
@@ -193,8 +197,12 @@ const addPermission = () => {
 // 用户列表数据
 const userList = ref([]);
 
-// 获取用户列表
+// 添加 loading 状态
+const tableLoading = ref(false);
+
+// 修改获取用户列表函数
 const getUserList = async () => {
+  tableLoading.value = true;
   try {
     const res: any = await urlResquest.userList();
     console.log(res);
@@ -206,6 +214,8 @@ const getUserList = async () => {
   } catch (error) {
     console.error('获取用户列表失败:', error);
     message.error('获取用户列表失败');
+  } finally {
+    tableLoading.value = false;
   }
 };
 
@@ -355,5 +365,16 @@ onMounted(() => {
 .fade-leave-from {
   opacity: 1;
   transform: translateX(0);
+}
+
+// 添加邀请成员弹窗样式
+:deep(.invite-modal) {
+  .ant-modal-title {
+    text-align: center;
+  }
+  
+  .ant-form {
+    margin-top: 16px;
+  }
 }
 </style>

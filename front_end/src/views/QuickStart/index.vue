@@ -18,14 +18,8 @@
               <div class="question-inner">
                 <p class="question-text">{{ item.question }}</p>
                 <div v-if="item.fileDataList.length" class="file-list-box">
-                  <FileBlock
-                    v-for="file of item.fileDataList"
-                    :key="file.file.lastModified"
-                    :file-data="file"
-                    :kb-id="kbId"
-                    :chat-id="chatId"
-                    status="send"
-                  />
+                  <FileBlock v-for="file of item.fileDataList" :key="file.file.lastModified" :file-data="file"
+                    :kb-id="kbId" :chat-id="chatId" status="send" />
                 </div>
               </div>
             </div>
@@ -33,76 +27,43 @@
               <img class="avatar" src="@/assets/home/ai-avatar.png" alt="头像" />
               <div class="ai-content">
                 <div class="ai-right">
-                  <p
-                    class="question-text"
-                    :class="[
-                      !item.source.length && !item?.picList?.length ? 'change-radius' : '',
-                      item.showTools ? '' : 'flashing',
-                    ]"
-                  >
+                  <p class="question-text" :class="[
+                    !item.source.length && !item?.picList?.length ? 'change-radius' : '',
+                    item.showTools ? '' : 'flashing',
+                  ]">
                     <HighLightMarkDown :content="item.answer" />
-                    <ChatInfoPanel
-                      v-if="Object.keys(item?.itemInfo?.tokenInfo || {}).length"
-                      :chat-item-info="item.itemInfo"
-                    />
+                    <ChatInfoPanel v-if="Object.keys(item?.itemInfo?.tokenInfo || {}).length"
+                      :chat-item-info="item.itemInfo" />
                   </p>
                   <template v-if="item.source.length">
-                    <div
-                      :class="[
-                        'source-total',
-                        !showSourceIdxs.includes(index) ? 'source-total-last' : '',
-                      ]"
-                    >
+                    <div :class="[
+                      'source-total',
+                      !showSourceIdxs.includes(index) ? 'source-total-last' : '',
+                    ]">
                       <span v-if="language === 'zh'">
                         找到了{{ item.source.length }}个信息来源：
                       </span>
                       <span v-else> Found {{ item.source.length }} source of information </span>
-                      <SvgIcon
-                        v-show="!showSourceIdxs.includes(index)"
-                        name="down"
-                        @click="showSourceList(index)"
-                      />
-                      <SvgIcon
-                        v-show="showSourceIdxs.includes(index)"
-                        name="up"
-                        @click="hideSourceList(index)"
-                      />
+                      <SvgIcon v-show="!showSourceIdxs.includes(index)" name="down" @click="showSourceList(index)" />
+                      <SvgIcon v-show="showSourceIdxs.includes(index)" name="up" @click="hideSourceList(index)" />
                     </div>
                     <div v-show="showSourceIdxs.includes(index)" class="source-list">
-                      <div
-                        v-for="(sourceItem, sourceIndex) in item.source"
-                        :key="sourceIndex"
-                        class="data-source"
-                      >
+                      <div v-for="(sourceItem, sourceIndex) in item.source" :key="sourceIndex" class="data-source">
                         <p v-show="sourceItem.file_name" class="control">
                           <span class="tips">{{ common.dataSource }}{{ sourceIndex + 1 }}:</span>
-                          <a
-                            v-if="sourceItem.file_url.startsWith('http')"
-                            :href="sourceItem.file_url"
-                            target="_blank"
-                          >
+                          <a v-if="sourceItem.file_url.startsWith('http')" :href="sourceItem.file_url" target="_blank">
                             {{ sourceItem.file_name }}
                           </a>
-                          <span
-                            v-else
-                            :class="[
-                              'file',
-                              checkFileType(sourceItem.file_name) ? 'filename-active' : '',
-                            ]"
-                            @click="handleChatSource(sourceItem)"
-                          >
+                          <span v-else :class="[
+                            'file',
+                            checkFileType(sourceItem.file_name) ? 'filename-active' : '',
+                          ]" @click="handleChatSource(sourceItem)">
                             {{ sourceItem.file_name }}
                           </span>
-                          <SvgIcon
-                            v-show="sourceItem.showDetailDataSource"
-                            name="iconup"
-                            @click="hideDetail(item, sourceIndex)"
-                          />
-                          <SvgIcon
-                            v-show="!sourceItem.showDetailDataSource"
-                            name="icondown"
-                            @click="showDetail(item, sourceIndex)"
-                          />
+                          <SvgIcon v-show="sourceItem.showDetailDataSource" name="iconup"
+                            @click="hideDetail(item, sourceIndex)" />
+                          <SvgIcon v-show="!sourceItem.showDetailDataSource" name="icondown"
+                            @click="showDetail(item, sourceIndex)" />
                         </p>
                         <Transition name="sourceItem">
                           <div v-show="sourceItem.showDetailDataSource" class="source-content">
@@ -123,27 +84,15 @@
                       <span class="reload-text">{{ common.regenerate }}</span>
                     </div>
                     <div class="tools">
-                      <SvgIcon
-                        :style="{
-                          color: item.copied ? '#4D71FF' : '',
-                        }"
-                        name="copy"
-                        @click="myCopy(item)"
-                      />
-                      <SvgIcon
-                        :style="{
-                          color: item.like ? '#4D71FF' : '',
-                        }"
-                        name="like"
-                        @click="like(item, $event)"
-                      />
-                      <SvgIcon
-                        :style="{
-                          color: item.unlike ? '#4D71FF' : '',
-                        }"
-                        name="unlike"
-                        @click="unlike(item)"
-                      />
+                      <SvgIcon :style="{
+                        color: item.copied ? '#4D71FF' : '',
+                      }" name="copy" @click="myCopy(item)" />
+                      <SvgIcon :style="{
+                        color: item.like ? '#4D71FF' : '',
+                      }" name="like" @click="like(item, $event)" />
+                      <SvgIcon :style="{
+                        color: item.unlike ? '#4D71FF' : '',
+                      }" name="unlike" @click="unlike(item)" />
                     </div>
                   </div>
                 </div>
@@ -163,35 +112,19 @@
       <div class="question-box">
         <div class="question">
           <div v-if="fileBlockArr.length" class="file-list-box">
-            <FileBlock
-              v-for="file of fileBlockArr"
-              :key="file.file_id"
-              :file-data="file"
-              :kb-id="kbId"
-              :chat-id="chatId"
-              status="toBeSend"
-              @deleteFile="deleteFile"
-            />
+            <FileBlock v-for="file of fileBlockArr" :key="file.file_id" :file-data="file" :kb-id="kbId"
+              :chat-id="chatId" status="toBeSend" @deleteFile="deleteFile" />
           </div>
           <div class="send-box">
-            <a-textarea
-              v-model:value="question"
-              class="send-textarea"
-              max-length="200"
-              :bordered="false"
-              :placeholder="common.problemPlaceholder"
-              :auto-size="{ minRows: 1, maxRows: 8 }"
-              @keydown="textKeydownHandle"
-            />
+            <a-textarea v-model:value="question" class="send-textarea" max-length="200" :bordered="false"
+              :placeholder="common.problemPlaceholder" :auto-size="{ minRows: 1, maxRows: 8 }"
+              @keydown="textKeydownHandle" />
             <div class="send-action">
               <a-popover>
                 <template #content>
                   {{ chatId ? common.chatShare : common.chatShareNoChatId }}
                 </template>
-                <span
-                  :class="['question-icon', showLoading || !chatId ? 'isPreventClick' : '']"
-                  @click="shareChat"
-                >
+                <span :class="['question-icon', showLoading || !chatId ? 'isPreventClick' : '']" @click="shareChat">
                   <SvgIcon name="chat-share" />
                 </span>
               </a-popover>
@@ -199,19 +132,13 @@
                 <template #content>
                   {{ kbId ? common.chatUpload : common.chatUploadNoKbId }}
                 </template>
-                <span
-                  :class="['question-icon', showLoading || !kbId ? 'isPreventClick' : '']"
-                  @click="uploadFile"
-                >
+                <span :class="['question-icon', showLoading || !kbId ? 'isPreventClick' : '']" @click="uploadFile">
                   <SvgIcon name="chat-upload" />
                 </span>
               </a-popover>
               <a-popover>
                 <template #content>{{ common.chatToPic }}</template>
-                <span
-                  :class="['question-icon', showLoading ? 'isPreventClick' : '']"
-                  @click="downloadChat"
-                >
+                <span :class="['question-icon', showLoading ? 'isPreventClick' : '']" @click="downloadChat">
                   <SvgIcon name="chat-download" />
                 </span>
               </a-popover>
@@ -231,12 +158,7 @@
       <FileUploadDialog :dialog-type="1" />
     </div>
     <div class="scroll-btn-div">
-      <img
-        class="avatar"
-        src="@/assets/home/scroll-down.png"
-        alt="滑到底部"
-        @click="scrollBottom"
-      />
+      <img class="avatar" src="@/assets/home/scroll-down.png" alt="滑到底部" @click="scrollBottom" />
     </div>
   </div>
   <ChatSettingDialog ref="chatSettingForDialogRef" />
@@ -274,6 +196,7 @@ import FileUploadDialog from '@/components/FileUploadDialog.vue';
 import ChatInfoPanel from '@/components/ChatInfoPanel.vue';
 import { useBots } from '@/store/useBots';
 import CopyUrlDialog from '@/components/Bots/CopyUrlDialog.vue';
+import Cookies from 'js-cookie';
 
 const { common, home } = getLanguage();
 
@@ -520,7 +443,8 @@ const send = async () => {
   ctrl = new AbortController();
 
   const sendData = {
-    kb_ids: [kbId.value],
+    // kb_ids: [kbId.value],
+    kb_ids: [],
     history: history.value,
     question: q,
     streaming: chatSettingFormActive.value.capabilities.onlySearch === false,
@@ -571,6 +495,7 @@ const send = async () => {
       headers: {
         'Content-Type': 'application/json',
         Accept: ['text/event-stream', 'application/json'],
+        Authorization: `Bearer ${Cookies.get('token')}`
       },
       openWhenHidden: true,
       body: JSON.stringify({
@@ -1305,7 +1230,8 @@ $avatar-width: 96px;
   }
 }
 
-.sourceItem-leave, // 离开前,进入后透明度是1
+.sourceItem-leave,
+// 离开前,进入后透明度是1
 .sourceItem-enter-to {
   opacity: 1;
 }
@@ -1332,9 +1258,11 @@ $avatar-width: 96px;
   20% {
     transform: rotate(20deg);
   }
+
   30% {
     transform: rotate(20deg);
   }
+
   40% {
     transform: rotate(20deg);
   }
@@ -1346,12 +1274,15 @@ $avatar-width: 96px;
   60% {
     transform: rotate(0deg);
   }
+
   70% {
     transform: rotate(-15deg);
   }
+
   80% {
     transform: rotate(-30deg);
   }
+
   90% {
     transform: rotate(-15deg);
   }
@@ -1379,12 +1310,15 @@ $avatar-width: 96px;
   25% {
     transform: rotate(90deg);
   }
+
   50% {
     transform: rotate(180deg);
   }
+
   75% {
     transform: rotate(270deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

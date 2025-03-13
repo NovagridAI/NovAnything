@@ -45,6 +45,16 @@ enum EUrlKey {
   createDepartment = 'createDepartment',
   groupList = 'groupList',
   createUser = 'createUser',
+  deleteUser = 'deleteUser',
+  updateDepartment = 'updateDepartment',
+  deleteDepartment = 'deleteDepartment',
+  updateUser = 'updateUser',
+  createGroup = 'createGroup',
+  deleteGroup = 'deleteGroup',
+  grantKbAccess = 'grantKbAccess',
+  revokeKbAccess = 'revokeKbAccess',
+  addUserToGroup = 'addUserToGroup',
+  removeUserFromGroup = 'removeUserFromGroup',
 }
 
 interface IUrlValueConfig {
@@ -337,6 +347,113 @@ const urlConfig: IUrlConfig = {
       user_info: userPhone,
     },
   },
+  deleteUser: {
+    type: EUrlType.POST,
+    url: '/custom/user/delete',
+    param: {
+      user_id: userId,
+    },
+  },
+  // 更新部门
+  updateDepartment: {
+    type: EUrlType.POST,
+    url: '/custom/department/update',
+    showLoading: false,
+    param: {
+      dept_id: '',
+      parent_dept_id: '',
+      user_id: userId
+    }
+  },
+  // 删除部门
+  deleteDepartment: {
+    type: EUrlType.POST,
+    url: '/custom/department/delete',
+    showLoading: false,
+    param: {
+      dept_id: '',
+      user_id: userId
+    }
+  },
+  // 更新用户信息（包括部门）
+  updateUser: {
+    type: EUrlType.POST,
+    url: '/custom/user/update',
+    showLoading: false,
+    param: {
+      user_id: '',
+      dept_id: null
+    }
+  },
+  // 创建群组
+  createGroup: {
+    type: EUrlType.POST,
+    url: '/custom/group/create',
+    showLoading: false,
+    param: {
+      name: '',
+      description: '',
+      user_id: userId
+    }
+  },
+  // 删除群组
+  deleteGroup: {
+    type: EUrlType.POST,
+    url: '/custom/group/delete',
+    showLoading: false,
+    param: {
+      group_id: '',
+      user_id: userId
+    }
+  },
+  // 授予知识库访问权限
+  grantKbAccess: {
+    type: EUrlType.POST,
+    url: '/custom/kb/grant_access',
+    showLoading: true,
+    param: {
+      kb_id: '',
+      user_id: userId,
+      subject_type: '',
+      subject_id: '',
+      permission_type: ''
+    }
+  },
+  // 撤销知识库访问权限
+  revokeKbAccess: {
+    type: EUrlType.POST,
+    url: '/custom/kb/revoke_access',
+    showLoading: true,
+    param: {
+      kb_id: '',
+      user_id: userId,
+      subject_type: '',
+      subject_id: ''
+    }
+  },
+  // 添加用户到群组
+  addUserToGroup: {
+    type: EUrlType.POST,
+    url: '/custom/group/add_user',
+    showLoading: false,
+    param: {
+      user_id: userId,
+      target_user_id: '',
+      group_id: ''
+    }
+  },
+
+  // 从群组移除用户
+  removeUserFromGroup: {
+    type: EUrlType.POST,
+    url: '/custom/group/remove_user',
+    showLoading: false,
+    param: {
+      user_id: userId,
+      target_user_id: '',
+      group_id: ''
+    }
+  }
 };
 
 // 使用映射类型来创建一个类型，该类型将urlConfig中的每个键映射到IRequestMethod类型

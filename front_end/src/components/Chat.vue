@@ -532,9 +532,11 @@ const send = async () => {
     streaming: chatSettingFormActive.value.capabilities.onlySearch === false,
     networking: chatSettingFormActive.value.capabilities.networkSearch,
     product_source: 'saas',
-    rerank: chatSettingFormActive.value.capabilities.rerank,
+    // rerank: chatSettingFormActive.value.capabilities.rerank,
+    rerank: true,
     only_need_search_results: chatSettingFormActive.value.capabilities.onlySearch,
-    hybrid_search: chatSettingFormActive.value.capabilities.mixedSearch,
+    // hybrid_search: chatSettingFormActive.value.capabilities.mixedSearch,
+    hybrid_search: true,
     max_token: chatSettingFormActive.value.maxToken,
     api_base: chatSettingFormActive.value.apiBase,
     api_key: chatSettingFormActive.value.apiKey,
@@ -711,7 +713,8 @@ const shareChat = async () => {
         model: chatSettingFormActive.value.apiModelName,
         max_token: chatSettingFormActive.value.maxToken,
         hybrid_search: chatSettingFormActive.value.capabilities.mixedSearch,
-        chunk_size: chatSettingFormActive.value.chunkSize,
+        // chunk_size: chatSettingFormActive.value.chunkSize,
+        chunk_size: chatSettingFormActive.value.maxToken,
         rerank: chatSettingFormActive.value.capabilities.rerank,
       })
     );
