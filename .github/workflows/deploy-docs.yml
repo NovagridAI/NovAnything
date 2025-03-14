@@ -1,10 +1,16 @@
-name: Deploy Documentation
+name: Deploy README Styles
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'README.md'
+      - '.github/styles.css'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'README.md'
+      - '.github/styles.css'
 
 jobs:
   deploy:
@@ -12,16 +18,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          
-      - name: Install Dependencies
-        run: npm install -g docsify-cli
-        
-      - name: Deploy Documentation
+      - name: Deploy Styles
         run: |
-          docsify serve docs --port 3000
+          # 创建 gh-pages 分支
+          git checkout --orphan gh-pages
+          git rm -rf .
+          
+          # 复制样式文件
+          mkdir -p .github
+          cp ../.github/styles.css .github/
+          
+          # 提交更改
+          git add .
+          git commit -m "Deploy README styles"
+          git push origin gh-pages --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

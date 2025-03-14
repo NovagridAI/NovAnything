@@ -18,110 +18,39 @@ a:hover img[alt="Contributor"] {
 </style>
 
 
-<div align="center" style="padding: 2rem 0;">
+<div align="center">
 
 <img src="https://novagrid-1315164445.cos.ap-beijing.myqcloud.com/novagrid/novagrid_纯logo.png" 
      alt="NovAnything Logo" 
-     style="width: 200px; height: auto; margin-bottom: 1.5rem;">
+     width="200">
 
-<h1 style="color: #2c3e50; margin: 0.8rem 0; font-size: 2.2em;">NovAnything</h1>
-<p style="color: #7f8c8d; font-size: 1.2em; margin: 0.5rem 0;">基于QAnything的企业级知识库管理与问答系统</p>
+# NovAnything
 
-<div style="margin: 1.2rem 0; display: flex; justify-content: center; gap: 1.5rem;">
-    <a href="./README.md" style="color: #3498db; text-decoration: none; border-bottom: 1px dashed #3498db;">简体中文</a>
-    <span style="color: #e9ecef;">|</span>
-    <a href="./README_en.md" style="color: #3498db; text-decoration: none; border-bottom: 1px dashed #3498db;">English</a>
-</div>
+基于QAnything的企业级知识库管理与问答系统
 
-<div style="margin: 1.2rem 0; display: flex; justify-content: center; gap: 1rem;">
-    <a href="./LICENSE" style="text-decoration: none;">
-        <img src="https://img.shields.io/badge/license-AGPL--3.0-yellow" 
-             alt="License" 
-             style="border-radius: 4px;">
-    </a>
-    <a href="https://github.com/NovagridAI/NovAnything/pulls" style="text-decoration: none;">
-        <img src="https://img.shields.io/badge/PRs-welcome-red" 
-             alt="PRs Welcome" 
-             style="border-radius: 4px;">
-    </a>
-</div>
+[简体中文](./README.md) | [English](./README_en.md)
+
+[![License](https://img.shields.io/badge/license-AGPL--3.0-yellow)](./LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-red)](https://github.com/NovagridAI/NovAnything/pulls)
 
 </div>
 
-<div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
+---
 
-<details open="open" style="margin: 2rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-<summary  style="cursor: pointer; list-style: none; /* 隐藏默认三角 */">
-    <h2 style="color: #2c3e50; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
-        <span style="color: #3498db;">📑</span> 目录
-    </h2>
-</summary>
+<details>
+<summary>📑 目录</summary>
 
-<style>
-    /* 隐藏 Firefox 的默认三角 */
-    summary::-webkit-details-marker {
-        display: none !important;
-    }
-    /* 隐藏 Webkit 内核的默认三角 */
-    summary::marker {
-        display: none !important;
-        content: '' !important;
-    }
-</style>
+- [✨ 项目简介](#-项目简介)
+- [🌟 核心特性](#-核心特性)
+- [🔧 系统架构](#-系统架构)
+- [📢 版本演进](#-版本演进)
+- [🚀 快速开始](#-快速开始)
+- [❓ 常见问题](#-常见问题)
+- [🤝 参与贡献](#-参与贡献)
+- [📄 许可证书](#-许可证书)
+- [👥 贡献者](#-贡献者)
+- [🙏 致谢](#-致谢)
 
-<div style="margin-top: 1rem; padding-left: 12px;">
-
-<div style="display: grid; gap: 0.8rem;">
-
-<!-- 主目录项 -->
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-项目简介" style="color: #2c3e50; text-decoration: none;">✨ 项目简介</a>
-</div>
-
-<!-- 子目录项 -->
-<div style="display: grid; gap: 0.6rem; margin-left: 1.8rem;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <a href="#-核心特性" style="color: #7f8c8d; text-decoration: none;">🌟 核心特性</a>
-    </div>
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <a href="#-系统架构" style="color: #7f8c8d; text-decoration: none;">🔧 系统架构</a>
-    </div>
-</div>
-
-<!-- 其他主目录项模板 -->
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-版本演进" style="color: #2c3e50; text-decoration: none;">📢 版本演进</a>
-</div>
-
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-快速开始" style="color: #2c3e50; text-decoration: none;">🚀 快速开始</a>
-</div>
-
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-常见问题" style="color: #2c3e50; text-decoration: none;">❓ 常见问题</a>
-</div>
-
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-参与贡献" style="color: #2c3e50; text-decoration: none;">🤝 参与贡献</a>
-</div>
-
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-许可证书" style="color: #2c3e50; text-decoration: none;">📄 许可证书</a>
-</div>
-
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-贡献者" style="color: #2c3e50; text-decoration: none;">👥 贡献者</a>
-</div>
-
-<div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-致谢" style="color: #2c3e50; text-decoration: none;">🙏 致谢</a>
-</div>
-
-<!-- 更多目录项... -->
-
-</div>
-
-</div>
 </details>
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
