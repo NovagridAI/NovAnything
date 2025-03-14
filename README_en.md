@@ -23,7 +23,7 @@ a:hover img[alt="Contributor"] {
      style="width: 200px; height: auto; margin-bottom: 1.5rem;">
 
 <h1 style="color: #2c3e50; margin: 0.8rem 0; font-size: 2.2em;">NovAnything</h1>
-<p style="color: #7f8c8d; font-size: 1.2em; margin: 0.5rem 0;">基于QAnything的企业级知识库管理与问答系统</p>
+<p style="color: #7f8c8d; font-size: 1.2em; margin: 0.5rem 0;">Enterprise-level knowledge base management and question-answering system based on QAnything</p>
 
 <div style="margin: 1.2rem 0; display: flex; justify-content: center; gap: 1.5rem;">
     <a href="./README.md" style="color: #3498db; text-decoration: none; border-bottom: 1px dashed #3498db;">简体中文</a>
@@ -51,8 +51,7 @@ a:hover img[alt="Contributor"] {
 <details open="open" style="margin: 2rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
 <summary  style="cursor: pointer; list-style: none; /* 隐藏默认三角 */">
     <h2 style="color: #2c3e50; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
-        <span style="color: #3498db;">📑</span> 目录
-    </h2>
+        <span style="color: #3498db;">📑</span> Table of Contents</h2>
 </summary>
 
 <style>
@@ -71,48 +70,48 @@ a:hover img[alt="Contributor"] {
 
 <div style="display: grid; gap: 0.8rem;">
 
-<!-- 主目录项 -->
+<!-- Main directory items -->
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-项目简介" style="color: #2c3e50; text-decoration: none;">✨ 项目简介</a>
+    <a href="#project-introduction" style="color: #2c3e50; text-decoration: none;">✨ Project Introduction</a>
 </div>
 
-<!-- 子目录项 -->
+<!-- Subdirectory items -->
 <div style="display: grid; gap: 0.6rem; margin-left: 1.8rem;">
     <div style="display: flex; align-items: center; gap: 8px;">
-        <a href="#-核心特性" style="color: #7f8c8d; text-decoration: none;">🌟 核心特性</a>
+        <a href="#core-features" style="color: #7f8c8d; text-decoration: none;">🌟 Core Features</a>
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
-        <a href="#-系统架构" style="color: #7f8c8d; text-decoration: none;">🔧 系统架构</a>
+        <a href="#system-architecture" style="color: #7f8c8d; text-decoration: none;">🔧 System Architecture</a>
     </div>
 </div>
 
-<!-- 其他主目录项模板 -->
+<!-- Other main directory items -->
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-版本演进" style="color: #2c3e50; text-decoration: none;">📢 版本演进</a>
+    <a href="#version-evolution" style="color: #2c3e50; text-decoration: none;">📢 Version Evolution</a>
 </div>
 
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-快速开始" style="color: #2c3e50; text-decoration: none;">🚀 快速开始</a>
+    <a href="#quick-start" style="color: #2c3e50; text-decoration: none;">🚀 Quick Start</a>
 </div>
 
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-常见问题" style="color: #2c3e50; text-decoration: none;">❓ 常见问题</a>
+    <a href="#faq" style="color: #2c3e50; text-decoration: none;">❓ FAQ</a>
 </div>
 
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-参与贡献" style="color: #2c3e50; text-decoration: none;">🤝 参与贡献</a>
+    <a href="#contribution-guide" style="color: #2c3e50; text-decoration: none;">🤝 Contribution Guide</a>
 </div>
 
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-许可证书" style="color: #2c3e50; text-decoration: none;">📄 许可证书</a>
+    <a href="#license" style="color: #2c3e50; text-decoration: none;">📄 License</a>
 </div>
 
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-贡献者" style="color: #2c3e50; text-decoration: none;">👥 贡献者</a>
+    <a href="#contributors" style="color: #2c3e50; text-decoration: none;">👥 Contributors</a>
 </div>
 
 <div style="display: flex; align-items: center; gap: 8px;">
-    <a href="#-致谢" style="color: #2c3e50; text-decoration: none;">🙏 致谢</a>
+    <a href="#acknowledgments" style="color: #2c3e50; text-decoration: none;">🙏 Acknowledgments</a>
 </div>
 
 <!-- 更多目录项... -->
@@ -124,93 +123,95 @@ a:hover img[alt="Contributor"] {
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-# ✨ 项目简介
-<div style="margin: 2rem 0; padding-left: 16px; border-left: 3px solid #3498db;">
+# ✨ Project Introduction
+<div id="project-introduction" style="margin: 2rem 0; padding-left: 16px; border-left: 3px solid #3498db;">
 
-NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，基于 [QAnything](https://github.com/netease-youdao/QAnything) 进行二次开发。我们在保留原有系统强大的文档解析和智能问答能力的基础上，增加了用户权限控制和知识库权限管理功能，并对前端界面进行了全面重构优化，使其更适合企业级应用场景。
-
-</div>
-
-<div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
-
-## 🌟 核心特性
-
-<div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin: 2rem 0;">
-
-<!-- 权限控制系统 -->
-<div style="padding: 22px; background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 14px; box-shadow: 0 6px 12px rgba(0,0,0,0.08);">
-    <h3 style="margin: 0 0 1rem; color: #2c3e50;">🔐 权限控制</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-        <div>
-            <h4 style="color: #34495e; margin: 0 0 8px;">▸ 用户体系</h4>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.95em;">
-                <li>三级角色管理</li>
-                <li>动态权限继承</li>
-            </ul>
-        </div>
-        <div>
-            <h4 style="color: #34495e; margin: 0 0 8px;">▸ 知识库体系</h4>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.95em;">
-                <li>分级控制</li>
-                <li>权限转移</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<!-- 用户界面优化 -->
-<div style="padding: 22px; background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 14px; box-shadow: 0 6px 12px rgba(0,0,0,0.08);">
-    <h3 style="margin: 0 0 1rem; color: #2c3e50;">🎨 交互体验</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-        <div>
-            <h4 style="color: #34495e; margin: 0 0 8px;">▸ 界面设计</h4>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.95em;">
-                <li>响应式布局</li>
-                <li>更现代的UI</li>
-            </ul>
-        </div>
-        <div>
-            <h4 style="color: #34495e; margin: 0 0 8px;">▸ 交互优化</h4>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.95em;">
-                <li>优化交互逻辑</li>
-                <li>实时反馈机制</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<!-- 文档处理能力 -->
-<div style="padding: 22px; background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 14px; box-shadow: 0 6px 12px rgba(0,0,0,0.08);">
-    <h3 style="margin: 0 0 1rem; color: #2c3e50;">📄 文档处理</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-        <div>
-            <h4 style="color: #34495e; margin: 0 0 8px;">▸ 格式支持</h4>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.95em;">
-                <li>Office全系</li>
-                <li>PDF/图片</li>
-                <li>网页/多媒体</li>
-            </ul>
-        </div>
-        <div>
-            <h4 style="color: #34495e; margin: 0 0 8px;">▸ 智能处理</h4>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.95em;">
-                <li>语义搜索</li>
-                <li>智能问答</li>
-            </ul>
-        </div>
-    </div>
-</div>
+NovAnything is an enterprise-level knowledge base management and question-answering system developed by Novagrid, based on secondary development of [QAnything](https://github.com/netease-youdao/QAnything). While retaining the original system's robust document parsing and intelligent question-answering capabilities, we have added user access control and knowledge base permission management features. Additionally, the front-end interface has been completely redesigned and optimized to better suit enterprise application scenarios.
 
 </div>
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-## 🔧 系统架构
+## 🌟 Core Features
+<div id="core-features">
 
-<div style="margin: 2rem 0 2.5rem; padding: 0 1.5rem;">
+<div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 2rem 0;">
 
-### 🏗️ 架构演进
-**基于QAnything核心架构，新增权限控制层：**
+<!-- Access Control -->
+<div style="padding: 20px; background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <h3 style="margin: 0 0 1rem; color: #2c3e50; font-size: 1.1em;">🔐 Access Control</h3>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+        <div>
+            <h4 style="color: #34495e; margin: 0 0 8px; font-size: 0.95em;">▸ User</h4>
+            <ul style="margin: 0; padding-left: 16px; font-size: 0.9em; color: #7f8c8d;">
+                <li style="margin-bottom: 8px;">Three-tier role management</li>
+                <li>Dynamic permission inheritance</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="color: #34495e; margin: 0 0 8px; font-size: 0.95em;">▸ RAG</h4>
+            <ul style="margin: 0; padding-left: 16px; font-size: 0.9em; color: #7f8c8d;">
+                <li style="margin-bottom: 8px;">Hierarchical control</li>
+                <li>Permission transfer</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- User Experience -->
+<div style="padding: 20px; background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <h3 style="margin: 0 0 1rem; color: #2c3e50; font-size: 1.1em;">🎨 User Experience</h3>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+        <div>
+            <h4 style="color: #34495e; margin: 0 0 8px; font-size: 0.95em;">▸ Interface</h4>
+            <ul style="margin: 0; padding-left: 16px; font-size: 0.9em; color: #7f8c8d;">
+                <li style="margin-bottom: 8px;">Responsive layout</li>
+                <li>More modern UI</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="color: #34495e; margin: 0 0 8px; font-size: 0.95em;">▸ Interactive</h4>
+            <ul style="margin: 0; padding-left: 16px; font-size: 0.9em; color: #7f8c8d;">
+                <li style="margin-bottom: 8px;">Optimize interaction logic</li>
+                <li>Real-time feedback</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Document Process -->
+<div style="padding: 20px; background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <h3 style="margin: 0 0 1rem; color: #2c3e50; font-size: 1.1em;">📄 Document Process</h3>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+        <div>
+            <h4 style="color: #34495e; margin: 0 0 8px; font-size: 0.95em;">▸ Format Support</h4>
+            <ul style="margin: 0; padding-left: 16px; font-size: 0.9em; color: #7f8c8d;">
+                <li style="margin-bottom: 8px;">All Office suites</li>
+                <li style="margin-bottom: 8px;">PDF/Picture</li>
+                <li>Web/Multimedia</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="color: #34495e; margin: 0 0 8px; font-size: 0.95em;">▸ Intelligent Process</h4>
+            <ul style="margin: 0; padding-left: 16px; font-size: 0.9em; color: #7f8c8d;">
+                <li style="margin-bottom: 8px;">Semantic search</li>
+                <li>Intelligent Q&A</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+</div>
+
+</div>
+
+<div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
+
+## 🔧 System Architecture
+<div id="system-architecture" style="margin: 2rem 0 2.5rem; padding: 0 1.5rem;">
+
+### 🏗️ Version Evolution
+**Based on QAnything's core architecture, with added access control layer:**
 
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 1.2rem;">
 
@@ -218,24 +219,24 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
     <div style="position: absolute; left: 0; top: 0.2em; width: 1.8em; height: 1.8em; background: #f8f9fa; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
         <span style="color: #3498db; font-size: 1.1em;">🔑</span>
     </div>
-    <h4 style="color: #2c3e50; margin: 0 0 0.4rem;">用户认证系统</h4>
-    <div style="color: #7f8c8d; font-size: 0.95em;">RBAC 权限模型支持</div>
+    <h4 style="color: #2c3e50; margin: 0 0 0.4rem;">User Authentication System</h4>
+    <div style="color: #7f8c8d; font-size: 0.95em;">RBAC Permission Model Support</div>
 </div>
 
 <div style="position: relative; padding-left: 2.5rem;">
     <div style="position: absolute; left: 0; top: 0.2em; width: 1.8em; height: 1.8em; background: #f8f9fa; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
         <span style="color: #e67e22; font-size: 1.1em;">🔒</span>
     </div>
-    <h4 style="color: #2c3e50; margin: 0 0 0.4rem;">权限管理模块</h4>
-    <div style="color: #7f8c8d; font-size: 0.95em;">部门/角色/用户三级控制</div>
+    <h4 style="color: #2c3e50; margin: 0 0 0.4rem;">Permission Management Module</h4>
+    <div style="color: #7f8c8d; font-size: 0.95em;">Department/Role/User Three-level Control</div>
 </div>
 
 <div style="position: relative; padding-left: 2.5rem;">
     <div style="position: absolute; left: 0; top: 0.2em; width: 1.8em; height: 1.8em; background: #f8f9fa; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
         <span style="color: #9b59b6; font-size: 1.1em;">📊</span>
     </div>
-    <h4 style="color: #2c3e50; margin: 0 0 0.4rem;">前端交互优化</h4>
-    <div style="color: #7f8c8d; font-size: 0.95em;">更加现代的UI与交互逻辑</div>
+    <h4 style="color: #2c3e50; margin: 0 0 0.4rem;">Frontend Interaction Optimization</h4>
+    <div style="color: #7f8c8d; font-size: 0.95em;">More Modern UI and Interaction Logic</div>
 </div>
 
 </div>
@@ -244,7 +245,7 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
     <div style="display: flex; align-items: center; gap: 0.8rem; color: #34495e;">
         <span style="font-size: 1.2em;">⚙️</span>
         <div style="font-size: 0.95em;">
-            <strong>基础架构：</strong>
+            <strong>Base Architecture:</strong>
             QAnything + Milvus + MySQL + ElasticSearch
         </div>
     </div>
@@ -255,47 +256,46 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-## 📢 版本演进
+## �� Version Evolution
+<div id="version-evolution" style="display: flex; flex-direction: column; gap: 28px; margin: 2.5rem 0;">
 
-<div style="display: flex; flex-direction: column; gap: 28px; margin: 2.5rem 0;">
-
-<!-- 已发布版本 -->
+<!-- Released Version -->
 <div style="padding: 24px; background: linear-gradient(152deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.06);">
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem;">
         <div style="width: 36px; height: 36px; background: #3498db; border-radius: 8px; display: grid; place-items: center;">
             <span style="color: white; font-size: 1.2em;">✓</span>
         </div>
         <div>
-            <h3 style="color: #2c3e50; margin: 0;">已发布版本 - v0.0.1</h3>
+            <h3 style="color: #2c3e50; margin: 0;">Released Version - v0.0.1</h3>
             <span style="font-size: 0.9em; color: #7f8c8d;">2025-03-14</span>
         </div>
     </div>
     <ul style="margin: 0; font-size: 0.95em; line-height: 1.6;">
         <li style="margin-bottom: 1.2rem;">
-            <strong style="color: #2c3e50; display: block;">权限管理系统</strong>
-            <div style="font-size: 0.9em; color: #7f8c8d;">支持角色/部门/用户三级控制与知识库权限管理</div>
+            <strong style="color: #2c3e50; display: block;">Permission Management System</strong>
+            <div style="font-size: 0.9em; color: #7f8c8d;">Support for role/department/user three-level control and knowledge base permission management</div>
         </li>
         <li>
-            <strong style="color: #2c3e50; display: block;">前端优化</strong>
-            <div style="font-size: 0.9em; color: #7f8c8d;">基于QAnything页面结构进行了UI优化</div>
+            <strong style="color: #2c3e50; display: block;">Frontend Optimization</strong>
+            <div style="font-size: 0.9em; color: #7f8c8d;">UI optimization based on QAnything's page structure</div>
         </li>
     </ul>
 </div>
 
-<!-- 开发进程 -->
+<!-- Development Progress -->
 <div style="padding: 24px; background: linear-gradient(152deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.06);">
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem;">
         <div style="width: 36px; height: 36px; background: #e67e22; border-radius: 8px; display: grid; place-items: center;">
             <span style="color: white; font-size: 1.2em;">⌛</span>
         </div>
         <div>
-            <h3 style="color: #2c3e50; margin: 0;">开发进程</h3>
-            <span style="font-size: 0.9em; color: #7f8c8d;">预计 2025-Q2 完成</span>
+            <h3 style="color: #2c3e50; margin: 0;">Development Progress</h3>
+            <span style="font-size: 0.9em; color: #7f8c8d;">Expected completion: 2025-Q2</span>
         </div>
     </div>
     <div style="margin-bottom: 1.5rem;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 0.9em;">前端重构与优化</span>
+            <span style="font-size: 0.9em;">Frontend Refactoring and Optimization</span>
             <span style="color: #3498db; font-size: 0.9em;">10%</span>
         </div>
         <div style="height: 6px; background: #f1f2f6; border-radius: 3px;">
@@ -304,8 +304,8 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
     </div>
     <ul style="margin: 0; font-size: 0.95em; line-height: 1.6;">
         <li>
-            <strong style="color: #2c3e50; display: block;">交互升级</strong>
-            <div style="font-size: 0.9em; color: #7f8c8d;">重构大部分的交互逻辑与界面</div>
+            <strong style="color: #2c3e50; display: block;">Interaction Upgrade</strong>
+            <div style="font-size: 0.9em; color: #7f8c8d;">Refactoring most of the interaction logic and interface</div>
         </li>
     </ul>
     <div style="margin: 1.2rem 0 1.5rem; height: 1px; background: rgba(0,0,0,0.08); position: relative;">
@@ -313,7 +313,7 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
     </div>
     <div style="margin-bottom: 1.5rem;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 0.9em;">后端功能完善</span>
+            <span style="font-size: 0.9em;">Backend Function Enhancement</span>
             <span style="color: #3498db; font-size: 0.9em;">15%</span>
         </div>
         <div style="height: 6px; background: #f1f2f6; border-radius: 3px;">
@@ -322,8 +322,8 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
     </div>
     <ul style="margin: 0; font-size: 0.95em; line-height: 1.6;">
         <li>
-            <strong style="color: #2c3e50; display: block;">模型配置存储</strong>
-            <div style="font-size: 0.9em; color: #7f8c8d;">持久化当前用户的配置</div>
+            <strong style="color: #2c3e50; display: block;">Model Configuration Storage</strong>
+            <div style="font-size: 0.9em; color: #7f8c8d;">Persistent storage of current user configurations</div>
         </li>
     </ul>
 </div>
@@ -333,17 +333,18 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-# 🚀 快速开始
+# 📢 Quick Start
+<div id="quick-start">
 
-## 📋 环境要求
+## 📋 Environment Requirements
 <div style="margin: 1.5rem 0 2rem;">
 
-| 系统        | 依赖项             | 最低要求     | 说明                                                                 |
-|-------------|--------------------|--------------|---------------------------------------------------------------------|
-| 🐧 Linux    | 内存           | ≥20GB        | 物理内存或SWAP交换空间                                               |
-| 🍎 macOS    | Docker             | 20.10.5+     | [安装指南](https://docs.docker.com/engine/install/)                  |
-| 🪟 Windows  | Docker Desktop     | 4.26.1+      | [安装指南](https://docs.docker.com/desktop/)                        |
-| 🐳 通用     | Docker Compose     | 2.23.3+      | [安装指南](https://docs.docker.com/compose/install/)                |
+| System      | Dependency         | Minimum Requirement | Description                                                           |
+|-------------|--------------------|---------------------|-----------------------------------------------------------------------|
+| 🐧 Linux    | Memory         | ≥20GB              | Physical memory or SWAP space                                         |
+| 🍎 macOS    | Docker             | 20.10.5+           | [Installation Guide](https://docs.docker.com/engine/install/)         |
+| 🪟 Windows  | Docker Desktop     | 4.26.1+            | [Installation Guide](https://docs.docker.com/desktop/)                |
+| 🐳 General  | Docker Compose     | 2.23.3+            | [Installation Guide](https://docs.docker.com/compose/install/)        |
 
 </div>
 
@@ -371,37 +372,37 @@ a {
 }
 </style>
 
-## 📥 安装步骤
+## 📥 Installation Steps
 <div style="margin: 2rem 0;">
 
-### 1️⃣ 获取代码
+### 1️⃣ Get the Code
 ```bash
 git clone https://github.com/NovagridAI/NovAnything.git && cd NovAnything
 ```
 
-### 2️⃣ 启动服务
+### 2️⃣ Start Services
 <div style="margin: 1.2rem 0 1.8rem;">
 
 ```bash
-# Linux 系统
+# Linux System
 docker compose -f docker-compose-linux.yaml up -d
 
-# macOS 系统
+# macOS System
 docker compose -f docker-compose-mac.yaml up -d
 
-# Windows 系统
+# Windows System
 docker compose -f docker-compose-win.yaml up -d
 ```
 
 </div>
 
-### 3️⃣ 访问入口
+### 3️⃣ Access
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
 
 <div style="padding: 12px; border-left: 4px solid #3498db;">
     <div style="display: flex; align-items: center; gap: 8px;">
         <span style="color: #3498db;">🌐</span>
-        <strong>Web 界面</strong>
+        <strong>Web Interface</strong>
     </div>
     <div style="margin-top: 6px;">
         <a href="http://localhost:8777/novanything/" target="_blank">http://localhost:8777/novanything/</a>
@@ -411,7 +412,7 @@ docker compose -f docker-compose-win.yaml up -d
 <div style="padding: 12px; border-left: 4px solid #e67e22;">
     <div style="display: flex; align-items: center; gap: 8px;">
         <span style="color: #e67e22;">🔌</span>
-        <strong>API 服务</strong>
+        <strong>API Service</strong>
     </div>
     <div style="margin-top: 6px;">
         <a href="http://localhost:8777/api/" target="_blank">http://localhost:8777/api/</a>
@@ -422,40 +423,40 @@ docker compose -f docker-compose-win.yaml up -d
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-# ❓ 常见问题
-<div style="margin: 1.5rem 0 2rem; padding: 16px; background: #f8f9fa; border-radius: 8px;">
-📚 完整文档请访问 
-<a href="docs/FAQ.md" style="color: #3498db; text-decoration: none; border-bottom: 1px dashed #3498db;">FAQ文档</a> 
-<span style="color: #7f8c8d; font-size: 0.9em;">（最近更新：2025-03-15）</span>
+# ❓ FAQ
+<div id="faq" style="margin: 1.5rem 0 2rem; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+📚 Complete documentation available at 
+<a href="docs/FAQ.md" style="color: #3498db; text-decoration: none; border-bottom: 1px dashed #3498db;">FAQ Documentation</a> 
+<span style="color: #7f8c8d; font-size: 0.9em;">（Last updated: 2025-03-15）</span>
 </div>
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-# 🤝 参与贡献
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+# 🤝 Contribution Guide
+<div id="contribution-guide" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
 
 <div style="padding: 12px; border-left: 3px solid #3498db;">
     <div style="display: flex; gap: 8px; align-items: center;">
         <span style="color: #3498db;">💡</span>
-        <strong>问题反馈</strong>
+        <strong>Issue Reporting</strong>
     </div>
-    <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 6px;">提交Bug或功能建议</div>
+    <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 6px;">Submit bugs or feature suggestions</div>
 </div>
 
 <div style="padding: 12px; border-left: 3px solid #8e44ad;">
     <div style="display: flex; gap: 8px; align-items: center;">
         <span style="color: #8e44ad;">📖</span>
-        <strong>文档改进</strong>
+        <strong>Documentation Improvement</strong>
     </div>
-    <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 6px;">完善使用手册与API文档</div>
+    <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 6px;">Enhance user manual and API documentation</div>
 </div>
 
 <div style="padding: 12px; border-left: 3px solid #e67e22;">
     <div style="display: flex; gap: 8px; align-items: center;">
         <span style="color: #e67e22;">💻</span>
-        <strong>代码贡献</strong>
+        <strong>Code Contribution</strong>
     </div>
-    <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 6px;">提交Pull Request</div>
+    <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 6px;">Submit Pull Requests</div>
 </div>
 
 </div>
@@ -467,7 +468,7 @@ docker compose -f docker-compose-win.yaml up -d
         <span style="color: #3498db;">📢</span>
         <div>
             <div style="color: #2c3e50; font-weight: 500;">GitHub Issues</div>
-            <div style="color: #7f8c8d; font-size: 0.9em;">问题追踪与功能请求</div>
+            <div style="color: #7f8c8d; font-size: 0.9em;">Issue tracking and feature requests</div>
         </div>
     </div>
 </a>
@@ -477,7 +478,7 @@ docker compose -f docker-compose-win.yaml up -d
         <span style="color: #8e44ad;">💬</span>
         <div>
             <div style="color: #2c3e50; font-weight: 500;">GitHub Discussions</div>
-            <div style="color: #7f8c8d; font-size: 0.9em;">技术讨论与经验分享</div>
+            <div style="color: #7f8c8d; font-size: 0.9em;">Technical discussions and experience sharing</div>
         </div>
     </div>
 </a>
@@ -486,7 +487,7 @@ docker compose -f docker-compose-win.yaml up -d
     <div style="display: flex; align-items: center; gap: 10px;">
         <span style="color: #e67e22;">📧</span>
         <div>
-            <div style="color: #2c3e50; font-weight: 500;">联系邮箱</div>
+            <div style="color: #2c3e50; font-weight: 500;">Contact Email</div>
             <a href="mailto:contact@novagrid.ai" style="color: #3498db; text-decoration: none;">contact@novagrid.ai</a>
         </div>
     </div>
@@ -496,25 +497,26 @@ docker compose -f docker-compose-win.yaml up -d
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-# 📄 许可证书
-<div style="margin: 2rem 0; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+# 📄 License
+<div id="license" style="margin: 2rem 0; padding: 16px; background: #f8f9fa; border-radius: 8px;">
     <div style="display: flex; align-items: center; gap: 12px;">
         <span style="font-size: 1.2em;">⚖️</span>
         <div>
-            采用 <a href="./LICENSE" style="color: #3498db; text-decoration: none;">AGPL-3.0 许可证</a>
-            <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 4px;">开源自由，共同成长</div>
+            Licensed under <a href="./LICENSE" style="color: #3498db; text-decoration: none;">AGPL-3.0 License</a>
+            <div style="color: #7f8c8d; font-size: 0.9em; margin-top: 4px;">Open source, grow together</div>
         </div>
     </div>
 </div>
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-# 👥 贡献者
+# 👥 Contributors
+<div id="contributors">
 
-## 🌟 核心贡献者
+## 🌟 Core Contributors
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
 
-<!-- 贡献者模板 -->
+<!-- Contributor template -->
 <a href="https://github.com/Mangosata" target="_blank" style="text-decoration: none;">
     <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; transition: transform 0.2s;">
         <div style="display: flex; align-items: center; gap: 12px;">
@@ -542,8 +544,6 @@ docker compose -f docker-compose-win.yaml up -d
     </div>
 </a>
 
-<!-- 更多贡献者... -->
-
 </div>
 
 <!-- ## 🤝 所有贡献者
@@ -563,9 +563,9 @@ docker compose -f docker-compose-win.yaml up -d
 
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
-# 🙏 致谢
-<div style="margin: 2rem 0; padding-left: 16px; border-left: 3px solid #3498db;">
-    <div style="color: #2c3e50; margin-bottom: 12px;">特别鸣谢：</div>
+# 🙏 Acknowledgments
+<div id="acknowledgments" style="margin: 2rem 0; padding-left: 16px; border-left: 3px solid #3498db;">
+    <div style="color: #2c3e50; margin-bottom: 12px;">Special Thanks:</div>
     <a href="https://github.com/netease-youdao/QAnything" target="_blank" style="text-decoration: none; color: #3498db; margin: 8px 0;">
         • QAnything
     </a>
@@ -574,6 +574,7 @@ docker compose -f docker-compose-win.yaml up -d
 <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0; box-shadow: 0 1px 2px rgba(52,152,219,0.2);"></div>
 
 <div style="text-align: center; color: #7f8c8d; margin-top: 3rem;">
-    <p style="margin: 0.5rem 0; font-size: 0.95em;">由 Novagrid 倾力打造</p>
+    <p style="margin: 0.5rem 0; font-size: 0.95em;">Crafted with ❤️ by Novagrid</p>
     <p style="margin: 0.5rem 0; font-size: 0.9em;">Copyright © 2025 Novagrid AI. All rights reserved.</p>
 </div>
+
