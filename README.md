@@ -26,21 +26,11 @@
 
 </div>
 
-<div align="center">
-
----
-
-</div>
 
 ## ✨ 项目简介
 
 NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，基于 [QAnything](https://github.com/netease-youdao/QAnything) 进行二次开发。我们在保留原有系统强大的文档解析和智能问答能力的基础上，增加了用户权限控制和知识库权限管理功能，并对前端界面进行了全面重构优化，使其更适合企业级应用场景。
 
-<div align="center">
-
----
-
-</div>
 
 ## 🌟 核心特性
 
@@ -69,11 +59,6 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
   - 语义搜索
   - 智能问答
 
-<div align="center">
-
----
-
-</div>
 
 ## 🔧 系统架构
 
@@ -93,11 +78,6 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
 - MySQL
 - ElasticSearch
 
-<div align="center">
-
----
-
-</div>
 
 ## 📢 版本演进
 
@@ -113,11 +93,6 @@ NovAnything 是由 Novagrid 开发的企业级知识库管理与问答系统，�
 - **后端功能完善** (15%)
   - 持久化当前用户的配置
 
-<div align="center">
-
----
-
-</div>
 
 ## 🚀 快速开始
 
@@ -153,21 +128,11 @@ docker compose -f docker-compose-win.yaml up -d
 - Web界面：http://localhost:8777/novanything/
 - API服务：http://localhost:8777/api/
 
-<div align="center">
-
----
-
-</div>
 
 ## ❓ 常见问题
 
 📚 完整文档请访问 [FAQ文档](docs/FAQ.md)（最近更新：2025-03-15）
 
-<div align="center">
-
----
-
-</div>
 
 ## 🤝 参与贡献
 
@@ -181,21 +146,11 @@ docker compose -f docker-compose-win.yaml up -d
 - [GitHub Discussions](https://github.com/NovagridAI/NovAnything/discussions)：技术讨论与经验分享
 - 📧 邮箱：contact@novagrid.ai
 
-<div align="center">
-
----
-
-</div>
 
 ## 📄 许可证书
 
 采用 [AGPL-3.0 许可证](./LICENSE)
 
-<div align="center">
-
----
-
-</div>
 
 ## 👥 贡献者
 
@@ -220,22 +175,12 @@ docker compose -f docker-compose-win.yaml up -d
 </tr>
 </table>
 
-<div align="center">
-
----
-
-</div>
 
 ## 🙏 致谢
 
 特别鸣谢：
 - [QAnything](https://github.com/netease-youdao/QAnything)
 
-<div align="center">
-
----
-
-</div>
 
 <div align="center">
 <p>由 Novagrid 倾力打造</p>
