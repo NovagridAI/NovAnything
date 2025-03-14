@@ -1,3 +1,5 @@
+<link rel="stylesheet" href=".github/styles.css">
+
 <style>
 /* 贡献者卡片悬停动画 */
 a:hover div[style*="background: #f8f9fa"] {
