@@ -81,7 +81,6 @@ const formState = reactive({
 });
 
 const onFinish = async (values: any) => {
-  console.log(values);
   try {
     const res = await urlRequest.login({
       username: values.username,
@@ -91,13 +90,16 @@ const onFinish = async (values: any) => {
     if(res.code === 200) {
       message.success('登录成功');
       Cookies.set('token', res.data.access_token);
+      
+      // 确保先设置 localStorage，再更新 store
+      localStorage.setItem('userId', res.data.user_id);
       setUserInfo({
         userId: res.data.user_id,
-        token: res.data.access_token
+        token: res.data.access_token,
+        role: res.data.role
       });
-      localStorage.setItem('userId', res.data.user_id);
+      await nextTick();
       await router.push('/');
-      console.log('路由跳转完成');
     } else {
       message.error(res.msg || '登录失败');
     }

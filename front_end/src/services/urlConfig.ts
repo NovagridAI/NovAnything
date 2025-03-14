@@ -55,6 +55,7 @@ enum EUrlKey {
   revokeKbAccess = 'revokeKbAccess',
   addUserToGroup = 'addUserToGroup',
   removeUserFromGroup = 'removeUserFromGroup',
+  updateUserRole = 'updateUserRole',
 }
 
 interface IUrlValueConfig {
@@ -75,6 +76,8 @@ type IUrlConfig = Record<EUrlKey, IUrlValueConfig>;
 import services from '.';
 
 export const userId = localUserInfo.userId;
+
+const userIdD = () => localUserInfo.userId
 export const userPhone = localUserInfo.phoneNumber;
 
 //ajax请求接口
@@ -99,10 +102,10 @@ const urlConfig: IUrlConfig = {
   // 获取知识库列表
   kbList: {
     type: EUrlType.POST,
-    url: 'http://198.2.235.68:8777/api/user/list_knowledge_base',
+    url: '/user/list_knowledge_base',
     showLoading: true,
     param: {
-      user_id: userId,
+      user_id: userIdD(),
       user_info: userPhone,
     },
   },
@@ -333,7 +336,7 @@ const urlConfig: IUrlConfig = {
   },
   groupList: {
     type: EUrlType.GET,
-    url: '/custom/group/list',
+    url: '/group/list',
     showLoading: false,
     param: {
       user_id: userId
@@ -341,7 +344,7 @@ const urlConfig: IUrlConfig = {
   },
   createUser: {
     type: EUrlType.POST,
-    url: '/custom/user/create',
+    url: '/user/create',
     param: {
       user_id: userId,
       user_info: userPhone,
@@ -349,7 +352,7 @@ const urlConfig: IUrlConfig = {
   },
   deleteUser: {
     type: EUrlType.POST,
-    url: '/custom/user/delete',
+    url: '/user/delete',
     param: {
       user_id: userId,
     },
@@ -357,7 +360,7 @@ const urlConfig: IUrlConfig = {
   // 更新部门
   updateDepartment: {
     type: EUrlType.POST,
-    url: '/custom/department/update',
+    url: '/department/update',
     showLoading: false,
     param: {
       dept_id: '',
@@ -368,7 +371,7 @@ const urlConfig: IUrlConfig = {
   // 删除部门
   deleteDepartment: {
     type: EUrlType.POST,
-    url: '/custom/department/delete',
+    url: '/department/delete',
     showLoading: false,
     param: {
       dept_id: '',
@@ -378,7 +381,7 @@ const urlConfig: IUrlConfig = {
   // 更新用户信息（包括部门）
   updateUser: {
     type: EUrlType.POST,
-    url: '/custom/user/update',
+    url: '/user/update',
     showLoading: false,
     param: {
       user_id: '',
@@ -388,7 +391,7 @@ const urlConfig: IUrlConfig = {
   // 创建群组
   createGroup: {
     type: EUrlType.POST,
-    url: '/custom/group/create',
+    url: '/group/create',
     showLoading: false,
     param: {
       name: '',
@@ -399,7 +402,7 @@ const urlConfig: IUrlConfig = {
   // 删除群组
   deleteGroup: {
     type: EUrlType.POST,
-    url: '/custom/group/delete',
+    url: '/group/delete',
     showLoading: false,
     param: {
       group_id: '',
@@ -409,7 +412,7 @@ const urlConfig: IUrlConfig = {
   // 授予知识库访问权限
   grantKbAccess: {
     type: EUrlType.POST,
-    url: '/custom/kb/grant_access',
+    url: '/kb/grant_access',
     showLoading: true,
     param: {
       kb_id: '',
@@ -422,7 +425,7 @@ const urlConfig: IUrlConfig = {
   // 撤销知识库访问权限
   revokeKbAccess: {
     type: EUrlType.POST,
-    url: '/custom/kb/revoke_access',
+    url: '/kb/revoke_access',
     showLoading: true,
     param: {
       kb_id: '',
@@ -434,7 +437,7 @@ const urlConfig: IUrlConfig = {
   // 添加用户到群组
   addUserToGroup: {
     type: EUrlType.POST,
-    url: '/custom/group/add_user',
+    url: '/group/add_user',
     showLoading: false,
     param: {
       user_id: userId,
@@ -446,12 +449,24 @@ const urlConfig: IUrlConfig = {
   // 从群组移除用户
   removeUserFromGroup: {
     type: EUrlType.POST,
-    url: '/custom/group/remove_user',
+    url: '/group/remove_user',
     showLoading: false,
     param: {
       user_id: userId,
       target_user_id: '',
       group_id: ''
+    }
+  },
+
+  // 更新用户角色
+  updateUserRole: {
+    type: EUrlType.POST,
+    url: '/user/update',
+    showLoading: true,
+    param: {
+      user_id: userId,
+      target_user_id: '',
+      role: ''
     }
   }
 };

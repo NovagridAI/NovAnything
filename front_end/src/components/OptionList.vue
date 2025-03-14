@@ -707,7 +707,7 @@ const getSubjectList = async () => {
           allSubjects.value = res.data.map(dept => ({
             id: dept.dept_id,
             name: dept.dept_name,
-            permissions: dept.permissions || {}
+            permissions: dept.permissions || []
           }));
         }
         break;
@@ -718,7 +718,7 @@ const getSubjectList = async () => {
           allSubjects.value = res.data.map(group => ({
             id: group.group_id,
             name: group.group_name,
-            permissions: group.permissions || {}
+            permissions: group.permissions || []
           }));
         }
         break;
@@ -737,48 +737,40 @@ const getSubjectList = async () => {
 
 // 检查主体是否对指定知识库有权限
 const checkSubjectHasPermission = (subject, kbId) => {
-  if (!subject || !subject.permissions) return false;
+  if (!subject) return false;
   
-  // 根据不同主体类型检查权限
-  switch (selectedSubjectType.value) {
-    case 'user':
-      // 检查用户拥有的知识库
-      if (subject.permissions.owned_kbs && 
-          subject.permissions.owned_kbs.some(kb => kb.kb_id === kbId)) {
-        return true;
-      }
+  // 处理部门和用户组的情况，它们的权限是一个数组
+  if (selectedSubjectType.value === 'department' || selectedSubjectType.value === 'group') {
+    // 检查权限数组中是否包含当前知识库ID
+    return Array.isArray(subject.permissions) && 
+           subject.permissions.some(permission => permission.kb_id === kbId);
+  }
+  
+  // 处理用户的情况，用户的权限是一个对象
+  if (subject.permissions) {
+    // 检查所有主体类型通用的权限字段
+    const commonPermissionChecks = [
+      // 检查直接访问权限
+      subject.permissions.direct_access && 
+      subject.permissions.direct_access.some(access => access.kb_id === kbId),
       
-      // 检查用户直接访问权限
-      if (subject.permissions.direct_access && 
-          subject.permissions.direct_access.some(access => access.kb_id === kbId)) {
-        return true;
-      }
+      // 检查拥有的知识库
+      subject.permissions.owned_kbs && 
+      subject.permissions.owned_kbs.some(kb => kb.kb_id === kbId),
       
       // 检查部门访问权限
-      if (subject.permissions.department_access) {
-        if (Array.isArray(subject.permissions.department_access) && 
-            subject.permissions.department_access.some(access => access.kb_id === kbId)) {
-          return true;
-        }
-      }
+      subject.permissions.department_access && 
+      Array.isArray(subject.permissions.department_access) && 
+      subject.permissions.department_access.some(access => access.kb_id === kbId),
       
       // 检查群组访问权限
-      if (subject.permissions.group_access) {
-        if (Array.isArray(subject.permissions.group_access) && 
-            subject.permissions.group_access.some(access => access.kb_id === kbId)) {
-          return true;
-        }
-      }
-      break;
-      
-    case 'department':
-    case 'group':
-      // 检查部门或群组的直接权限
-      if (subject.permissions.direct_access && 
-          subject.permissions.direct_access.some(access => access.kb_id === kbId)) {
-        return true;
-      }
-      break;
+      subject.permissions.group_access && 
+      Array.isArray(subject.permissions.group_access) && 
+      subject.permissions.group_access.some(access => access.kb_id === kbId)
+    ];
+    
+    // 如果任何一个权限检查通过，则返回true
+    return commonPermissionChecks.some(check => check === true);
   }
   
   return false;

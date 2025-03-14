@@ -22,7 +22,7 @@
             />
             <a-button type="primary" :disabled="false" @click="inviteMember">
               <template #icon><UserAddOutlined /></template>
-              邀请成员
+              创建成员
             </a-button>
           </template>
           
@@ -34,14 +34,14 @@
           </template>
 
           <template v-if="activeTab === 'member'">
-            <a-input
+            <!-- <a-input
               placeholder="搜索成员"
               style="width: 200px; margin-right: 16px"
               @search="onSearch"
-            />
+            /> -->
             <a-button type="primary" :disabled="false" @click="inviteMember">
               <template #icon><UserAddOutlined /></template>
-              邀请成员
+              创建成员
             </a-button>
           </template>
 

@@ -10,7 +10,7 @@ k * @LastEditTime: 2024-01-11 11:33:16
 import axios from './axiosInterceptor/index';
 import { useUser } from '@/store/useUser';
 
-const { checkPhone } = useUser();
+// const { checkPhone } = useUser();
 
 export const apiBase =
   import.meta.env.VITE_APP_MODE === 'dev' ? '' : import.meta.env.VITE_APP_API_HOST;
@@ -24,10 +24,12 @@ export const bondParams = {};
 
 export default {
   get(baseUrl: string, _query = {} as any, option = {} as any) {
+    const { userInfo } = useUser();
     let url = /http/.test(baseUrl) ? `${baseUrl}` : `${apiBase}${baseUrl}`;
     const query = {
       ...bondParams,
       ..._query,
+      user_id: userInfo.userId || localStorage.getItem('userId') || '',
     };
 
     const { getResponseHeader, ...others } = option;
@@ -52,9 +54,11 @@ export default {
     return data;
   },
   post(baseUrl: string, data = {}, option = {} as any) {
+    const { userInfo } = useUser();
     const params = {
       ...bondParams,
       ...data,
+      user_id: userInfo.userId || localStorage.getItem('userId') || '',
     } as any;
     const _url = `${apiBase}${baseUrl}`;
     const url = /http/.test(baseUrl) ? baseUrl : _url;

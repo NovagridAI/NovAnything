@@ -65,11 +65,11 @@
       @cancel="handleManageMembersCancel"
       :footer="null"
     >
-      <a-input-search
+      <!-- <a-input-search
         v-model:value="searchMember"
         placeholder="搜索用户名"
         style="margin-bottom: 16px"
-      />
+      /> -->
       
       <div class="members-container">
         <div class="members-column">
@@ -311,7 +311,7 @@ const addMemberToGroup = async (userId) => {
     // 使用 group/add_user 接口添加用户到群组
     const res = await urlResquest.addUserToGroup({
       user_id: localStorage.getItem('userId') || '',
-      target_user_id: userId,
+      target_user_ids: [userId],
       group_id: currentGroupId.value
     })
     

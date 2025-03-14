@@ -10,10 +10,11 @@
 export const useUser = defineStore(
   'user',
   () => {
-    const userInfo = ref({
+    const userInfo: any = ref({
       token: '',
       phoneNumber: '1',
       userId: '',
+      role: ''
     });
 
     const userPhoneDialogOpen = ref(false);
@@ -21,6 +22,7 @@ export const useUser = defineStore(
     const setUserInfo = info => {
       userInfo.value.token = info.token;
       userInfo.value.userId = info.userId;
+      userInfo.value.role = info.role;
     };
 
     const getCachePhone = () => {

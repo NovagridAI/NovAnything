@@ -61,22 +61,22 @@ const clearChatSettingStorage = () => {
 };
 
 const openNotification = (localVersion: string, cacheVersion: string) => {
-  const key = `key`;
-  notification.warning({
-    message: `提示`,
-    description: `前端版本已从${cacheVersion}更新至${localVersion}。点击下方按钮以同步最新配置，这将清除您之前设置的模型配置缓存。(如果不更新使用可能会出现问题)`,
-    btn: () =>
-      h(
-        Button,
-        {
-          type: 'primary',
-          onClick: () => confirm(key, localVersion),
-        },
-        { default: () => '更新' }
-      ),
-    key,
-    placement: 'topRight',
-  });
+  // const key = `key`;
+  // notification.warning({
+  //   message: `提示`,
+  //   description: `前端版本已从${cacheVersion}更新至${localVersion}。点击下方按钮以同步最新配置，这将清除您之前设置的模型配置缓存。(如果不更新使用可能会出现问题)`,
+  //   btn: () =>
+  //     h(
+  //       Button,
+  //       {
+  //         type: 'primary',
+  //         onClick: () => confirm(key, localVersion),
+  //       },
+  //       { default: () => '更新' }
+  //     ),
+  //   key,
+  //   placement: 'topRight',
+  // });
 };
 
 const confirm = (key: string, localVersion: string) => {

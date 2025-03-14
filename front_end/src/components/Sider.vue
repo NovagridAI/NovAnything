@@ -10,7 +10,7 @@
   <div class="sider">
     <div class="logo">NovAnything</div>
     <div class="header-navs">
-      <div v-for="item in navList" :key="item.name"
+      <div v-for="item in filteredNavList" :key="item.name"
         :class="['nav-item', navIndex === item.value ? 'nav-item-active' : '']" @click="setNavIdx(item.value)">
         <!--        <div :class="['item-icon', item.value === 0 ? 'knowledge-icon' : 'bot-icon']"></div>-->
         <div :class="['item-icon']">
@@ -91,6 +91,8 @@ import { IChatItemInfo, IFileListItem } from '@/utils/types';
 import { useUploadFiles } from '@/store/useUploadFiles';
 import { FolderOutlined, ThunderboltOutlined, RobotOutlined, UserOutlined, PlusOutlined, LogoutOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import Cookies from 'js-cookie';
+import { useUser } from '@/store/useUser';
 // import urlResquest from '@/services/urlConfig';
 // import { pageStatus } from '@/utils/enum';
 // import { resultControl } from '@/utils/utils';
@@ -110,6 +112,7 @@ const { initUploadFileListQuick } = useUploadFiles();
 const { navIndex } = storeToRefs(useHeader());
 const { changePage } = routeController();
 const { setNavIndex } = useHeader();
+const { userInfo } = useUser();
 
 const navList = [
   {
@@ -133,6 +136,16 @@ const navList = [
     icon: markRaw(UserOutlined)
   },
 ];
+
+// 添加这段代码，根据用户角色过滤导航项
+const filteredNavList = computed(() => {
+  const userRole = (userInfo as any).role;
+  // 如果不是管理员，则过滤掉用户管理选项
+  if (userRole !== 'admin' && userRole !== 'superadmin') {
+    return navList.filter(item => item.value !== 3);
+  }
+  return navList;
+});
 
 // header的item-icon选择
 const iconMap = new Map([
@@ -245,8 +258,10 @@ const quickClickHandle = async (type: 0 | 1, cardData?: IHistoryList) => {
 const handleLogout = () => {
   // 清除token
   localStorage.removeItem('token');
+  Cookies.remove('token');
+  localStorage.clear();
   // 可能需要清除其他用户相关信息
-  message.success(getLanguage().account.logoutSuccess || '退出成功');
+  message.success('退出成功');
   // 跳转到登录页面
   changePage('/login');
 };
@@ -424,24 +439,26 @@ onUnmounted(() => {
 
   .account {
     padding: 20px;
+    margin-top: auto;
     
     .logout-btn {
       display: flex;
       align-items: center;
       padding: 10px 15px;
-      background: $secondaryBgColor;
+      background: rgba(220, 38, 38, 0.1);
       border-radius: 8px;
-      color: $textTitleColor;
+      color: #dc2626;
       cursor: pointer;
       transition: all 0.3s;
       
       &:hover {
-        background: $hoverBgColor;
+        background: rgba(220, 38, 38, 0.2);
       }
       
       .logout-icon {
         margin-right: 8px;
         font-size: 16px;
+        color: #dc2626;
       }
     }
   }

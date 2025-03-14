@@ -40,7 +40,7 @@ export default {
     succeeded: '解析成功',
     upSucceeded: '上传成功',
     upFailed: '上传失败',
-    problemPlaceholder: "请输入问题(300字以内), 在文本开头 '@<标签1>  @<标签2>' 可锁定检索范围",
+    problemPlaceholder: "请输入问题(300字以内)",
     errTip: '输入内容不能为空',
     uploadFile: '上传文件',
     errorKnowledge: '请输入知识库名称',

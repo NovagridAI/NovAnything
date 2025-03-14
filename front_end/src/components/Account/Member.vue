@@ -17,6 +17,12 @@
                 @click="handleUpgrade(record)" 
               />
             </a-tooltip>
+            <a-tooltip title="降级为普通用户">
+              <team-outlined 
+                :class="{ 'disabled': record.role === 'user' }"
+                @click="handleDowngrade(record)" 
+              />
+            </a-tooltip>
             <a-popconfirm
               title="确定要删除该用户吗？"
               ok-text="确定"
@@ -43,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { StopOutlined, UserSwitchOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { StopOutlined, UserSwitchOutlined, DeleteOutlined, TeamOutlined } from '@ant-design/icons-vue';
 import { ref } from 'vue';
 import { message } from 'ant-design-vue';
 import type { TableColumnType } from 'ant-design-vue';
@@ -85,7 +91,7 @@ const columns = ref<TableColumnType[]>([
   //   key: 'loginType',
   // },
   {
-    title: '部门',
+    title: '权限',
     dataIndex: 'role',
     key: 'role',
   },
@@ -122,7 +128,7 @@ const handleStatus = (record: UserType) => {
 
 // 处理升级管理员
 const handleUpgrade = (record: UserType) => {
-  if (record.role === 'admin') {
+  if (record.role === 'admin' || record.role === 'superadmin') {
     message.warning('该用户已经是管理员');
     return;
   }
@@ -130,6 +136,21 @@ const handleUpgrade = (record: UserType) => {
     title: '升级为管理员',
     content: '确定要将该用户升级为管理员吗？',
     action: 'upgrade',
+    record,
+  };
+  modalVisible.value = true;
+};
+
+// 处理降级为普通用户
+const handleDowngrade = (record: UserType) => {
+  if (record.role === 'user') {
+    message.warning('该用户已经是普通用户');
+    return;
+  }
+  modalConfig.value = {
+    title: '降级为普通用户',
+    content: '确定要将该管理员降级为普通用户吗？',
+    action: 'downgrade',
     record,
   };
   modalVisible.value = true;
@@ -159,16 +180,35 @@ const handleModalOk = async () => {
     const { action, record } = modalConfig.value;
     if (!record) return;
 
-    // TODO: 替换为实际的 API 调用
     switch (action) {
       case 'status':
         // await api.updateUserStatus(record.id, record.status === 1 ? 0 : 1);
         message.success(`${record.status === 1 ? '停用' : '启用'}成功`);
         break;
-      case 'upgrade':
-        // await api.upgradeToAdmin(record.id);
-        message.success('升级成功');
+      case 'upgrade': {
+        const res = await urlResquest.updateUserRole({
+          target_user_id: record.user_id,
+          role: 'admin'
+        });
+        if (res.code === 200) {
+          message.success('升级成功');
+        } else {
+          message.error(res.msg || '升级失败');
+        }
         break;
+      }
+      case 'downgrade': {
+        const res = await urlResquest.updateUserRole({
+          target_user_id: record.user_id,
+          role: 'user'
+        });
+        if (res.code === 200) {
+          message.success('降级成功');
+        } else {
+          message.error(res.msg || '降级失败');
+        }
+        break;
+      }
       case 'delete':
         // await api.deleteUser(record.id);
         message.success('删除成功');
@@ -178,7 +218,8 @@ const handleModalOk = async () => {
     modalVisible.value = false;
     emit('refresh'); // 通知父组件刷新数据
   } catch (error) {
-    message.error('操作失败');
+    console.error('操作失败:', error);
+    message.error(error.msg || '操作失败');
   }
 };
 </script>

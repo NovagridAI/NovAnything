@@ -18,7 +18,7 @@
     :style="props.style"
     @click="selectKnowledgeBase(item)"
   >
-    <a-popover overlay-class-name="card-hover" placement="right">
+    <a-popover v-if="userInfo.role === 'admin' || userInfo.role === 'superadmin'" overlay-class-name="card-hover" placement="right">
       <template #content>
         <div class="tools-box">
           <ul>
@@ -26,10 +26,10 @@
               <SvgIcon class="edit" name="icon-manage"></SvgIcon>
               <span class="tool-name">{{ common.manage }}</span>
             </li>
-            <li @click="editKnowledgeBase(item)">
+            <!-- <li @click="editKnowledgeBase(item)">
               <SvgIcon class="edit" name="edit"></SvgIcon>
               <span class="tool-name">{{ common.rename }}</span>
-            </li>
+            </li> -->
             <li @click="deleteKnowledgeBase(item)">
               <SvgIcon class="delete" name="delete"></SvgIcon>
               <span class="tool-name">{{ common.delete }}</span>
@@ -56,6 +56,13 @@
         <!--        <div class="time">{{ item.createTime }}</div>-->
       </div>
     </a-popover>
+    <div v-else class="content">
+      <div class="title">
+        <div class="normal">
+          <p class="title-text">{{ item.kb_name }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 <script lang="ts" setup>
@@ -66,11 +73,12 @@ import { resultControl } from '@/utils/utils';
 import { message } from 'ant-design-vue';
 import { pageStatus } from '@/utils/enum';
 import { getLanguage } from '@/language/index';
-
+import { useUser } from '@/store/useUser';
 const common = getLanguage().common;
 // import { useDebounceFn } from '@vueuse/core';
 const { setShowDeleteModal, setCurrentId, setCurrentKbName, setDefault } = useKnowledgeBase();
 const { showDeleteModal, selectList, currentId } = storeToRefs(useKnowledgeBase());
+const { userInfo } = useUser();
 
 const props = defineProps({
   list: {
