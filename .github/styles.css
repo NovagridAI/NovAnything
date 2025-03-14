@@ -1,0 +1,51 @@
+/* 贡献者卡片悬停动画 */
+a:hover div[style*="background: #f8f9fa"] {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(52,152,219,0.15);
+}
+
+/* 头像悬浮效果 */
+img[alt="Contributor"] {
+    transition: transform 0.3s ease-in-out;
+}
+
+a:hover img[alt="Contributor"] {
+    transform: rotate(8deg) scale(1.05);
+}
+
+/* 表格样式 */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+td, th {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    text-align: left;
+}
+
+th {
+    background: rgb(218, 229, 239);
+    color: white;
+}
+
+a {
+    color: #3498db;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(190, 190, 190, 0.3);
+}
+
+/* 隐藏 Firefox 的默认三角 */
+summary::-webkit-details-marker {
+    display: none !important;
+}
+
+/* 隐藏 Webkit 内核的默认三角 */
+summary::marker {
+    display: none !important;
+    content: '' !important;
+} 
