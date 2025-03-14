@@ -81,26 +81,156 @@ async def list_users(req: request):
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
     
-    # 获取所有用户
+    # 获取所有用户的基本信息
     query = """
-        SELECT u.user_id, u.user_name, u.email, u.role, u.dept_id, u.status, u.creation_time, d.dept_name
+        SELECT u.user_id, u.user_name, u.email, u.role, u.dept_id, u.status, 
+               u.creation_time, d.dept_name
         FROM User u
         LEFT JOIN Department d ON u.dept_id = d.dept_id
-        ORDER BY u.creation_time
+        WHERE u.status = %s
+        ORDER BY u.creation_time DESC
     """
-    users = local_doc_qa.milvus_summary.execute_query_(query, (), fetch=True)
+    users = local_doc_qa.milvus_summary.execute_query_(query, ("active",), fetch=True)
     
     result = []
     for user in users:
+        current_user_id = user[0]
+        
+        # 获取用户所属的用户组
+        groups_query = """
+            SELECT g.group_id, g.group_name, gm.creation_time as join_time
+            FROM GroupMember gm
+            JOIN UserGroup g ON gm.group_id = g.group_id
+            WHERE gm.user_id = %s
+            ORDER BY gm.creation_time DESC
+        """
+        user_groups = local_doc_qa.milvus_summary.execute_query_(groups_query, (current_user_id,), fetch=True)
+        
+        # 查询用户拥有的知识库
+        owned_kb_query = """
+            SELECT kb_id, kb_name, latest_insert_time
+            FROM KnowledgeBase
+            WHERE user_id = %s
+            AND deleted = 0
+            ORDER BY latest_insert_time DESC
+        """
+        owned_kbs = local_doc_qa.milvus_summary.execute_query_(owned_kb_query, (current_user_id,), fetch=True)
+        
+        # 查询用户直接拥有的权限
+        direct_access_query = """
+            SELECT kb.kb_id, kb.kb_name, kba.permission_type,
+                   kba.granted_by, u.user_name as granted_by_name,
+                   kba.granted_at
+            FROM KnowledgeBaseAccess kba
+            JOIN KnowledgeBase kb ON kba.kb_id = kb.kb_id
+            LEFT JOIN User u ON kba.granted_by = u.user_id
+            WHERE kba.subject_type = 'user' 
+            AND kba.subject_id = %s
+            AND kb.deleted = 0
+            ORDER BY kba.granted_at DESC
+        """
+        direct_access = local_doc_qa.milvus_summary.execute_query_(direct_access_query, (current_user_id,), fetch=True)
+        
+        # 查询用户通过部门获得的权限
+        dept_access_query = """
+            SELECT kb.kb_id, kb.kb_name, kba.permission_type,
+                   kba.granted_by, u.user_name as granted_by_name,
+                   kba.granted_at
+            FROM KnowledgeBaseAccess kba
+            JOIN KnowledgeBase kb ON kba.kb_id = kb.kb_id
+            LEFT JOIN User u ON kba.granted_by = u.user_id
+            WHERE kba.subject_type = 'department' 
+            AND kba.subject_id = %s
+            AND kb.deleted = 0
+            ORDER BY kba.granted_at DESC
+        """
+        dept_access = local_doc_qa.milvus_summary.execute_query_(dept_access_query, (user[4],), fetch=True) if user[4] else []
+        
+        # 查询用户通过用户组获得的权限
+        group_access_query = """
+            SELECT kb.kb_id, kb.kb_name, kba.permission_type,
+                   kba.granted_by, u.user_name as granted_by_name,
+                   kba.granted_at,
+                   g.group_id, g.group_name
+            FROM GroupMember gm
+            JOIN UserGroup g ON gm.group_id = g.group_id
+            JOIN KnowledgeBaseAccess kba ON kba.subject_id = g.group_id
+            JOIN KnowledgeBase kb ON kba.kb_id = kb.kb_id
+            LEFT JOIN User u ON kba.granted_by = u.user_id
+            WHERE gm.user_id = %s
+            AND kba.subject_type = 'group'
+            AND kb.deleted = 0
+            ORDER BY kba.granted_at DESC
+        """
+        group_access = local_doc_qa.milvus_summary.execute_query_(group_access_query, (current_user_id,), fetch=True)
+        
         result.append({
             "user_id": user[0],
             "user_name": user[1],
             "email": user[2],
             "role": user[3],
-            "dept_id": user[4],
+            "department": {
+                "dept_id": user[4],
+                "dept_name": user[7]
+            } if user[4] else None,
             "status": user[5],
             "creation_time": user[6].strftime("%Y-%m-%d %H:%M:%S") if user[6] else None,
-            "dept_name": user[7]
+            "groups": [
+                {
+                    "group_id": group[0],
+                    "group_name": group[1],
+                    "join_time": group[2].strftime("%Y-%m-%d %H:%M:%S") if group[2] else None
+                } for group in user_groups
+            ] if user_groups else None,
+            "permissions": {
+                "owned_kbs": [
+                    {
+                        "kb_id": kb[0],
+                        "kb_name": kb[1],
+                        "creation_time": kb[2].strftime("%Y-%m-%d %H:%M:%S") if kb[2] else None
+                    } for kb in owned_kbs
+                ],
+                "direct_access": [
+                    {
+                        "kb_id": acc[0],
+                        "kb_name": acc[1],
+                        "permission_type": acc[2],
+                        "granted_by": {
+                            "user_id": acc[3],
+                            "user_name": acc[4]
+                        },
+                        "granted_at": acc[5].strftime("%Y-%m-%d %H:%M:%S") if acc[5] else None
+                    } for acc in direct_access
+                ],
+                "department_access": [
+                    {
+                        "kb_id": acc[0],
+                        "kb_name": acc[1],
+                        "permission_type": acc[2],
+                        "granted_by": {
+                            "user_id": acc[3],
+                            "user_name": acc[4]
+                        },
+                        "granted_at": acc[5].strftime("%Y-%m-%d %H:%M:%S") if acc[5] else None
+                    } for acc in dept_access
+                ] if dept_access else None,
+                "group_access": [
+                    {
+                        "kb_id": acc[0],
+                        "kb_name": acc[1],
+                        "permission_type": acc[2],
+                        "granted_by": {
+                            "user_id": acc[3],
+                            "user_name": acc[4]
+                        },
+                        "granted_at": acc[5].strftime("%Y-%m-%d %H:%M:%S") if acc[5] else None,
+                        "group": {
+                            "group_id": acc[6],
+                            "group_name": acc[7]
+                        }
+                    } for acc in group_access
+                ] if group_access else None
+            }
         })
     
     return sanic_json({"code": 200, "msg": "获取用户列表成功", "data": result})
@@ -199,8 +329,8 @@ async def delete_user(req: request):
         return sanic_json({"code": 400, "msg": "目标用户ID不能为空"})
     
     # 检查用户是否存在
-    query = "SELECT user_id FROM User WHERE user_id = %s"
-    if not local_doc_qa.milvus_summary.execute_query_(query, (target_user_id,), fetch=True):
+    query = "SELECT user_id FROM User WHERE user_id = %s AND status = %s"
+    if not local_doc_qa.milvus_summary.execute_query_(query, (target_user_id, "active"), fetch=True):
         return sanic_json({"code": 404, "msg": "用户不存在"})
     
     # 不允许删除自己
@@ -707,14 +837,14 @@ async def get_accessible_kbs(req: request):
         
         # 获取通过用户组授权的知识库
         query = f"""
-            SELECT k.kb_id, k.kb_name, k.description, k.owner_id, k.creation_time, 
-                   k.update_time, k.status, k.embedding_model, k.kb_type, a.permission_type, a.subject_id
+            SELECT k.kb_id, k.kb_name, k.user_id, k.latest_qa_time, 
+                   k.latest_insert_time, k.deleted, a.permission_type, a.subject_id
             FROM KnowledgeBase k
             JOIN KnowledgeBaseAccess a ON k.kb_id = a.kb_id
             WHERE a.subject_type = 'group' AND a.subject_id IN ({placeholders})
-                  AND k.owner_id != %s
+                  AND k.user_id != %s
                   {exclude_condition}
-            ORDER BY k.creation_time DESC
+            ORDER BY k.latest_insert_time DESC
         """
         
         params = group_ids + [user_id]
@@ -727,15 +857,15 @@ async def get_accessible_kbs(req: request):
         kb_group_map = {}
         for kb in group_kbs_raw:
             kb_id = kb[0]
-            permission_type = kb[9]
-            group_id = kb[10]
+            permission_type = kb[6]
+            group_id = kb[7]
             
             level_map = {'read': 1, 'write': 2, 'admin': 3}
             current_level = level_map.get(permission_type, 0)
             
             if kb_id not in kb_group_map or current_level > level_map.get(kb_group_map[kb_id]['permission_type'], 0):
                 kb_group_map[kb_id] = {
-                    'kb_data': kb[:10],
+                    'kb_data': kb[:7],  # 只保留实际存在的字段数据
                     'permission_type': permission_type,
                     'group_id': group_id
                 }

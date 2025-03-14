@@ -102,8 +102,8 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/mysql:/var/lib/mysql
 
 
-  qanything_local:
-    container_name: qanything-container-local
+  novanything_local:
+    container_name: novanything-container-local
     image: xixihahaliu01/qanything-win:v1.5.1
     command: /bin/bash -c "cd /workspace/QAnything && bash scripts/entrypoint.sh"
     privileged: true

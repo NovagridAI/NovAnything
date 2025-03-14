@@ -142,7 +142,7 @@ class KnowledgeBaseManager:
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
             admin_data = (
-                str(uuid.uuid4()),
+                str(f"user_{uuid.uuid4().hex[:8]}"),
                 "admin",
                 "admin@example.com",
                 hashed_password.decode('utf-8'),
@@ -351,13 +351,25 @@ class KnowledgeBaseManager:
             "CREATE INDEX index_bot_id ON QaLogs (bot_id)",
             "CREATE INDEX index_query ON QaLogs (query)",
             "CREATE INDEX index_timestamp ON QaLogs (timestamp)",
-            "CREATE INDEX IF NOT EXISTS idx_user_dept ON User(dept_id);",
-            "CREATE INDEX IF NOT EXISTS idx_user_email ON User(email);",
-            # 如果没有的话，给QanythingBot添加一列：llm_setting VARCHAR(512)
-            "ALTER TABLE QanythingBot ADD COLUMN llm_setting VARCHAR(512) DEFAULT '{}'",
-            "ALTER TABLE QanythingBot DROP COLUMN model",
+            "CREATE INDEX idx_user_dept ON User(dept_id)",
+            "CREATE INDEX idx_user_email ON User(email)",
         ]
 
+        # 先检查列是否存在
+        check_llm_setting = """
+            SELECT COUNT(1) FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE table_schema=DATABASE() 
+            AND table_name='QanythingBot' 
+            AND column_name='llm_setting'
+        """
+        check_model = """
+            SELECT COUNT(1) FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE table_schema=DATABASE() 
+            AND table_name='QanythingBot' 
+            AND column_name='model'
+        """
+
+        # 处理索引创建
         for query in index_queries:
             try:
                 self.execute_query_(query, (), commit=True)
@@ -365,12 +377,25 @@ class KnowledgeBaseManager:
             except mysql.connector.Error as err:
                 if err.errno == 1061:  # 重复键错误
                     debug_logger.info(f"Index already exists (this is okay): {query}")
-                elif err.errno == 1060:  # 已存在的列无需创建
-                    debug_logger.info(f"Column already exists (this is okay): {query}")
-                elif err.errno == 1091:  # 已经删除的列无需删除
-                    debug_logger.info(f"Column already deleted (this is okay): {query}")
                 else:
                     debug_logger.error(f"Error creating index: {err}")
+
+        # 处理列操作
+        result = self.execute_query_(check_llm_setting, (), fetch=True)
+        if result and result[0][0] == 0:  # llm_setting列不存在
+            try:
+                self.execute_query_("ALTER TABLE QanythingBot ADD COLUMN llm_setting VARCHAR(512) DEFAULT '{}'", (), commit=True)
+                debug_logger.info("Column llm_setting added successfully")
+            except mysql.connector.Error as err:
+                debug_logger.error(f"Error adding llm_setting column: {err}")
+
+        result = self.execute_query_(check_model, (), fetch=True)
+        if result and result[0][0] == 1:  # model列存在
+            try:
+                self.execute_query_("ALTER TABLE QanythingBot DROP COLUMN model", (), commit=True)
+                debug_logger.info("Column model dropped successfully")
+            except mysql.connector.Error as err:
+                debug_logger.error(f"Error dropping model column: {err}")
 
         debug_logger.info("All tables and indexes checked/created successfully.")
 
@@ -410,9 +435,10 @@ class KnowledgeBaseManager:
         if not kb_ids:
             return []
         kb_ids_str = ','.join("'{}'".format(str(x)) for x in kb_ids)
-        query = "SELECT kb_id FROM KnowledgeBase WHERE kb_id IN ({}) AND deleted = 0 AND user_id = %s".format(
+        debug_logger.info("kb_ids: {}".format(kb_ids_str))
+        query = "SELECT kb_id FROM KnowledgeBase WHERE kb_id IN ({}) AND deleted = 0".format(
             kb_ids_str)
-        result = self.execute_query_(query, (user_id,), fetch=True)
+        result = self.execute_query_(query, (), fetch=True)
         debug_logger.info("check_kb_exist {}".format(result))
         valid_kb_ids = [kb_info[0] for kb_info in result]
         unvalid_kb_ids = list(set(kb_ids) - set(valid_kb_ids))
@@ -441,8 +467,8 @@ class KnowledgeBaseManager:
                  WHERE deleted = 0
                  AND file_id IN ({})
                  AND kb_id = %s
-                 AND kb_id IN (SELECT kb_id FROM KnowledgeBase WHERE user_id = %s)""".format(file_ids_str)
-        result = self.execute_query_(query, (kb_id, user_id), fetch=True)
+                 """.format(file_ids_str)
+        result = self.execute_query_(query, (kb_id, ), fetch=True)
         debug_logger.info("check_file_exist {}".format(result))
         return result
 
