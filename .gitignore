@@ -16,7 +16,6 @@ qa_logs
 api.log
 front_end/dist
 node_modules
-models
 volumes
 *.log
 front_end/yarn.lock
