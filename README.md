@@ -181,6 +181,7 @@ docker compose -f docker-compose-win.yaml up -d
 特别鸣谢：
 - [QAnything](https://github.com/netease-youdao/QAnything)
 
+---
 
 <div align="center">
 <p>由 Novagrid 倾力打造</p>
