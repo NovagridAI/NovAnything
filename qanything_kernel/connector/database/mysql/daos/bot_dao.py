@@ -33,7 +33,8 @@ class BotDAO(BaseDAO):
                 kb_ids_str TEXT NOT NULL,
                 llm_setting TEXT,
                 is_deleted TINYINT(1) DEFAULT 0,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """
         self.execute_query(query, commit=True)

@@ -1,5 +1,5 @@
+from qanything_kernel.connector.database.mysql import KnowledgeBaseManager
 from qanything_kernel.utils.custom_log import insert_logger
-from qanything_kernel.connector.database.mysql.mysql_client import KnowledgeBaseManager
 from qanything_kernel.configs.model_config import UPLOAD_ROOT_PATH
 from qanything_kernel.utils.custom_log import debug_logger
 from langchain_core.documents import Document

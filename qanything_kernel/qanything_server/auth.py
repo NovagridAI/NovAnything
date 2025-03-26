@@ -1,13 +1,18 @@
 import functools
-import jwt
-from datetime import datetime, timedelta
-import bcrypt
 import os
+from datetime import datetime, timedelta
+
+import bcrypt
+import jwt
 from sanic import request, response
 from sanic.response import json as sanic_json
+
+from qanything_kernel.connector.database.mysql.daos.knowledge_base_dao import KnowledgeBaseDAO
+from qanything_kernel.connector.database.mysql.daos.user_dao import UserDAO
+from qanything_kernel.connector.database.mysql.models.user import User
+from qanything_kernel.core.local_doc_qa import LocalDocQA
 from qanything_kernel.utils.custom_log import debug_logger
 from qanything_kernel.utils.general_utils import get_time_async, safe_get
-from qanything_kernel.core.local_doc_qa import LocalDocQA
 
 # JWT配置
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")  # 生产环境中应使用环境变量
@@ -23,6 +28,28 @@ ROLE_SUPERADMIN = "superadmin"  # 超级管理员
 KB_PERM_READ = "read"        # 知识库读取权限
 KB_PERM_WRITE = "write"      # 知识库写入/修改权限
 KB_PERM_ADMIN = "admin"      # 知识库管理权限（包括权限分配，但不包括删除）
+
+
+def check_kb_access_wrapper(local_doc_qa, user_id, kb_id, permission):
+    """
+    包装知识库权限检查
+    
+    Args:
+        local_doc_qa: LocalDocQA实例
+        user_id: 用户ID
+        kb_id: 知识库ID
+        permission: 所需权限
+        
+    Returns:
+        是否有权限
+    """
+    try:
+        # 使用KnowledgeBaseDAO检查权限
+        kb_dao = KnowledgeBaseDAO(local_doc_qa.milvus_summary.db_connection)
+        return kb_dao.check_kb_access(user_id, kb_id, permission)
+    except Exception as e:
+        debug_logger.error(f"检查知识库权限时出错: {str(e)}")
+        return False
 
 def auth_required(required_role=ROLE_USER, check_kb_access=False, kb_permission=KB_PERM_READ):
     """
@@ -62,6 +89,11 @@ def auth_required(required_role=ROLE_USER, check_kb_access=False, kb_permission=
                 debug_logger.error("未提供用户ID")
                 return response.json({"code": 401, "msg": "未提供用户ID"})
             
+            # 处理GET请求中可能出现的列表形式的用户ID
+            if isinstance(user_id, list) and len(user_id) > 0:
+                user_id = user_id[0]
+                debug_logger.info(f"检测到用户ID是列表形式，已转换为字符串: {user_id}")
+            
             # 从请求头获取令牌
             auth_header = req.headers.get('Authorization')
             if not auth_header or not auth_header.startswith('Bearer '):
@@ -91,20 +123,23 @@ def auth_required(required_role=ROLE_USER, check_kb_access=False, kb_permission=
                 if check_kb_access:
                     # 如果用户是超级管理员，则不需要进一步检查知识库权限
                     if user_role != ROLE_SUPERADMIN:
+                        local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+
+                        # 检查单个知识库权限
                         kb_id = safe_get(req, 'kb_id')
                         if kb_id:
-                            local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
-                            # 检查用户是否有权限访问该知识库
-                            if not local_doc_qa.milvus_summary.check_kb_access(user_id, kb_id, kb_permission):
+                            # 使用专门的方法检查知识库访问权限
+                            has_access = check_kb_access_wrapper(local_doc_qa, user_id, kb_id, kb_permission)
+                            if not has_access:
                                 debug_logger.error(f"知识库访问权限不足 - 用户: {user_id}, 知识库: {kb_id}, 所需权限: {kb_permission}")
                                 return response.json({"code": 403, "msg": f"没有权限{kb_permission}访问知识库 {kb_id}"})
-                        
-                        # 如果是批量操作多个知识库
+
+                        # 检查批量操作多个知识库的权限
                         kb_ids = safe_get(req, 'kb_ids')
                         if kb_ids and isinstance(kb_ids, list):
-                            local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
                             for kb_id in kb_ids:
-                                if not local_doc_qa.milvus_summary.check_kb_access(user_id, kb_id, kb_permission):
+                                has_access = check_kb_access_wrapper(local_doc_qa, user_id, kb_id, kb_permission)
+                                if not has_access:
                                     debug_logger.error(f"知识库访问权限不足 - 用户: {user_id}, 知识库: {kb_id}, 所需权限: {kb_permission}")
                                     return response.json({"code": 403, "msg": f"没有权限{kb_permission}访问知识库 {kb_id}"})
                 
@@ -123,8 +158,24 @@ def auth_required(required_role=ROLE_USER, check_kb_access=False, kb_permission=
                 debug_logger.error(f"用户 {user_id} 提供了无效的令牌")
                 return response.json({"code": 401, "msg": "无效的令牌"})
             except Exception as e:
-                debug_logger.error(f"认证失败 - 用户: {user_id}, 错误: {str(e)}")
-                return response.json({"code": 401, "msg": f"认证失败: {str(e)}"})
+                error_message = str(e)
+                error_type = type(e).__name__
+                
+                # 简单识别应用错误的常见模式
+                app_error_patterns = [
+                    "TypeError", "ValueError", "AttributeError", "KeyError", 
+                    "cannot unpack", "not iterable", "NoneType", "index out of range"
+                ]
+                
+                # 检查是否为应用错误
+                is_app_error = any(pattern in error_message or pattern in error_type for pattern in app_error_patterns)
+                
+                if is_app_error:
+                    debug_logger.error(f"应用错误 - 用户: {user_id}, 错误: {error_message}")
+                    return response.json({"code": 500, "msg": f"应用错误: {error_message}"})
+                else:
+                    debug_logger.error(f"认证错误 - 用户: {user_id}, 错误: {error_message}")
+                    return response.json({"code": 401, "msg": f"认证失败: {error_message}"})
         return decorated_function
     return decorator
 
@@ -141,15 +192,14 @@ def get_user_role(user_id, req: request):
     """
     try:
         local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
-        
-        # 查询用户角色
-        query = "SELECT role FROM User WHERE user_id = %s AND status = 'active'"
-        result = local_doc_qa.milvus_summary.execute_query_(query, (user_id,), fetch=True)
-        
-        if result and result[0]:
-            role = result[0][0]
-            debug_logger.info(f"用户 {user_id} 的角色是 {role}")
-            return role
+        user_dao = UserDAO(local_doc_qa.milvus_summary.db_connection)
+
+        # 使用用户DAO获取用户信息
+        user = user_dao.get_user_by_id(user_id)
+
+        if user and user.status == 'active':
+            debug_logger.info(f"用户 {user_id} 的角色是 {user.role}")
+            return user.role
         else:
             debug_logger.warn(f"未找到用户 {user_id} 或用户已禁用")
             return None
@@ -197,8 +247,16 @@ def verify_password(plain_password, hashed_password):
         布尔值，表示密码是否匹配
     """
     try:
+        # 确保输入是字符串类型
+        if not plain_password or not hashed_password:
+            return False
+
+        # 确保密码是字符串类型
+        plain_password_str = str(plain_password)
+        hashed_password_str = str(hashed_password)
+            
         # 使用 bcrypt 进行密码验证
-        result = bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+        result = bcrypt.checkpw(plain_password_str.encode('utf-8'), hashed_password_str.encode('utf-8'))
         debug_logger.info(f"密码验证{'成功' if result else '失败'}")
         return result
     except Exception as e:
@@ -211,45 +269,46 @@ async def login(req: request):
     用户登录接口
     
     Args:
-        req: Sanic请求对象，包含用户ID和密码
+        req: Sanic请求对象，包含用户名和密码
         
     Returns:
         JSON响应，包含令牌和用户信息
     """
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
-    user_id = safe_get(req, 'user_id')
+    username = safe_get(req, 'username')
     password = safe_get(req, 'password')
-    
-    debug_logger.info(f"用户登录尝试 - 用户ID: {user_id}")
-    
-    if not user_id or not password:
-        debug_logger.error(f"登录参数不完整 - 用户ID: {user_id}")
-        return sanic_json({"code": 400, "msg": "用户ID和密码不能为空"})
-    
-    # 查询用户信息
-    query = "SELECT password_hash, role, user_name, dept_id FROM User WHERE user_id = %s AND status = 'active'"
-    user_info = local_doc_qa.milvus_summary.execute_query_(query, (user_id,), fetch=True)
-    
-    if not user_info:
-        debug_logger.error(f"用户不存在或已禁用 - 用户ID: {user_id}")
+
+    debug_logger.info(f"用户登录尝试 - 用户名: {username}")
+
+    if not username or not password:
+        debug_logger.error(f"登录参数不完整 - 用户名: {username}")
+        return sanic_json({"code": 400, "msg": "用户名和密码不能为空"})
+
+    user_dao = UserDAO(local_doc_qa.milvus_summary.db_connection)
+
+    # 通过用户名查找用户
+    query = "SELECT * FROM User WHERE username = %s AND status = 'active'"
+    user_info = user_dao.execute_query(query, (username,), fetch=True, dictionary=True)
+
+    user = None
+    if user_info and len(user_info) > 0:
+        user = User.from_dict(user_info[0])
+
+    if not user or user.status != 'active':
+        debug_logger.error(f"用户不存在或已禁用 - 用户名: {username}")
         return sanic_json({"code": 401, "msg": "用户不存在或已禁用"})
     
-    hashed_password = user_info[0][0]
-    user_role = user_info[0][1]
-    user_name = user_info[0][2]
-    dept_id = user_info[0][3]
-    
     # 验证密码
-    if not verify_password(password, hashed_password):
-        debug_logger.error(f"密码验证失败 - 用户ID: {user_id}")
+    if not user.password or not verify_password(password, user.password):
+        debug_logger.error(f"密码验证失败 - 用户名: {username}")
         return sanic_json({"code": 401, "msg": "用户名或密码错误"})
     
     # 获取用户所属部门名称
     dept_name = None
-    if dept_id:
+    if user.dept_id:
         query = "SELECT dept_name FROM Department WHERE dept_id = %s"
-        dept_result = local_doc_qa.milvus_summary.execute_query_(query, (dept_id,), fetch=True)
-        if dept_result:
+        dept_result = user_dao.execute_query(query, (user.dept_id,), fetch=True)
+        if dept_result and len(dept_result) > 0:
             dept_name = dept_result[0][0]
     
     # 查询用户所属的用户组
@@ -259,66 +318,98 @@ async def login(req: request):
         JOIN GroupMember m ON g.group_id = m.group_id
         WHERE m.user_id = %s AND m.status = 'active'
     """
-    groups_result = local_doc_qa.milvus_summary.execute_query_(query, (user_id,), fetch=True)
+    groups_result = user_dao.execute_query(query, (user.user_id,), fetch=True)
     user_groups = [{"group_id": row[0], "group_name": row[1]} for row in groups_result] if groups_result else []
     
     # 生成JWT令牌
     payload = {
-        "user_id": user_id,
-        "role": user_role,
+        "user_id": user.user_id,
+        "role": user.role,
         "exp": datetime.utcnow() + JWT_ACCESS_TOKEN_EXPIRES
     }
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     
     # 更新用户最后登录时间
     update_query = "UPDATE User SET last_login = NOW() WHERE user_id = %s"
-    local_doc_qa.milvus_summary.execute_query_(update_query, (user_id,), commit=True)
-    
-    debug_logger.info(f"用户登录成功 - 用户ID: {user_id}, 角色: {user_role}")
+    user_dao.execute_query(update_query, (user.user_id,), commit=True)
+
+    debug_logger.info(f"用户登录成功 - 用户ID: {user.user_id}, 角色: {user.role}")
     return sanic_json({
         "code": 200, 
         "msg": "登录成功", 
         "data": {
             "token": token,
-            "user_id": user_id,
-            "user_name": user_name,
-            "role": user_role,
-            "dept_id": dept_id,
+            "user_id": user.user_id,
+            "username": user.username,
+            "role": user.role,
+            "dept_id": user.dept_id,
             "dept_name": dept_name,
             "groups": user_groups
         }
     })
 
 @get_time_async
-@auth_required(ROLE_USER)  # 刷新令牌只需要普通用户权限
 async def refresh_token(req: request):
     """
     刷新JWT令牌
     
     Args:
-        req: Sanic请求对象
+        req: Sanic请求对象，需要在Authorization头中包含有效的JWT令牌
         
     Returns:
         JSON响应，包含新的令牌
     """
-    user_id = req.ctx.user["user_id"]
-    role = req.ctx.user["role"]
+    # 从请求头获取令牌
+    auth_header = req.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        debug_logger.error("未提供令牌或令牌格式错误")
+        return response.json({"code": 401, "msg": "未提供令牌或令牌格式错误"})
     
-    debug_logger.info(f"刷新令牌 - 用户: {user_id}, 角色: {role}")
+    token = auth_header.split(' ')[1]
     
-    # 生成新的JWT令牌
-    payload = {
-        "user_id": user_id,
-        "role": role,
-        "exp": datetime.utcnow() + JWT_ACCESS_TOKEN_EXPIRES
-    }
-    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    
-    debug_logger.info(f"令牌刷新成功 - 用户: {user_id}")
-    return response.json({
-        "code": 200,
-        "msg": "令牌刷新成功",
-        "data": {
-            "token": token
+    try:
+        # 验证当前令牌
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+        user_role = payload.get("role")
+        
+        if not user_id:
+            debug_logger.error("令牌中缺少用户ID")
+            return response.json({"code": 401, "msg": "无效的令牌：缺少用户ID"})
+            
+        debug_logger.info(f"刷新令牌 - 用户: {user_id}, 角色: {user_role}")
+        
+        # 验证用户是否存在且状态正常
+        local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+        user_dao = UserDAO(local_doc_qa.milvus_summary.db_connection)
+        
+        user = user_dao.get_user_by_id(user_id)
+        if not user or user.status != 'active':
+            debug_logger.error(f"用户不存在或已禁用 - 用户ID: {user_id}")
+            return response.json({"code": 401, "msg": "用户不存在或已禁用"})
+        
+        # 生成新的JWT令牌
+        new_payload = {
+            "user_id": user_id,
+            "role": user_role,
+            "exp": datetime.utcnow() + JWT_ACCESS_TOKEN_EXPIRES
         }
-    }) 
+        new_token = jwt.encode(new_payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+        
+        debug_logger.info(f"令牌刷新成功 - 用户: {user_id}")
+        return response.json({
+            "code": 200,
+            "msg": "令牌刷新成功",
+            "data": {
+                "token": new_token
+            }
+        })
+    except jwt.ExpiredSignatureError:
+        debug_logger.error("令牌已过期，无法刷新")
+        return response.json({"code": 401, "msg": "令牌已过期，请重新登录"})
+    except jwt.InvalidTokenError:
+        debug_logger.error("提供了无效的令牌")
+        return response.json({"code": 401, "msg": "无效的令牌"})
+    except Exception as e:
+        debug_logger.error(f"刷新令牌失败: {str(e)}")
+        return response.json({"code": 401, "msg": f"刷新令牌失败: {str(e)}"}) 

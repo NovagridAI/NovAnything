@@ -1,12 +1,12 @@
 """
 知识库数据访问对象
 """
-import uuid
-from typing import List, Optional, Dict, Any, Tuple
-from qanything_kernel.utils.custom_log import debug_logger
+from typing import List, Optional, Tuple, Dict
+
 from qanything_kernel.configs.model_config import KB_SUFFIX
 from qanything_kernel.connector.database.mysql.daos.base_dao import BaseDAO
-from qanything_kernel.connector.database.mysql.models.knowledge_base import KnowledgeBase, KnowledgeBaseAccess
+from qanything_kernel.connector.database.mysql.models.knowledge_base import KnowledgeBase
+from qanything_kernel.utils.custom_log import debug_logger
 
 
 class KnowledgeBaseDAO(BaseDAO):
@@ -27,6 +27,7 @@ class KnowledgeBaseDAO(BaseDAO):
                 kb_id VARCHAR(255) UNIQUE,
                 user_id VARCHAR(255),
                 kb_name VARCHAR(255),
+                kb_type VARCHAR(20) DEFAULT 'personal',
                 deleted BOOL DEFAULT 0,
                 latest_qa_time TIMESTAMP NULL,
                 latest_insert_time TIMESTAMP NULL
@@ -51,59 +52,110 @@ class KnowledgeBaseDAO(BaseDAO):
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """
         self.execute_query(query, commit=True)
-    
-    def new_knowledge_base(self, kb_id: str, user_id: str, kb_name: str) -> Tuple[str, str]:
+
+        # 创建索引
+        try:
+            index_queries = [
+                "CREATE INDEX idx_kb_type ON KnowledgeBase(kb_type)",
+            ]
+
+            for query in index_queries:
+                self.execute_query(query, commit=True)
+                debug_logger.info(f"创建索引成功: {query}")
+        except Exception as e:
+            if "Duplicate key name" in str(e):
+                debug_logger.info("索引已存在，跳过创建")
+            else:
+                debug_logger.error(f"创建索引时出错: {e}")
+
+    def new_knowledge_base(self, kb_id: str, user_id: str, kb_name: str, kb_type: str = 'personal', ) -> Tuple[
+        str, str]:
         """创建新知识库
         
         Args:
             kb_id: 知识库ID
             user_id: 用户ID
             kb_name: 知识库名称
+            kb_type: 知识库类型，可选值：'personal'(个人), 'team'(团队), 'temporary'(临时)
             
         Returns:
             (知识库ID, 状态消息)
         """
         # 创建知识库
-        query = "INSERT INTO KnowledgeBase (kb_id, user_id, kb_name) VALUES (%s, %s, %s)"
-        self.execute_query(query, (kb_id, user_id, kb_name), commit=True)
+        query = "INSERT INTO KnowledgeBase (kb_id, user_id, kb_name, kb_type) VALUES (%s, %s, %s, %s)"
+        self.execute_query(query, (kb_id, user_id, kb_name, kb_type), commit=True)
         
         # 设置所有者权限
         self.set_kb_access(kb_id, user_id, "user", "admin", user_id)
         
         return kb_id, "success"
-    
-    def get_knowledge_bases(self, user_id: str) -> List[Tuple[str, str]]:
+
+    def get_knowledge_bases(self, user_id: str, kb_type: Optional[str] = None) -> List[Tuple[str, str, str]]:
         """获取用户可访问的所有知识库
         
         Args:
             user_id: 用户ID
+            kb_type: 知识库类型筛选，如果为None则获取全部类型
             
         Returns:
-            知识库ID和名称的元组列表
+            知识库ID、名称和类型的元组列表
         """
         # 首先获取用户直接拥有的知识库
-        query = (f"SELECT kb_id, kb_name FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND "
-                 f"(kb_id LIKE '%{KB_SUFFIX}' OR kb_id LIKE '%{KB_SUFFIX}_FAQ')")
-        owned_kbs = self.execute_query(query, (user_id,), fetch=True)
+        if kb_type:
+            query = (
+                f"SELECT kb_id, kb_name, kb_type FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND kb_type = %s AND "
+                f"(kb_id LIKE '%{KB_SUFFIX}' OR kb_id LIKE '%{KB_SUFFIX}_FAQ')")
+            owned_kbs = self.execute_query(query, (user_id, kb_type), fetch=True)
+        else:
+            query = (f"SELECT kb_id, kb_name, kb_type FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND "
+                     f"(kb_id LIKE '%{KB_SUFFIX}' OR kb_id LIKE '%{KB_SUFFIX}_FAQ')")
+            owned_kbs = self.execute_query(query, (user_id,), fetch=True)
         
         # 获取用户通过权限可以访问的知识库
-        query = f"""
-            SELECT DISTINCT kb.kb_id, kb.kb_name 
-            FROM KnowledgeBase kb
-            JOIN KnowledgeBaseAccess kba ON kb.kb_id = kba.kb_id
-            JOIN User u ON u.user_id = %s
-            WHERE kb.deleted = 0 
-            AND kb.user_id != %s
-            AND (
-                (kba.subject_id = %s AND kba.subject_type = 'user')
-                OR (kba.subject_id = u.dept_id AND kba.subject_type = 'department')
-            )
-            AND (
-                kb.kb_id LIKE '%{KB_SUFFIX}'
-                OR kb.kb_id LIKE '%{KB_SUFFIX}_FAQ'
-            )
-        """
-        shared_kbs = self.execute_query(query, (user_id, user_id, user_id), fetch=True)
+        if kb_type:
+            if kb_type == 'team':
+                # 只查询团队知识库
+                query = f"""
+                    SELECT DISTINCT kb.kb_id, kb.kb_name, kb.kb_type
+                    FROM KnowledgeBase kb
+                    JOIN KnowledgeBaseAccess kba ON kb.kb_id = kba.kb_id
+                    JOIN User u ON u.user_id = %s
+                    WHERE kb.deleted = 0 
+                    AND kb.kb_type = 'team'
+                    AND kb.user_id != %s
+                    AND (
+                        (kba.subject_id = %s AND kba.subject_type = 'user')
+                        OR (kba.subject_id = u.dept_id AND kba.subject_type = 'department')
+                    )
+                    AND (
+                        kb.kb_id LIKE '%{KB_SUFFIX}'
+                        OR kb.kb_id LIKE '%{KB_SUFFIX}_FAQ'
+                    )
+                """
+                shared_kbs = self.execute_query(query, (user_id, user_id, user_id), fetch=True)
+            else:
+                # 个人和临时知识库不能共享
+                shared_kbs = []
+        else:
+            # 查询所有共享的团队知识库
+            query = f"""
+                SELECT DISTINCT kb.kb_id, kb.kb_name, kb.kb_type
+                FROM KnowledgeBase kb
+                JOIN KnowledgeBaseAccess kba ON kb.kb_id = kba.kb_id
+                JOIN User u ON u.user_id = %s
+                WHERE kb.deleted = 0 
+                AND kb.kb_type = 'team'
+                AND kb.user_id != %s
+                AND (
+                    (kba.subject_id = %s AND kba.subject_type = 'user')
+                    OR (kba.subject_id = u.dept_id AND kba.subject_type = 'department')
+                )
+                AND (
+                    kb.kb_id LIKE '%{KB_SUFFIX}'
+                    OR kb.kb_id LIKE '%{KB_SUFFIX}_FAQ'
+                )
+            """
+            shared_kbs = self.execute_query(query, (user_id, user_id, user_id), fetch=True)
         
         # 合并结果
         return owned_kbs + shared_kbs
@@ -157,7 +209,7 @@ class KnowledgeBaseDAO(BaseDAO):
         kb_ids_str = ','.join(['%s'] * len(kb_ids))
         query = f"SELECT kb_id FROM KnowledgeBase WHERE kb_id IN ({kb_ids_str}) AND deleted = 0"
         
-        result = self.execute_query(query, kb_ids, fetch=True)
+        result = self.execute_query(query, tuple(kb_ids), fetch=True)
         debug_logger.info(f"check_kb_exist {result}")
         
         valid_kb_ids = [kb_info[0] for kb_info in result]
@@ -406,5 +458,119 @@ class KnowledgeBaseDAO(BaseDAO):
             return True
         except Exception as e:
             debug_logger.error(f"设置权限失败: {str(e)}")
-            return False 
+            return False
+
+    def get_temporary_knowledge_bases(self, user_id: str) -> List[Tuple[str, str, str]]:
+        """获取用户的临时知识库
+        
+        Args:
+            user_id: 用户ID
             
+        Returns:
+            临时知识库ID、名称和过期时间的元组列表
+        """
+        query = """
+            SELECT kb_id, kb_name, expired_at 
+            FROM KnowledgeBase 
+            WHERE user_id = %s AND kb_type = 'temporary' AND deleted = 0
+        """
+        return self.execute_query(query, (user_id,), fetch=True)
+
+    def physically_delete_temporary_knowledge_base(self, kb_ids: List[str]) -> int:
+        """物理删除临时知识库
+        
+        Args:
+            kb_ids: 要删除的临时知识库ID列表
+            
+        Returns:
+            成功删除的知识库数量
+        """
+        if not kb_ids:
+            return 0
+
+        # 先验证这些知识库是否都是临时知识库
+        kb_ids_str = ','.join(['%s'] * len(kb_ids))
+        verify_query = f"""
+            SELECT kb_id 
+            FROM KnowledgeBase 
+            WHERE kb_id IN ({kb_ids_str}) 
+            AND kb_type = 'temporary'
+        """
+
+        valid_kbs = self.execute_query(verify_query, kb_ids, fetch=True)
+        if not valid_kbs:
+            return 0
+
+        valid_kb_ids = [kb[0] for kb in valid_kbs]
+        if len(valid_kb_ids) != len(kb_ids):
+            debug_logger.warning(f"部分知识库不是临时知识库或不存在: 请求删除 {kb_ids}，有效的临时知识库 {valid_kb_ids}")
+
+        if not valid_kb_ids:
+            return 0
+
+        # 首先删除知识库权限表中的记录
+        valid_kb_ids_str = ','.join(['%s'] * len(valid_kb_ids))
+        delete_access_query = f"""
+            DELETE FROM {self.access_table}
+            WHERE kb_id IN ({valid_kb_ids_str})
+        """
+        self.execute_query(delete_access_query, valid_kb_ids, commit=True)
+
+        # 最后删除知识库主表中的记录
+        delete_kb_query = f"""
+            DELETE FROM {self.table}
+            WHERE kb_id IN ({valid_kb_ids_str})
+            AND kb_type = 'temporary'
+        """
+        result = self.execute_query(delete_kb_query, valid_kb_ids, commit=True, check=True)
+
+        debug_logger.info(f"物理删除临时知识库完成: {valid_kb_ids}, 删除数量: {result if result else 0}")
+        return result if result else 0
+
+    def remove_subject_access(self, subject_type: str, subject_id: str) -> bool:
+        """删除特定主体的所有知识库权限记录
+        
+        Args:
+            subject_type: 主体类型 ('user', 'department', 'group')
+            subject_id: 主体ID
+            
+        Returns:
+            是否成功删除
+        """
+        debug_logger.info(f"正在删除主体权限记录 - 类型: {subject_type}, ID: {subject_id}")
+
+        # 验证主体类型
+        if subject_type not in ['user', 'department', 'group']:
+            debug_logger.error(f"无效的主体类型: {subject_type}")
+            return False
+
+        # 删除该主体的所有知识库权限记录
+        query = """
+            DELETE FROM KnowledgeBaseAccess 
+            WHERE subject_id = %s AND subject_type = %s
+        """
+        try:
+            self.execute_query(query, (subject_id, subject_type), commit=True)
+            debug_logger.info(f"成功删除主体权限记录 - 类型: {subject_type}, ID: {subject_id}")
+            return True
+        except Exception as e:
+            debug_logger.error(f"删除主体权限记录失败: {str(e)}")
+            return False
+
+    def get_kb_access_by_type(self, kb_id: str, subject_type: str) -> List[Dict]:
+        """获取指定知识库的指定类型的权限数据
+        
+        Args:
+            kb_id: 知识库ID
+            subject_type: 主体类型，可以是'user', 'department', 'group'
+            
+        Returns:
+            权限数据字典列表
+        """
+        query = """
+            SELECT subject_id, permission_type
+            FROM KnowledgeBaseAccess
+            WHERE kb_id = %s AND subject_type = %s
+        """
+        results = self.execute_query(query, (kb_id, subject_type), fetch=True, dictionary=True)
+        return results if results else []

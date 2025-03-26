@@ -2,6 +2,10 @@
 数据库管理器
 集成所有DAO，提供统一的接口
 """
+from datetime import datetime
+from typing import List, Optional, Tuple, Dict, Any
+import uuid
+
 from qanything_kernel.connector.database.mysql.connection import DatabaseConnection
 from qanything_kernel.connector.database.mysql.daos.user_dao import UserDAO
 from qanything_kernel.connector.database.mysql.daos.knowledge_base_dao import KnowledgeBaseDAO
@@ -13,6 +17,7 @@ from qanything_kernel.connector.database.mysql.daos.bot_dao import BotDAO
 from qanything_kernel.connector.database.mysql.daos.department_dao import DepartmentDAO
 from qanything_kernel.connector.database.mysql.daos.user_group_dao import UserGroupDAO
 from qanything_kernel.connector.database.mysql.daos.group_member_dao import GroupMemberDAO
+from qanything_kernel.connector.database.mysql.daos.conversation_dao import ConversationDAO
 from qanything_kernel.connector.database.mysql.models.file import File, FileImage
 from qanything_kernel.connector.database.mysql.models.faq import Faq
 from qanything_kernel.connector.database.mysql.models.document import Document
@@ -21,6 +26,7 @@ from qanything_kernel.connector.database.mysql.models.bot import QanythingBot
 from qanything_kernel.connector.database.mysql.models.department import Department
 from qanything_kernel.connector.database.mysql.models.user_group import UserGroup
 from qanything_kernel.connector.database.mysql.models.group_member import GroupMember
+from qanything_kernel.connector.database.mysql.models.conversation import Conversation
 from qanything_kernel.utils.custom_log import debug_logger
 
 
@@ -49,6 +55,7 @@ class DatabaseManager:
         self.department_dao = DepartmentDAO(self.db_connection)
         self.user_group_dao = UserGroupDAO(self.db_connection)
         self.group_member_dao = GroupMemberDAO(self.db_connection)
+        self.conversation_dao = ConversationDAO(self.db_connection)
         
         self.create_tables()
         
@@ -87,6 +94,9 @@ class DatabaseManager:
         # 创建用户组成员表
         self.group_member_dao.create_table()
         
+        # 创建会话表
+        self.conversation_dao.create_table()
+        
         debug_logger.info("数据库表检查和创建完成")
         
     # 用户相关方法
@@ -99,44 +109,34 @@ class DatabaseManager:
         return self.user_dao.get_users()
     
     # 知识库相关方法
-    def new_milvus_base(self, kb_id, user_id, kb_name, user_name=None):
-        """创建新知识库"""
-        if not self.check_user_exist(user_id):
-            # 如果用户不存在，先创建用户
-            from qanything_kernel.connector.database.mysql.models.user import User
-            user = User(user_id=user_id, user_name=user_name or user_id)
-            self.user_dao.create_user(user)
-            
-        return self.kb_dao.new_knowledge_base(kb_id, user_id, kb_name)
-    
     def get_knowledge_bases(self, user_id):
         """获取用户可访问的所有知识库"""
         return self.kb_dao.get_knowledge_bases(user_id)
-    
-    def check_kb_exist(self, user_id, kb_ids):
+
+    def check_kb_exist(self, kb_ids):
         """检查知识库是否存在"""
         return self.kb_dao.check_kb_exist(kb_ids)
-    
+
     def get_knowledge_base_name(self, kb_ids):
         """获取指定kb_ids的知识库信息"""
         return self.kb_dao.get_knowledge_base_name(kb_ids)
-    
+
     def delete_knowledge_base(self, user_id, kb_ids):
         """删除知识库"""
         return self.kb_dao.delete_knowledge_base(user_id, kb_ids)
-    
+
     def rename_knowledge_base(self, user_id, kb_id, kb_name):
         """重命名知识库"""
         return self.kb_dao.rename_knowledge_base(user_id, kb_id, kb_name)
-    
+
     def update_knowledge_base_latest_qa_time(self, kb_id, timestamp):
         """更新知识库的最新问答时间"""
         return self.kb_dao.update_knowledge_base_latest_qa_time(kb_id, timestamp)
-    
+
     def update_knowlegde_base_latest_insert_time(self, kb_id, timestamp):
         """更新知识库的最新插入时间"""
         return self.kb_dao.update_knowledge_base_latest_insert_time(kb_id, timestamp)
-    
+
     def get_user_by_kb_id(self, kb_id):
         """根据知识库ID获取所有者用户ID"""
         return self.kb_dao.get_user_by_kb_id(kb_id)
@@ -288,28 +288,23 @@ class DatabaseManager:
             json_data=json_data
         )
         return self.document_dao.add_document(document)
-    
-    def update_document(self, doc_id, update_content):
-        """更新文档内容"""
-        return self.document_dao.update_document(doc_id, update_content)
-    
+
+    def delete_documents(self, doc_ids):
+        """添加文档"""
+        return self.document_dao.delete_documents(doc_ids)
+
+    def get_document_by_file_id(self, file_id):
+        return self.document_dao.get_document_by_file_id(file_id)
+
     def get_document_by_doc_id(self, doc_id):
-        """根据文档ID获取文档"""
-        document = self.document_dao.get_document_by_doc_id(doc_id)
-        return document.json_data if document else None
-    
-    def get_document_by_file_id(self, file_id, batch_size=100):
-        """根据文件ID获取文档"""
-        return self.document_dao.get_document_by_file_id(file_id, batch_size)
-    
-    def delete_documents(self, file_ids):
-        """删除文档"""
-        return self.document_dao.delete_documents(file_ids)
-    
+        return self.document_dao.get_document_by_doc_id(doc_id)
+
+    def update_document(self, doc_id, update_content):
+        return self.document_dao.update_document(doc_id, update_content)
+
     # QaLog相关方法
     def add_qa_log(self, qa_log: QaLog) -> None:
         """添加问答日志
-        
         Args:
             qa_log: 问答日志对象
         """
@@ -782,4 +777,105 @@ class DatabaseManager:
             用户所属的组数量
         """
         return self.group_member_dao.get_user_groups_count(user_id)
+    
+    # 会话管理相关方法
+    def add_conversation(self, user_id: str, title: str, kb_ids: List[str], 
+                        is_favorite: bool = False) -> str:
+        """添加会话
+        
+        Args:
+            user_id: 用户ID
+            title: 会话标题
+            kb_ids: 知识库ID列表
+            is_favorite: 是否收藏
+            
+        Returns:
+            会话ID
+        """
+        conversation = Conversation(
+            conversation_id=uuid.uuid4().hex,
+            user_id=user_id,
+            title=title,
+            kb_ids=kb_ids,
+            is_favorite=is_favorite,
+            create_time=datetime.now(),
+            update_time=datetime.now()
+        )
+        
+        return self.conversation_dao.add_conversation(conversation)
+    
+    def get_conversations(self, user_id: str, is_favorite: Optional[bool] = None,
+                         limit: Optional[int] = None, offset: Optional[int] = None) -> List[Dict[str, Any]]:
+        """获取会话列表
+        
+        Args:
+            user_id: 用户ID
+            is_favorite: 是否只获取收藏的会话
+            limit: 限制返回数量
+            offset: 偏移量
+            
+        Returns:
+            会话列表
+        """
+        return self.conversation_dao.get_conversations(user_id, is_favorite, limit, offset)
+    
+    def get_conversation_by_id(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """根据ID获取会话
+        
+        Args:
+            conversation_id: 会话ID
+            
+        Returns:
+            会话详情
+        """
+        return self.conversation_dao.get_conversation_by_id(conversation_id)
+    
+    def update_conversation(self, conversation_id: str, title: Optional[str] = None,
+                           is_favorite: Optional[bool] = None, kb_ids: Optional[List[str]] = None) -> bool:
+        """更新会话
+        
+        Args:
+            conversation_id: 会话ID
+            title: 会话标题
+            is_favorite: 是否收藏
+            kb_ids: 知识库ID列表
+            
+        Returns:
+            是否更新成功
+        """
+        return self.conversation_dao.update_conversation(conversation_id, title, is_favorite, kb_ids)
+    
+    def toggle_favorite_conversation(self, conversation_id: str) -> bool:
+        """切换会话收藏状态
+        
+        Args:
+            conversation_id: 会话ID
+            
+        Returns:
+            是否切换成功
+        """
+        return self.conversation_dao.toggle_favorite(conversation_id)
+    
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """删除会话
+        
+        Args:
+            conversation_id: 会话ID
+            
+        Returns:
+            是否删除成功
+        """
+        return self.conversation_dao.delete_conversation(conversation_id)
+    
+    def count_conversations(self, user_id: str, is_favorite: Optional[bool] = None) -> int:
+        """统计会话数量
+        
+        Args:
+            user_id: 用户ID
+            is_favorite: 是否只统计收藏的会话
+            
+        Returns:
+            会话数量
+        """
+        return self.conversation_dao.count_conversations(user_id, is_favorite)
         

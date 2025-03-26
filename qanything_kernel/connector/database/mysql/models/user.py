@@ -10,7 +10,7 @@ from datetime import datetime
 class User:
     """用户模型"""
     user_id: str
-    user_name: str
+    username: str
     dept_id: Optional[str] = None
     email: Optional[str] = None
     password: Optional[str] = None
@@ -23,7 +23,7 @@ class User:
         """转换为字典"""
         data = {
             'user_id': self.user_id,
-            'user_name': self.user_name,
+            'username': self.username,
             'role': self.role,
             'status': self.status
         }
@@ -45,7 +45,7 @@ class User:
         return cls(
             id=data.get('id'),
             user_id=data.get('user_id'),
-            user_name=data.get('user_name'),
+            username=data.get('username'),
             dept_id=data.get('dept_id'),
             email=data.get('email'),
             password=data.get('password'),

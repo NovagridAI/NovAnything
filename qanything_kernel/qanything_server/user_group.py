@@ -1,5 +1,5 @@
 import uuid
-from qanything_kernel.qanything_server.handler import auth_required
+from qanything_kernel.qanything_server.auth import auth_required, ROLE_SUPERADMIN
 from qanything_kernel.utils.general_utils import get_time_async, safe_get
 from qanything_kernel.core.local_doc_qa import LocalDocQA
 from qanything_kernel.utils.custom_log import debug_logger, qa_logger
@@ -8,9 +8,9 @@ from sanic.response import json as sanic_json
 
 
 @get_time_async
-@auth_required("admin")
+@auth_required(required_role=ROLE_SUPERADMIN)
 async def create_user_group(req: request):
-    """创建新用户组"""
+    """创建新用户组 - 仅超级管理员可操作"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
     group_name = safe_get(req, 'group_name')
@@ -36,9 +36,9 @@ async def create_user_group(req: request):
 
 
 @get_time_async
-@auth_required("admin")
+@auth_required(required_role=ROLE_SUPERADMIN)
 async def list_user_groups(req: request):
-    """获取用户组列表"""
+    """获取用户组列表 - 仅超级管理员可操作"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
     
@@ -68,9 +68,9 @@ async def list_user_groups(req: request):
 
 
 @get_time_async
-@auth_required("admin")
+@auth_required(required_role=ROLE_SUPERADMIN)
 async def delete_user_group(req: request):
-    """删除用户组"""
+    """删除用户组 - 仅超级管理员可操作"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
     group_id = safe_get(req, 'group_id')
@@ -103,9 +103,9 @@ async def delete_user_group(req: request):
 
 
 @get_time_async
-@auth_required("admin")
+@auth_required(required_role=ROLE_SUPERADMIN)
 async def add_user_to_group(req: request):
-    """添加用户到用户组"""
+    """添加用户到用户组 - 仅超级管理员可操作"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')  # 当前操作用户
     target_user_id = safe_get(req, 'target_user_id')  # 要添加的用户ID
@@ -140,9 +140,9 @@ async def add_user_to_group(req: request):
 
 
 @get_time_async
-@auth_required("admin")
+@auth_required(required_role=ROLE_SUPERADMIN)
 async def remove_user_from_group(req: request):
-    """从用户组移除用户"""
+    """从用户组移除用户 - 仅超级管理员可操作"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')  # 当前操作用户
     target_user_id = safe_get(req, 'target_user_id')  # 要移除的用户ID
@@ -167,9 +167,9 @@ async def remove_user_from_group(req: request):
 
 
 @get_time_async
-@auth_required("admin")
+@auth_required(required_role=ROLE_SUPERADMIN)
 async def list_group_members(req: request):
-    """获取用户组成员列表"""
+    """获取用户组成员列表 - 仅超级管理员可操作"""
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
     group_id = safe_get(req, 'group_id')
@@ -184,7 +184,7 @@ async def list_group_members(req: request):
     
     # 获取用户组成员
     query = """
-        SELECT u.user_id, u.user_name, u.email, u.role, u.dept_id, d.dept_name
+        SELECT u.user_id, u.username, u.email, u.role, u.dept_id, d.dept_name
         FROM GroupMember gm
         JOIN User u ON gm.user_id = u.user_id
         LEFT JOIN Department d ON u.dept_id = d.dept_id
@@ -196,7 +196,7 @@ async def list_group_members(req: request):
     for member in members:
         result.append({
             "user_id": member[0],
-            "user_name": member[1],
+            "username": member[1],
             "email": member[2],
             "role": member[3],
             "dept_id": member[4],

@@ -10,12 +10,12 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(curre
 sys.path.append(root_dir)
 print(root_dir)
 
+from qanything_kernel.connector.database.mysql import KnowledgeBaseManager
 from sanic import Sanic, response
 from qanything_kernel.utils.custom_log import insert_logger
 from qanything_kernel.utils.general_utils import get_time_async
 from qanything_kernel.core.retriever.general_document import LocalFileForInsert
 from qanything_kernel.core.retriever.vectorstore import VectorStoreMilvusClient
-from qanything_kernel.connector.database.mysql.mysql_client import KnowledgeBaseManager
 from qanything_kernel.core.retriever.elasticsearchstore import StoreElasticSearchClient
 from qanything_kernel.core.retriever.parent_retriever import ParentRetriever
 from qanything_kernel.configs.model_config import MYSQL_HOST_LOCAL, MYSQL_PORT_LOCAL, \

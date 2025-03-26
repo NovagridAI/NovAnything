@@ -16,6 +16,8 @@ class KnowledgeBase:
     latest_qa_time: Optional[datetime] = None
     latest_insert_time: Optional[datetime] = None
     id: Optional[int] = None
+    kb_type: str = 'personal'  # 'personal', 'team', 'temporary'
+    expired_at: Optional[datetime] = None  # 临时知识库过期时间
     
     def to_dict(self):
         """转换为字典"""
@@ -23,9 +25,13 @@ class KnowledgeBase:
             'kb_id': self.kb_id,
             'user_id': self.user_id,
             'kb_name': self.kb_name,
+            'kb_type': self.kb_type,
             'deleted': self.deleted
         }
         
+        if self.expired_at is not None:
+            data['expired_at'] = self.expired_at
+            
         if self.latest_qa_time is not None:
             data['latest_qa_time'] = self.latest_qa_time
             
@@ -42,6 +48,8 @@ class KnowledgeBase:
             kb_id=data.get('kb_id'),
             user_id=data.get('user_id'),
             kb_name=data.get('kb_name'),
+            kb_type=data.get('kb_type', 'personal'),
+            expired_at=data.get('expired_at'),
             deleted=bool(data.get('deleted', 0)),
             latest_qa_time=data.get('latest_qa_time'),
             latest_insert_time=data.get('latest_insert_time')

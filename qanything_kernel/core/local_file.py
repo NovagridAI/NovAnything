@@ -1,5 +1,4 @@
 from typing import Union, Tuple, Dict
-from qanything_kernel.connector.database.mysql.mysql_client import KnowledgeBaseManager
 from sanic.request import File
 from qanything_kernel.configs.model_config import UPLOAD_ROOT_PATH
 import uuid

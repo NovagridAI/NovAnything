@@ -1,7 +1,8 @@
 from langchain.retrievers import ParentDocumentRetriever
+
+from qanything_kernel.connector.database.mysql import KnowledgeBaseManager
 from qanything_kernel.core.retriever.vectorstore import VectorStoreMilvusClient
 from qanything_kernel.core.retriever.elasticsearchstore import StoreElasticSearchClient
-from qanything_kernel.connector.database.mysql.mysql_client import KnowledgeBaseManager
 from qanything_kernel.core.retriever.docstrore import MysqlStore
 from qanything_kernel.configs.model_config import DEFAULT_CHILD_CHUNK_SIZE, DEFAULT_PARENT_CHUNK_SIZE, SEPARATORS
 from qanything_kernel.utils.custom_log import debug_logger, insert_logger

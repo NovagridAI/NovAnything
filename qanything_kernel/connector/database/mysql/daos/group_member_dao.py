@@ -96,7 +96,7 @@ class GroupMemberDAO(BaseDAO):
             成员信息列表
         """
         query = """
-            SELECT gm.*, u.user_name
+            SELECT gm.*, u.username
             FROM GroupMember gm
             JOIN User u ON gm.user_id = u.user_id
             WHERE gm.group_id = %s AND gm.status = 'active'
@@ -221,4 +221,14 @@ class GroupMemberDAO(BaseDAO):
         query = "SELECT COUNT(*) FROM GroupMember WHERE user_id = %s AND status = 'active'"
         result = self.execute_query(query, (user_id,), fetch=True)
         
-        return result[0][0] if result else 0 
+        return result[0][0] if result else 0
+    
+    def get_all_active_members(self) -> List[Dict]:
+        """获取所有活跃状态的组成员
+        
+        Returns:
+            组成员字典列表
+        """
+        query = "SELECT * FROM GroupMember WHERE status = 'active'"
+        results = self.execute_query(query, fetch=True, dictionary=True)
+        return results if results else [] 

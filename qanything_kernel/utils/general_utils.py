@@ -93,26 +93,31 @@ def format_time_record(time_record):
 
 
 def safe_get(req: Request, attr: str, default=None):
-    debug_logger.info(f"请求为: {req.json}")
+    content_type = req.headers.get('content-type', '').lower()
+    
     try:
+        # 先检查表单数据
         if attr in req.form:
             return req.form.getlist(attr)[0]
+        
+        # 检查URL参数
         if attr in req.args:
             return req.args[attr]
-        if attr in req.json:
-            return req.json[attr]
-        # if value := req.form.get(attr):
-        #     return value
-        # if value := req.args.get(attr):
-        #     return value
-        # """req.json执行时不校验content-type，body字段可能不能被正确解析为json"""
-        # if value := req.json.get(attr):
-        #     return value
+        
+        # 仅当content-type包含json时尝试读取JSON数据
+        if 'json' in content_type:
+            try:
+                if req.json and attr in req.json:
+                    return req.json[attr]
+            except BadRequest as e:
+                logging.warning(f"解析JSON时出错: {str(e)}")
+        
     except BadRequest:
-        logging.warning(f"missing {attr} in request")
+        logging.warning(f"在请求中未找到 {attr}")
     except Exception as e:
-        logging.warning(f"get {attr} from request failed:")
+        logging.warning(f"从请求中获取 {attr} 失败: {str(e)}")
         logging.warning(traceback.format_exc())
+    
     return default
 
 

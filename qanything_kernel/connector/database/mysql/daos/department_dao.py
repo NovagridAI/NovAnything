@@ -197,3 +197,14 @@ class DepartmentDAO(BaseDAO):
             tree['children'].append(self._build_department_tree(child))
             
         return tree 
+    
+    def get_all_departments(self) -> List[Department]:
+        """获取所有激活状态的部门
+        
+        Returns:
+            部门对象列表
+        """
+        query = "SELECT * FROM Department"
+        results = self.execute_query(query, fetch=True, dictionary=True)
+        
+        return [Department.from_dict(row) for row in results] if results else [] 

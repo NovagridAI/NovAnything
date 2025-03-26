@@ -163,4 +163,14 @@ class UserGroupDAO(BaseDAO):
         Returns:
             用户组名称是否已存在
         """
-        return self.exists(self.table, "group_name = %s AND owner_id = %s", (group_name, owner_id)) 
+        return self.exists(self.table, "group_name = %s AND owner_id = %s", (group_name, owner_id))
+    
+    def get_active_groups(self) -> List[Dict]:
+        """获取所有活跃的用户组
+        
+        Returns:
+            用户组列表
+        """
+        query = "SELECT * FROM UserGroup"
+        results = self.execute_query(query, fetch=True, dictionary=True)
+        return results if results else [] 

@@ -80,8 +80,11 @@ class LocalFileForInsert:
         self.mysql_client = mysql_client
         if self.file_location == 'FAQ':
             faq_info = self.mysql_client.get_faq(self.file_id)
-            user_id, kb_id, question, answer, nos_keys = faq_info
-            self.faq_dict = {'question': question, 'answer': answer, 'nos_keys': nos_keys}
+            self.faq_dict = {
+                'question': faq_info.question, 
+                'answer': faq_info.answer, 
+                'nos_keys': faq_info.nos_keys
+            }
         elif self.file_location == 'URL':
             self.file_url = file_url
             upload_path = os.path.join(UPLOAD_ROOT_PATH, user_id)

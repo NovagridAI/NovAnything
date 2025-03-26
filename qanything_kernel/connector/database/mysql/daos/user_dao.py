@@ -23,7 +23,7 @@ class UserDAO(BaseDAO):
             CREATE TABLE IF NOT EXISTS User (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id VARCHAR(255) UNIQUE,
-                user_name VARCHAR(255),
+                username VARCHAR(255) UNIQUE,
                 dept_id VARCHAR(255),
                 email VARCHAR(255),
                 password VARCHAR(255),
@@ -38,6 +38,7 @@ class UserDAO(BaseDAO):
         index_queries = [
             "CREATE INDEX idx_user_dept ON User(dept_id)",
             "CREATE INDEX idx_user_email ON User(email)",
+            "CREATE INDEX idx_user_username ON User(username)"
         ]
         
         for query in index_queries:
@@ -65,7 +66,7 @@ class UserDAO(BaseDAO):
             
             admin_data = {
                 'user_id': str(f"user_{uuid.uuid4().hex[:8]}"),
-                'user_name': "admin",
+                'username': "admin",
                 'email': "admin@example.com",
                 'password': hashed_password.decode('utf-8'),
                 'role': "superadmin",
@@ -120,7 +121,7 @@ class UserDAO(BaseDAO):
         Returns:
             用户是否存在
         """
-        query = "SELECT user_id FROM User WHERE user_id = %s"
+        query = "SELECT user_id FROM User WHERE user_id = %s and status = 'active'"
         result = self.execute_query(query, (user_id,), fetch=True)
         debug_logger.info(f"check_user_exist {result}")
         return result is not None and len(result) > 0
@@ -203,4 +204,15 @@ class UserDAO(BaseDAO):
         if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return user
             
-        return None 
+        return None
+    
+    def get_active_users(self) -> List[User]:
+        """获取所有激活状态的用户
+        
+        Returns:
+            用户对象列表
+        """
+        query = "SELECT * FROM User WHERE status = 'active'"
+        results = self.execute_query(query, fetch=True, dictionary=True)
+        
+        return [User.from_dict(row) for row in results] if results else [] 
