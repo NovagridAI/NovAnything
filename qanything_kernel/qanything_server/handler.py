@@ -13,6 +13,8 @@ from qanything_kernel.configs.model_config import (DEFAULT_PARENT_CHUNK_SIZE, VE
 from qanything_kernel.core.local_doc_qa import LocalDocQA
 from qanything_kernel.utils.custom_log import debug_logger, qa_logger
 from qanything_kernel.utils.general_utils import *
+from qanything_kernel.connector.database.mysql.manager import DatabaseManager
+from qanything_kernel.connector.database.mysql.models.qa_log import QaLog
 
 INVALID_USER_ID = f"fail, Invalid user_id: . user_id 必须只含有字母，数字和下划线且字母开头"
 
@@ -48,15 +50,10 @@ async def local_doc_chat(req: request):
     preprocess_start = time.perf_counter()
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
-    user_info = safe_get(req, 'user_info', "1234")
-    passed, msg = check_user_id_and_user_info(user_id, user_info)
-    if not passed:
-        return sanic_json({"code": 2001, "msg": msg})
     # local_cluster = get_milvus_cluster_by_user_info(user_info)
     # user_id = user_id + '__' + user_info
     # local_doc_qa.milvus_summary.update_user_cluster(user_id, [get_milvus_cluster_by_user_info(user_info)])
     debug_logger.info('local_doc_chat %s', user_id)
-    debug_logger.info('user_info %s', user_info)
     bot_id = safe_get(req, 'bot_id')
     if bot_id:
         if not local_doc_qa.milvus_summary.check_bot_exist(bot_id):
@@ -164,11 +161,11 @@ async def local_doc_chat(req: request):
 
     time_record = {}
     if kb_ids:
-        not_exist_kb_ids = local_doc_qa.milvus_summary.check_kb_exist(user_id, kb_ids)
+        not_exist_kb_ids = local_doc_qa.milvus_summary.check_kb_exist(kb_ids)
         if not_exist_kb_ids:
             return sanic_json({"code": 2003, "msg": "fail, knowledge Base {} not found".format(not_exist_kb_ids)})
         faq_kb_ids = [kb + '_FAQ' for kb in kb_ids]
-        not_exist_faq_kb_ids = local_doc_qa.milvus_summary.check_kb_exist(user_id, faq_kb_ids)
+        not_exist_faq_kb_ids = local_doc_qa.milvus_summary.check_kb_exist(faq_kb_ids)
         exist_faq_kb_ids = [kb for kb in faq_kb_ids if kb not in not_exist_faq_kb_ids]
         debug_logger.info("exist_faq_kb_ids: %s", exist_faq_kb_ids)
         kb_ids += exist_faq_kb_ids
@@ -232,7 +229,27 @@ async def local_doc_chat(req: request):
                                  'condense_question': resp['condense_question'], 'prompt': resp['prompt'],
                                  'result': result, 'retrieval_documents': retrieval_documents,
                                  'source_documents': source_documents, 'bot_id': bot_id}
-                    local_doc_qa.milvus_summary.add_qalog(**chat_data)
+                    
+                    # 创建QaLog对象
+                    qa_log = QaLog(
+                        qa_id="",  # 会自动生成
+                        user_id=user_id,
+                        kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
+                        query=question,
+                        model=model,
+                        product_source=request_source,
+                        time_record=formatted_time_record,
+                        history=history,
+                        condense_question=resp['condense_question'],
+                        prompt=resp['prompt'],
+                        result=result,
+                        retrieval_documents=retrieval_documents,
+                        source_documents=source_documents,
+                        bot_id=bot_id
+                    )
+                    
+                    local_doc_qa.milvus_summary.add_qa_log(qa_log)
+                    
                     qa_logger.info("chat_data: %s", chat_data)
                     debug_logger.info("response: %s", chat_data['result'])
                     stream_res = {
@@ -300,12 +317,32 @@ async def local_doc_chat(req: request):
         retrieval_documents = format_source_documents(resp["retrieval_documents"])
         source_documents = format_source_documents(resp["source_documents"])
         formatted_time_record = format_time_record(time_record)
+        
+        # 创建QaLog对象
+        qa_log = QaLog(
+            qa_id="",  # 会自动生成
+            user_id=user_id,
+            kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
+            query=question,
+            model=model,
+            product_source=request_source,
+            time_record=formatted_time_record,
+            history=history,
+            condense_question=resp['condense_question'],
+            prompt=resp['prompt'],
+            result=resp['result'],
+            retrieval_documents=retrieval_documents,
+            source_documents=source_documents,
+            bot_id=bot_id
+        )
+        
+        await local_doc_qa.milvus_summary.add_qa_log(qa_log)
+        
         chat_data = {'user_id': user_id, 'kb_ids': kb_ids, 'query': question, 'time_record': formatted_time_record,
                      'history': history, "condense_question": resp['condense_question'], "model": model,
                      "product_source": request_source,
                      'retrieval_documents': retrieval_documents, 'prompt': resp['prompt'], 'result': resp['result'],
                      'source_documents': source_documents, 'bot_id': bot_id}
-        local_doc_qa.milvus_summary.add_qa_log(**chat_data)
         qa_logger.info("chat_data: %s", chat_data)
         debug_logger.info("response: %s", chat_data['result'])
         return sanic_json({"code": 200, "msg": "success no stream chat", "question": question,

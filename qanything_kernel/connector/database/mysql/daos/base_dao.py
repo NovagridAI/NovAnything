@@ -2,7 +2,10 @@
 基础数据访问对象，所有其他DAO类都应该继承自这个类
 """
 from typing import List, Dict, Any, Optional, Union, Tuple
+
+from regex import D
 from qanything_kernel.connector.database.mysql.connection import DatabaseConnection
+from qanything_kernel.utils.custom_log import debug_logger
 
 
 class BaseDAO:
@@ -75,7 +78,7 @@ class BaseDAO:
         
         query = f"UPDATE {table} SET {set_clause} WHERE {condition}"
         result = self.execute_query(query, values, commit=True, check=True)
-        
+        debug_logger.info(f"更新数据成功: {result}")
         return result is not None and result > 0
     
     def delete(self, table: str, condition: str, condition_params: tuple) -> bool:

@@ -98,17 +98,33 @@ def safe_get(req: Request, attr: str, default=None):
     try:
         # 先检查表单数据
         if attr in req.form:
-            return req.form.getlist(attr)[0]
+            form_values = req.form.getlist(attr)
+            if not form_values:
+                return default
+            # 如果列表只有一个元素，则返回该元素；否则返回整个列表
+            return form_values[0] if len(form_values) == 1 else form_values
         
         # 检查URL参数
         if attr in req.args:
-            return req.args[attr]
+            arg_value = req.args[attr]
+            # 如果是列表，判断长度
+            if isinstance(arg_value, list):
+                if not arg_value:
+                    return default
+                return arg_value[0] if len(arg_value) == 1 else arg_value
+            return arg_value
         
         # 仅当content-type包含json时尝试读取JSON数据
         if 'json' in content_type:
             try:
                 if req.json and attr in req.json:
-                    return req.json[attr]
+                    json_value = req.json[attr]
+                    # 如果是列表，判断长度
+                    if isinstance(json_value, list):
+                        if not json_value:
+                            return default
+                        return json_value[0] if len(json_value) == 1 else json_value
+                    return json_value
             except BadRequest as e:
                 logging.warning(f"解析JSON时出错: {str(e)}")
         
@@ -169,7 +185,10 @@ def get_time_async(func):
     @wraps(func)
     async def get_time_async_inner(*args, **kwargs):
         s_time = time.perf_counter()
-        res = await func(*args, **kwargs)  # 注意这里使用 await 来调用异步函数
+        if inspect.iscoroutinefunction(func):
+            res = await func(*args, **kwargs)  # 如果是异步函数，使用 await
+        else:
+            res = func(*args, **kwargs)  # 如果是同步函数，直接调用
         e_time = time.perf_counter()
         if 'embed' in func.__name__:
             embed_logger.info('函数 {} 执行耗时: {:.2f} 秒'.format(func.__name__, e_time - s_time))

@@ -2,31 +2,28 @@
 数据库管理器
 集成所有DAO，提供统一的接口
 """
-from datetime import datetime
 from typing import List, Optional, Tuple, Dict, Any
-import uuid
 
 from qanything_kernel.connector.database.mysql.connection import DatabaseConnection
-from qanything_kernel.connector.database.mysql.daos.user_dao import UserDAO
-from qanything_kernel.connector.database.mysql.daos.knowledge_base_dao import KnowledgeBaseDAO
-from qanything_kernel.connector.database.mysql.daos.file_dao import FileDAO
-from qanything_kernel.connector.database.mysql.daos.faq_dao import FaqDAO
-from qanything_kernel.connector.database.mysql.daos.document_dao import DocumentDAO
-from qanything_kernel.connector.database.mysql.daos.qa_log_dao import QaLogDAO
 from qanything_kernel.connector.database.mysql.daos.bot_dao import BotDAO
 from qanything_kernel.connector.database.mysql.daos.department_dao import DepartmentDAO
-from qanything_kernel.connector.database.mysql.daos.user_group_dao import UserGroupDAO
+from qanything_kernel.connector.database.mysql.daos.document_dao import DocumentDAO
+from qanything_kernel.connector.database.mysql.daos.faq_dao import FaqDAO
+from qanything_kernel.connector.database.mysql.daos.file_dao import FileDAO
 from qanything_kernel.connector.database.mysql.daos.group_member_dao import GroupMemberDAO
-from qanything_kernel.connector.database.mysql.daos.conversation_dao import ConversationDAO
-from qanything_kernel.connector.database.mysql.models.file import File, FileImage
-from qanything_kernel.connector.database.mysql.models.faq import Faq
-from qanything_kernel.connector.database.mysql.models.document import Document
-from qanything_kernel.connector.database.mysql.models.qa_log import QaLog
+from qanything_kernel.connector.database.mysql.daos.knowledge_base_dao import KnowledgeBaseDAO
+from qanything_kernel.connector.database.mysql.daos.model_config_dao import ModelConfigDAO
+from qanything_kernel.connector.database.mysql.daos.qa_log_dao import QaLogDAO
+from qanything_kernel.connector.database.mysql.daos.user_dao import UserDAO
+from qanything_kernel.connector.database.mysql.daos.user_group_dao import UserGroupDAO
 from qanything_kernel.connector.database.mysql.models.bot import QanythingBot
 from qanything_kernel.connector.database.mysql.models.department import Department
-from qanything_kernel.connector.database.mysql.models.user_group import UserGroup
+from qanything_kernel.connector.database.mysql.models.document import Document
+from qanything_kernel.connector.database.mysql.models.faq import Faq
+from qanything_kernel.connector.database.mysql.models.file import File, FileImage
 from qanything_kernel.connector.database.mysql.models.group_member import GroupMember
-from qanything_kernel.connector.database.mysql.models.conversation import Conversation
+from qanything_kernel.connector.database.mysql.models.qa_log import QaLog
+from qanything_kernel.connector.database.mysql.models.user_group import UserGroup
 from qanything_kernel.utils.custom_log import debug_logger
 
 
@@ -55,7 +52,7 @@ class DatabaseManager:
         self.department_dao = DepartmentDAO(self.db_connection)
         self.user_group_dao = UserGroupDAO(self.db_connection)
         self.group_member_dao = GroupMemberDAO(self.db_connection)
-        self.conversation_dao = ConversationDAO(self.db_connection)
+        self.model_config_dao = ModelConfigDAO(self.db_connection)
         
         self.create_tables()
         
@@ -93,9 +90,9 @@ class DatabaseManager:
         
         # 创建用户组成员表
         self.group_member_dao.create_table()
-        
-        # 创建会话表
-        self.conversation_dao.create_table()
+
+        # 创建模型配置表
+        self.model_config_dao.create_table()
         
         debug_logger.info("数据库表检查和创建完成")
         
@@ -303,34 +300,16 @@ class DatabaseManager:
         return self.document_dao.update_document(doc_id, update_content)
 
     # QaLog相关方法
-    def add_qa_log(self, qa_log: QaLog) -> None:
+    def add_qa_log(self, qa_log: QaLog) -> str:
         """添加问答日志
-        Args:
-            qa_log: 问答日志对象
-        """
-        return self.qa_log_dao.add_qa_log(qa_log)
-    
-    def get_qa_log_by_filter(self, need_info: List[str], user_id: Optional[str] = None, 
-                             query: Optional[str] = None, bot_id: Optional[str] = None, 
-                             time_range: Optional[Tuple[datetime, datetime]] = None,
-                             any_kb_id: Optional[str] = None, qa_ids: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        """根据条件获取问答日志
         
         Args:
-            need_info: 需要获取的字段列表
-            user_id: 用户ID
-            query: 查询内容
-            bot_id: 机器人ID
-            time_range: 时间范围元组 (开始时间, 结束时间)
-            any_kb_id: 包含特定知识库ID
-            qa_ids: 问答ID列表
+            qa_log: 问答日志对象
             
         Returns:
-            符合条件的问答日志列表
+            问答ID
         """
-        return self.qa_log_dao.get_qa_log_by_filter(
-            need_info, user_id, query, bot_id, time_range, any_kb_id, qa_ids
-        )
+        return self.qa_log_dao.add_qa_log(qa_log)
     
     def get_qa_log_by_id(self, qa_id: str, need_info: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
         """根据ID获取问答日志
@@ -343,45 +322,72 @@ class DatabaseManager:
             问答日志详情
         """
         return self.qa_log_dao.get_qa_log_by_id(qa_id, need_info)
-    
-    def get_related_qa_logs(self, qa_id: str, need_info: Optional[List[str]] = None, 
-                           need_more: bool = False) -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
-        """获取与指定问答相关的其他问答日志
+
+    def get_qa_logs(self, user_id: Optional[str] = None, limit: Optional[int] = None,
+                    offset: Optional[int] = None, need_info: Optional[List[str]] = None,
+                    is_favorite: Optional[bool] = None) -> List[Dict[str, Any]]:
+        """获取问答日志列表
+        
+        Args:
+            user_id: 用户ID，如果指定则只获取该用户的问答日志
+            limit: 限制返回数量
+            offset: 偏移量
+            need_info: 需要获取的字段列表
+            is_favorite: 是否只获取收藏的问答日志
+            
+        Returns:
+            问答日志列表
+        """
+        return self.qa_log_dao.get_qa_logs(user_id, limit, offset, need_info, is_favorite)
+
+    def update_qa_log(self, qa_id: str, update_data: Dict[str, Any]) -> bool:
+        """更新问答日志
         
         Args:
             qa_id: 问答ID
-            need_info: 需要获取的字段列表
-            need_more: 是否需要获取更多相关问答
+            update_data: 要更新的数据字典
             
         Returns:
-            (当前问答, 最近7天内的问答, 7天前的问答)
+            是否更新成功
         """
-        return self.qa_log_dao.get_related_qa_logs(qa_id, need_info, need_more)
-    
-    def get_qa_statistics(self, time_range: Tuple[datetime, datetime]) -> Dict[str, int]:
-        """获取指定时间范围内的问答统计信息
+        return self.qa_log_dao.update_qa_log(qa_id, update_data)
+
+    def delete_qa_log(self, qa_id: str) -> bool:
+        """删除问答日志
         
         Args:
-            time_range: 时间范围元组 (开始时间, 结束时间)
+            qa_id: 问答ID
             
         Returns:
-            统计信息字典，包含用户数和查询数
+            是否删除成功
         """
-        return self.qa_log_dao.get_statistic(time_range)
-    
-    def get_random_qa_logs(self, limit: int = 10, time_range: Optional[Tuple[datetime, datetime]] = None,
-                          need_info: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        """获取随机问答日志
+        return self.qa_log_dao.delete_qa_log(qa_id)
+
+    def toggle_favorite(self, qa_id: str, is_favorite: Optional[bool] = None) -> Tuple[bool, bool]:
+        """切换问答日志收藏状态
         
         Args:
-            limit: 最大返回数量
-            time_range: 时间范围元组 (开始时间, 结束时间)
-            need_info: 需要获取的字段列表
+            qa_id: 问答ID
+            is_favorite: 是否收藏，如果为None则自动切换状态
             
         Returns:
-            随机问答日志列表
+            (是否成功, 新的收藏状态)
         """
-        return self.qa_log_dao.get_random_qa_logs(limit, time_range, need_info)
+        return self.qa_log_dao.toggle_favorite(qa_id, is_favorite)
+
+    def get_favorites(self, user_id: str, limit: Optional[int] = None,
+                      offset: Optional[int] = None) -> List[Dict[str, Any]]:
+        """获取用户收藏的问答日志
+        
+        Args:
+            user_id: 用户ID
+            limit: 限制返回数量
+            offset: 偏移量
+            
+        Returns:
+            收藏的问答日志列表
+        """
+        return self.qa_log_dao.get_favorites(user_id, limit, offset)
     
     # Bot相关方法
     def add_bot(self, bot: QanythingBot) -> str:
@@ -777,105 +783,8 @@ class DatabaseManager:
             用户所属的组数量
         """
         return self.group_member_dao.get_user_groups_count(user_id)
-    
-    # 会话管理相关方法
-    def add_conversation(self, user_id: str, title: str, kb_ids: List[str], 
-                        is_favorite: bool = False) -> str:
-        """添加会话
-        
-        Args:
-            user_id: 用户ID
-            title: 会话标题
-            kb_ids: 知识库ID列表
-            is_favorite: 是否收藏
-            
-        Returns:
-            会话ID
-        """
-        conversation = Conversation(
-            conversation_id=uuid.uuid4().hex,
-            user_id=user_id,
-            title=title,
-            kb_ids=kb_ids,
-            is_favorite=is_favorite,
-            create_time=datetime.now(),
-            update_time=datetime.now()
-        )
-        
-        return self.conversation_dao.add_conversation(conversation)
-    
-    def get_conversations(self, user_id: str, is_favorite: Optional[bool] = None,
-                         limit: Optional[int] = None, offset: Optional[int] = None) -> List[Dict[str, Any]]:
-        """获取会话列表
-        
-        Args:
-            user_id: 用户ID
-            is_favorite: 是否只获取收藏的会话
-            limit: 限制返回数量
-            offset: 偏移量
-            
-        Returns:
-            会话列表
-        """
-        return self.conversation_dao.get_conversations(user_id, is_favorite, limit, offset)
-    
-    def get_conversation_by_id(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """根据ID获取会话
-        
-        Args:
-            conversation_id: 会话ID
-            
-        Returns:
-            会话详情
-        """
-        return self.conversation_dao.get_conversation_by_id(conversation_id)
-    
-    def update_conversation(self, conversation_id: str, title: Optional[str] = None,
-                           is_favorite: Optional[bool] = None, kb_ids: Optional[List[str]] = None) -> bool:
-        """更新会话
-        
-        Args:
-            conversation_id: 会话ID
-            title: 会话标题
-            is_favorite: 是否收藏
-            kb_ids: 知识库ID列表
-            
-        Returns:
-            是否更新成功
-        """
-        return self.conversation_dao.update_conversation(conversation_id, title, is_favorite, kb_ids)
-    
-    def toggle_favorite_conversation(self, conversation_id: str) -> bool:
-        """切换会话收藏状态
-        
-        Args:
-            conversation_id: 会话ID
-            
-        Returns:
-            是否切换成功
-        """
-        return self.conversation_dao.toggle_favorite(conversation_id)
-    
-    def delete_conversation(self, conversation_id: str) -> bool:
-        """删除会话
-        
-        Args:
-            conversation_id: 会话ID
-            
-        Returns:
-            是否删除成功
-        """
-        return self.conversation_dao.delete_conversation(conversation_id)
-    
-    def count_conversations(self, user_id: str, is_favorite: Optional[bool] = None) -> int:
-        """统计会话数量
-        
-        Args:
-            user_id: 用户ID
-            is_favorite: 是否只统计收藏的会话
-            
-        Returns:
-            会话数量
-        """
-        return self.conversation_dao.count_conversations(user_id, is_favorite)
-        
+
+    def close(self):
+        """关闭数据库连接"""
+        if hasattr(self, 'db_connection'):
+            self.db_connection.close()

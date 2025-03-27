@@ -37,6 +37,7 @@ class QaLogDAO(BaseDAO):
                 result TEXT NOT NULL,
                 retrieval_documents MEDIUMTEXT NOT NULL,
                 source_documents MEDIUMTEXT NOT NULL,
+                is_favorite TINYINT(1) DEFAULT 0,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """
@@ -46,7 +47,8 @@ class QaLogDAO(BaseDAO):
         index_queries = [
             "CREATE INDEX index_bot_id ON QaLogs (bot_id)",
             "CREATE INDEX index_query ON QaLogs (query)",
-            "CREATE INDEX index_timestamp ON QaLogs (timestamp)"
+            "CREATE INDEX index_timestamp ON QaLogs (timestamp)",
+            "CREATE INDEX index_is_favorite ON QaLogs (is_favorite)"
         ]
         
         for query in index_queries:
@@ -59,44 +61,51 @@ class QaLogDAO(BaseDAO):
                 else:
                     debug_logger.error(f"Error creating index: {e}")
     
-    def add_qa_log(self, qa_log: QaLog) -> None:
+    def add_qa_log(self, qa_log: QaLog) -> Any | None:
         """添加问答日志
         
         Args:
             qa_log: 问答日志对象
         """
-        if not qa_log.qa_id:
-            qa_log.qa_id = uuid.uuid4().hex
-            
-        qa_data = qa_log.to_dict()
-        
-        query = (
-            "INSERT INTO QaLogs (qa_id, user_id, bot_id, kb_ids, query, model, product_source, time_record, "
-            "history, condense_question, prompt, result, retrieval_documents, source_documents) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        )
-        
-        self.execute_query(
-            query, 
-            (
-                qa_data.get('qa_id'),
-                qa_data.get('user_id'),
-                qa_data.get('bot_id'),
-                qa_data.get('kb_ids'),
-                qa_data.get('query'),
-                qa_data.get('model'),
-                qa_data.get('product_source'),
-                qa_data.get('time_record'),
-                qa_data.get('history'),
-                qa_data.get('condense_question'),
-                qa_data.get('prompt'),
-                qa_data.get('result'),
-                qa_data.get('retrieval_documents'),
-                qa_data.get('source_documents')
-            ),
-            commit=True
-        )
-        debug_logger.info(f"添加问答日志: {qa_data.get('query')}")
+        try:
+            if not qa_log.qa_id:
+                qa_log.qa_id = uuid.uuid4().hex
+
+            qa_data = qa_log.to_dict()
+
+            query = (
+                "INSERT INTO QaLogs (qa_id, user_id, bot_id, kb_ids, query, model, product_source, time_record, "
+                "history, condense_question, prompt, result, retrieval_documents, source_documents, is_favorite) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            )
+
+            self.execute_query(
+                query,
+                (
+                    qa_data.get('qa_id'),
+                    qa_data.get('user_id'),
+                    qa_data.get('bot_id'),
+                    qa_data.get('kb_ids'),
+                    qa_data.get('query'),
+                    qa_data.get('model'),
+                    qa_data.get('product_source'),
+                    qa_data.get('time_record'),
+                    qa_data.get('history'),
+                    qa_data.get('condense_question'),
+                    qa_data.get('prompt'),
+                    qa_data.get('result'),
+                    qa_data.get('retrieval_documents'),
+                    qa_data.get('source_documents'),
+                    1 if qa_data.get('is_favorite') else 0
+                ),
+                commit=True
+            )
+            debug_logger.info(f"添加问答日志: {qa_data.get('query')}")
+
+            return qa_data.get('qa_id')
+        except Exception as e:
+            debug_logger.error(f"添加问答日志失败: {e}")
+            return None
     
     def get_qa_log_by_filter(self, need_info: List[str], user_id: Optional[str] = None, 
                               query: Optional[str] = None, bot_id: Optional[str] = None, 
@@ -173,7 +182,7 @@ class QaLogDAO(BaseDAO):
                     try:
                         result_dict[field] = json.loads(result_dict[field])
                     except json.JSONDecodeError:
-                        # 如果解析失败，保持原样
+                        debug_logger.error(f"解析JSON字段失败: {field} {result_dict[field]}")
                         pass
                         
             result_dicts.append(result_dict)
@@ -189,23 +198,38 @@ class QaLogDAO(BaseDAO):
         
         Args:
             qa_id: 问答ID
-            need_info: 需要获取的字段列表
+            need_info: 需要获取的字段列表，如果为None则获取所有字段
             
         Returns:
             问答日志详情
         """
+        # 如果need_info为None，则使用"*"获取所有字段
         if need_info is None:
-            need_info = ["user_id", "kb_ids", "query", "condense_question", "result", "timestamp", "product_source"]
-            
-        if "user_id" not in need_info:
-            need_info.append("user_id")
-            
-        if "kb_ids" not in need_info:
-            need_info.append("kb_ids")
-            
-        need_info_str = ", ".join(need_info)
+            need_info_str = "*"
+            # 获取所有字段的列名，用于后续构建字典
+            all_columns_query = "SHOW COLUMNS FROM QaLogs"
+            columns_result = self.execute_query(all_columns_query, fetch=True)
+            if columns_result:
+                need_info = [col[0] for col in columns_result]  # 列名在结果的第一个位置
+            else:
+                # 如果无法获取列名，则使用预定义的列表
+                need_info = ["id", "qa_id", "user_id", "bot_id", "kb_ids", "query", "model", 
+                            "product_source", "time_record", "history", "condense_question", 
+                            "prompt", "result", "retrieval_documents", "source_documents", 
+                            "is_favorite", "timestamp"]
+        else:
+            # 确保必要的字段存在
+            if "user_id" not in need_info:
+                need_info.append("user_id")
+                
+            if "kb_ids" not in need_info:
+                need_info.append("kb_ids")
+                
+            need_info_str = ", ".join(need_info)
+        
         query = f"SELECT {need_info_str} FROM QaLogs WHERE qa_id = %s"
         
+        debug_logger.info(f"get_qa_log_by_id: {query}, {qa_id}")
         result = self.execute_query(query, (qa_id,), fetch=True)
         if not result:
             return None
@@ -224,6 +248,7 @@ class QaLogDAO(BaseDAO):
                     qa_log[field] = json.loads(qa_log[field])
                 except json.JSONDecodeError:
                     # 如果解析失败，保持原样
+                    debug_logger.error(f"解析JSON字段失败: {field} {qa_log[field]}")
                     pass
                     
         return qa_log
@@ -286,6 +311,7 @@ class QaLogDAO(BaseDAO):
                             log[field] = json.loads(log[field])
                         except json.JSONDecodeError:
                             # 如果解析失败，保持原样
+                            debug_logger.error(f"解析JSON字段失败: {field} {log[field]}")
                             pass
                             
                 recent_logs.append(log)
@@ -319,6 +345,7 @@ class QaLogDAO(BaseDAO):
                             log[field] = json.loads(log[field])
                         except json.JSONDecodeError:
                             # 如果解析失败，保持原样
+                            debug_logger.error(f"解析JSON字段失败: {field} {log[field]}")
                             pass
                             
                 older_logs.append(log)
@@ -402,6 +429,7 @@ class QaLogDAO(BaseDAO):
                         log[field] = json.loads(log[field])
                     except json.JSONDecodeError:
                         # 如果解析失败，保持原样
+                        debug_logger.error(f"解析JSON字段失败: {field} {log[field]}")
                         pass
                         
             qa_logs.append(log)
@@ -424,4 +452,178 @@ class QaLogDAO(BaseDAO):
             "qa_id", "user_id", "bot_id", "kb_ids", "query", "model", 
             "product_source", "time_record", "history", "condense_question", 
             "prompt", "result", "retrieval_documents", "source_documents", "timestamp"
-        ] 
+        ]
+    
+    def get_qa_logs(self, user_id: Optional[str] = None, limit: Optional[int] = None, 
+                  offset: Optional[int] = None, need_info: Optional[List[str]] = None,
+                  is_favorite: Optional[bool] = None) -> List[Dict[str, Any]]:
+        """获取问答日志列表
+        
+        Args:
+            user_id: 用户ID，如果指定则只获取该用户的问答日志
+            limit: 限制返回数量
+            offset: 偏移量
+            need_info: 需要获取的字段列表，如果为None则获取所有字段
+            is_favorite: 是否只获取收藏的问答日志
+            
+        Returns:
+            问答日志列表
+        """
+        # 如果need_info为None，则使用"*"获取所有字段
+        if need_info is None:
+            need_info_str = "*"
+            # 获取所有字段的列名，用于后续构建字典
+            all_columns_query = "SHOW COLUMNS FROM QaLogs"
+            columns_result = self.execute_query(all_columns_query, fetch=True)
+            if columns_result:
+                need_info = [col[0] for col in columns_result]  # 列名在结果的第一个位置
+            else:
+                # 如果无法获取列名，则使用预定义的列表
+                need_info = ["id", "qa_id", "user_id", "bot_id", "kb_ids", "query", "model", 
+                            "product_source", "time_record", "history", "condense_question", 
+                            "prompt", "result", "retrieval_documents", "source_documents", 
+                            "is_favorite", "timestamp"]
+        else:
+            # 确保is_favorite在字段列表中
+            if "is_favorite" not in need_info:
+                need_info.append("is_favorite")
+                
+            need_info_str = ", ".join(need_info)
+        
+        query = f"SELECT {need_info_str} FROM QaLogs"
+        params = []
+        
+        conditions = []
+        if user_id:
+            # 确保user_id是标量值
+            if isinstance(user_id, list):
+                user_id = user_id[0] if user_id else None
+            if user_id:
+                conditions.append("user_id = %s")
+                params.append(user_id)
+            
+        if is_favorite is not None:
+            conditions.append("is_favorite = %s")
+            params.append(1 if is_favorite else 0)
+            
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+            
+        # 按时间戳降序排序
+        query += " ORDER BY timestamp DESC"
+        
+        if limit is not None:
+            query += " LIMIT %s"
+            params.append(limit)
+            
+            if offset is not None:
+                query += " OFFSET %s"
+                params.append(offset)
+                
+        debug_logger.info(f"get_qa_logs: {query}, {params}")
+        results = self.execute_query(query, tuple(params), fetch=True)
+        
+        qa_logs = []
+        for result in results:
+            log = dict(zip(need_info, result))
+            
+            # 处理时间戳
+            if 'timestamp' in log:
+                log['timestamp'] = log['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+                
+            # 确保is_favorite是布尔值
+            if 'is_favorite' in log:
+                log['is_favorite'] = bool(log['is_favorite'])
+                
+            # 解析JSON字段
+            for field in ['kb_ids', 'time_record', 'retrieval_documents', 'source_documents', 'history']:
+                if field in log and isinstance(log[field], str):
+                    try:
+                        log[field] = json.loads(log[field])
+                    except json.JSONDecodeError:
+                        # 如果解析失败，保持原样
+                        debug_logger.error(f"解析JSON字段失败: {field} {log[field]}")
+                        pass
+                        
+            qa_logs.append(log)
+            
+        return qa_logs
+    
+    def update_qa_log(self, qa_id: str, update_data: Dict[str, Any]) -> bool:
+        """更新问答日志
+        
+        Args:
+            qa_id: 问答ID
+            update_data: 要更新的数据字典
+            
+        Returns:
+            是否更新成功
+        """
+        if not update_data:
+            return False
+            
+        data_to_update = {}
+        
+        for key, value in update_data.items():
+            # 对于JSON字段进行处理
+            if key in ['kb_ids', 'time_record', 'history', 'retrieval_documents', 'source_documents'] and not isinstance(value, str):
+                data_to_update[key] = json.dumps(value, ensure_ascii=False)
+            else:
+                data_to_update[key] = value
+                
+        try:
+            self.update("QaLogs", data_to_update, "qa_id = %s", (qa_id,))
+            return True
+        except Exception as e:
+            debug_logger.error(f"更新问答日志失败: {e}")
+            return False
+    
+    def delete_qa_log(self, qa_id: str) -> bool:
+        """删除问答日志
+        
+        Args:
+            qa_id: 问答ID
+            
+        Returns:
+            是否删除成功
+        """
+        try:
+            self.delete("QaLogs", "qa_id = %s", (qa_id,))
+            return True
+        except Exception as e:
+            debug_logger.error(f"删除问答日志失败: {e}")
+            return False
+    
+    def toggle_favorite(self, qa_id: str, is_favorite: Optional[bool] = None) -> Tuple[bool, bool]:
+        """更新问答日志收藏状态
+        
+        Args:
+            qa_id: 问答ID
+            is_favorite: 是否收藏，如果为None则自动切换状态
+            
+        Returns:
+            (是否成功, 新的收藏状态)
+        """
+        if is_favorite is None:
+            # 自动切换状态，先获取当前收藏状态
+            status_query = "SELECT is_favorite FROM QaLogs WHERE qa_id = %s LIMIT 1"
+            result = self.execute_query(status_query, (qa_id,), fetch=True)
+            
+            if not result:
+                return False, False
+                
+            current_status = bool(result[0][0])
+            new_status = not current_status
+        else:
+            # 直接使用传入的状态
+            new_status = is_favorite
+        
+        # 更新状态
+        query = "UPDATE QaLogs SET is_favorite = %s WHERE qa_id = %s"
+        
+        try:
+            self.execute_query(query, (1 if new_status else 0, qa_id), commit=True)
+            return True, new_status
+        except Exception as e:
+            debug_logger.error(f"更新收藏状态失败: {e}")
+            return False, False 
