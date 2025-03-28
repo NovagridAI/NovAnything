@@ -89,15 +89,16 @@ const onFinish = async (values: any) => {
     
     if(res.code === 200) {
       message.success('登录成功');
-      Cookies.set('token', res.data.access_token);
+      Cookies.set('token', res.data.token);
       
       // 确保先设置 localStorage，再更新 store
       localStorage.setItem('userId', res.data.user_id);
       setUserInfo({
         userId: res.data.user_id,
-        token: res.data.access_token,
+        token: res.data.token,
         role: res.data.role
       });
+      console.log(res.data, res.data.user_id)
       await nextTick();
       await router.push('/');
     } else {

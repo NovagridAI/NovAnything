@@ -13,9 +13,17 @@ import router from './router/index';
 import pinia from './store/index';
 import '@/styles/common/global.scss';
 import 'virtual:svg-icons-register';
+import ArcoVue from '@arco-design/web-vue';
 import SvgIcon from '@/components/SvgIcon.vue';
+import '@arco-design/web-vue/dist/arco.css';
 
 const vueApp = createApp(App);
+
+vueApp.use(ArcoVue, {
+    // 用于改变使用组件时的前缀名称
+    componentPrefix: 'arco'
+});
+
 vueApp.use(pinia).use(router);
 vueApp.component('SvgIcon', SvgIcon);
 vueApp.mount('#app');

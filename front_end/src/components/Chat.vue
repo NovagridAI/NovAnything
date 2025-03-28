@@ -1,5 +1,6 @@
 <template>
-  <HistoryChat
+  <ChatHeaderMenu />
+  <!-- <HistoryChat
     :observer="observer"
     :observe-dom="observeDom"
     :qa-observe-dom="qaObserveDom"
@@ -9,7 +10,7 @@
     @setObserveDom="setObserveDom"
     @setQaObserverDom="setQaObserverDom"
     @clearHistory="clearHistory"
-  />
+  /> -->
   <div class="container showSider">
     <div class="my-page">
       <div id="chat" ref="chatContainer" class="chat showSider">
@@ -150,9 +151,30 @@
           {{ common.stop }}
         </a-button>
       </div>
+      <div class="question-container">
+        <div class="icon-container">
+          <arco-popover position="top">
+            <template #content>
+              <ChatAdvanceSettings />
+            </template>
+            <icon-settings class="action-icon" />
+          </arco-popover>
+          <icon-upload class="action-icon" />
+        </div>
+        <div class="question-container-button">
+          <arco-button  :disabled="showLoading" @click="send"  style="border-color: #165DFF; color: #165DFF;">
+            <icon-plus class="action-icon" style="margin-right: 8px;"/> 新话题
+          </arco-button>
+          <arco-button type="primary" :disabled="showLoading" @click="send">
+            <icon-send class="action-icon" style="margin-right: 8px;" /> 发送消息
+        </arco-button>
+        </div>
+        <arco-textarea placeholder="输入聊天内容..." allow-clear :auto-size = {minRows:6} :resize="false" class="full-width-textarea" style="padding-top: 58px;" />
+      </div>
       <div class="question-box">
         <div class="question">
-          <ChatTextarea v-model:input-value="question" :options="mentionOptions" @send="send">
+
+          <!-- <ChatTextarea v-model:input-value="question" :options="mentionOptions" @send="send">
             <a-popover>
               <template #content>
                 {{ selectList.length ? common.chatShare : common.chatShareNoChatId }}
@@ -194,7 +216,7 @@
             <a-button type="primary" :disabled="showLoading" shape="circle" @click="send">
               <SvgIcon name="sendplane" />
             </a-button>
-          </ChatTextarea>
+          </ChatTextarea> -->
         </div>
       </div>
     </div>
@@ -238,8 +260,10 @@ import ChatInfoPanel from '@/components/ChatInfoPanel.vue';
 import { useBots } from '@/store/useBots';
 import CopyUrlDialog from '@/components/Bots/CopyUrlDialog.vue';
 import ChatTextarea from '@/components/ChatTextarea.vue';
+import { IconSettings, IconUpload, IconPlus, IconSend, IconQuestionCircle } from '@arco-design/web-vue/es/icon';
 import Cookies from 'js-cookie'
-
+import ChatAdvanceSettings from '@/components/ChatAdvanceSettings.vue';
+import ChatHeaderMenu from '@/components/ChatHeaderMenu.vue';
 const common = getLanguage().common;
 
 const typewriter = new Typewriter((str: string) => {
@@ -901,11 +925,11 @@ $avatar-width: 96px;
 .container {
   position: relative;
   // padding-top: 16px;
-  height: calc(100%);
-  // margin-top: 65px;
+  // height: 100%;
+  // margin-top: 48px;
 
   &.showSider {
-    height: calc(100vh - 64px);
+    height: calc(100vh - 48px);
   }
 }
 
@@ -913,7 +937,7 @@ $avatar-width: 96px;
   position: relative;
   height: 100%;
   margin: 0 auto;
-  padding: 28px 28px 0 28px;
+  // padding: 28px 28px 0 28px;
   //border-radius: 12px 0 0 0;
   //border-top-color: #26293b;
   display: flex;
@@ -1155,7 +1179,8 @@ $avatar-width: 96px;
 
 .question-box {
   width: 100%;
-  margin: 32px 0;
+  // margin: 32px 0;
+  margin-bottom: 0px;
 
   .question {
     position: relative;
@@ -1319,6 +1344,59 @@ $avatar-width: 96px;
 .sourceitem-enter {
   opacity: 0;
 }
+
+.question-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  
+  :deep(.full-width-textarea) {
+    width: 100%;
+    resize: none;
+    padding-top: 20px;
+  }
+  
+  :deep(.arco-textarea-wrapper) {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.icon-container {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  z-index: 20;
+  
+  .action-icon {
+    font-size: 20px;
+    color: #666666;
+    cursor: pointer;
+    
+    &:hover {
+      color: $baseColor;
+    }
+  }
+}
+
+.question-container-button {
+  gap: 12px;
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  z-index: 20;
+}
+
 </style>
 <style lang="scss">
 @keyframes shake {

@@ -6,24 +6,26 @@
  * @FilePath: /QAnything/front_end/src/layout/index.vue
  * @Description: 
 -->
-
-<template>
-  <a-layout>
-    <!-- <Head /> -->
-    <a-layout>
-      <a-layout-sider width="220" style="background: red">
-        <Sider />
-      </a-layout-sider>
-      <a-layout>
-        <a-layout-content class="main">
-          <router-view></router-view>
-        </a-layout-content>
-      </a-layout>
-    </a-layout>
-  </a-layout>
-</template>
 <script lang="ts" setup>
 import Head from '@/components/Head.vue';
 import Sider from '@/components/Sider.vue';
+import KnowledgeList from '@/components/KnowledgeList.vue';
 </script>
 <style lang="scss" scoped></style>
+
+<template>
+  <arco-layout>
+    <!-- <Head /> -->
+    <arco-layout>
+      <arco-layout-sider :width="320">
+        <!-- <Sider /> -->
+        <KnowledgeList />
+      </arco-layout-sider>
+      <arco-layout>
+        <arco-layout-content>
+          <router-view></router-view>
+        </arco-layout-content>
+      </arco-layout>
+    </arco-layout>
+  </arco-layout>
+</template>

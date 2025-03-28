@@ -11,19 +11,14 @@
   <div class="page">
     <div class="layout-wrapper">
       <!-- 使用侧边栏组件 -->
-      <CollapsibleSidebar ref="sidebarRef">
-        <!-- 侧边栏内容 -->
-        <div class="sidebar-menu">
-          <!-- 这里可以放置侧边栏的内容 -->
-        </div>
-      </CollapsibleSidebar>
+      <!-- <CollapsibleSidebar ref="sidebarRef"></CollapsibleSidebar> -->
 
       <!-- 主内容区 -->
       <div class="container" :class="{ 'container-expanded': isSidebarCollapsed }">
-        <div v-if="showDefault === pageStatus.initing" class="initing"></div>
+        <Chat />
+        <!-- <div v-if="showDefault === pageStatus.initing" class="initing"></div>
         <DefaultPage v-if="showDefault === pageStatus.default" @change="change" />
-        <Chat v-else-if="showDefault === pageStatus.normal" />
-        <OptionList v-else-if="showDefault === pageStatus.optionlist" />
+        <OptionList v-else-if="showDefault === pageStatus.optionlist" /> -->
       </div>
     </div>
   </div>

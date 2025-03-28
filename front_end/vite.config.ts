@@ -12,6 +12,7 @@ import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers';
 import AutoImport from 'unplugin-auto-import/vite';
 //自定义svg相关插件
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
+import { ArcoResolver } from 'unplugin-vue-components/resolvers';
 
 function readFolder(entryPath, callback) {
   // 递归读取入口文件夹下的所有文件地址
@@ -84,10 +85,14 @@ export default defineConfig(({ mode }) => {
           AntDesignVueResolver({
             importStyle: false, // 禁用 CSS-in-JS
           }),
+          ArcoResolver({
+            sideEffect: true
+          })
         ],
       }),
       AutoImport({
         imports: ['vue', 'vue-router', 'pinia'],
+        resolvers: [ArcoResolver()],
         //下面配置生成自动导入 eslint规则json 生成后enabled改为false，避免重复生成  esint extend导入生成的自动导入json规则
         dts: './auto-imports.d.ts',
         eslintrc: {

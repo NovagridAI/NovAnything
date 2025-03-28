@@ -102,7 +102,7 @@ const urlConfig: IUrlConfig = {
   // 获取知识库列表
   kbList: {
     type: EUrlType.POST,
-    url: '/user/list_knowledge_base',
+    url: '/local_doc_qa/list_knowledge_base',
     showLoading: true,
     param: {
       user_id: userIdD(),

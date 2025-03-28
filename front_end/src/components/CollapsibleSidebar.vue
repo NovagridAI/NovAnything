@@ -27,7 +27,7 @@ import { useKnowledgeBase } from '@/store/useKnowledgeBase';
 import SiderCard from '@/components/SiderCard.vue';
 
 const isCollapsed = ref(false);
-const { knowledgeBaseList, currentKbName } = storeToRefs(useKnowledgeBase());
+const { knowledgeBaseList } = storeToRefs(useKnowledgeBase());
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;

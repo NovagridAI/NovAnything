@@ -15,6 +15,44 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Login/index.vue'),
   },
   {
+    path: '/fullscreen-view',
+    name: 'FullscreenView',
+    component: () => import('@/components/FullScreenView.vue'),
+    children: [
+      {
+        path: 'knowledge',
+        name: 'Knowledge',
+        component: () => import('@/components/FullScreenKnowledgeList.vue'),
+        children: [
+          {
+            path: 'personal',
+            name: 'Personal',
+            component: () => import('@/components/FullScreenKnowledgeList.vue')
+          },
+          {
+            path: 'organization',
+            name: 'Organization',
+            component: () => import('@/components/FullScreenKnowledgeList.vue')
+          }
+        ]
+      },
+      {
+        path: 'user-settings',
+        name: 'UserSettings',
+        component: () => import('@/components/ChatSettingPage.vue')
+      },
+      // {
+      //   path: 'view3',
+      //   name: 'View3',
+      //   component: () => import('@/views/fullscreen/View3.vue')
+      // },
+      // {
+      //   path: '',
+      //   redirect: '/fullscreen-view/view1'
+      // }
+    ]
+  },
+  {
     path: '/',
     name: 'home',
     component: () => import('@/layout/index.vue'),

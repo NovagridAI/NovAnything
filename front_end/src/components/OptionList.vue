@@ -11,15 +11,15 @@
     <div class="list-page">
       <div class="content">
         <div class="options">
-          <a-button type="primary" class="to-chat" @click="goChat">
+          <!-- <a-button type="primary" class="to-chat" @click="goChat">
             <LeftOutlined class="back-icon" />
             <span>{{ home.conversation }}</span>
-          </a-button>
+          </a-button> -->
           <p class="kb-name">
             <span class="name">
               {{ currentKbName.slice(0, 15) }}
             </span>
-            <span class="id"> {{ home.knowledgeID }} {{ currentId }} </span>
+            <span class="id">{{ currentId }}</span>
           </p>
         </div>
         <div class="nav-info">
@@ -940,8 +940,8 @@ onMounted(() => {
   }
 
   .kb-name {
-    margin: 0 20px 0 30px;
-    font-size: 24px;
+    margin: 0 20px 0 0pxpx;
+    font-size: 20px;
     font-weight: 500;
     color: #222222;
 

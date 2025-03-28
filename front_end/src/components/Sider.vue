@@ -8,7 +8,6 @@
 -->
 <template>
   <div class="sider">
-    <div class="logo">NovAnything</div>
     <div class="header-navs">
       <div v-for="item in filteredNavList" :key="item.name"
         :class="['nav-item', navIndex === item.value ? 'nav-item-active' : '']" @click="setNavIdx(item.value)">
