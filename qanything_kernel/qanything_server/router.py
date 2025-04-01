@@ -41,7 +41,7 @@ def register_routes(app: Sanic):
     app.add_route(get_file_base64, "/api/local_doc_qa/get_file_base64", methods=['POST'])  # tags=["获取文件的base64编码"]
 
     # 问答日志相关接口
-    app.add_route(get_qa_logs, "/api/local_doc_qa/get_qa_logs", methods=['GET'])  # tags=["获取问答日志列表"]
+    app.add_route(get_qa_logs, "/api/local_doc_qa/get_qa_logs", methods=['POST'])  # tags=["获取问答日志列表"]
     app.add_route(get_qa_log, "/api/local_doc_qa/get_qa_log", methods=['GET'])  # tags=["获取问答日志详情"]
     app.add_route(create_qa_log, "/api/local_doc_qa/create_qa_log", methods=['POST'])  # tags=["创建问答日志"]
     app.add_route(update_qa_log, "/api/local_doc_qa/update_qa_log", methods=['POST'])  # tags=["更新问答日志"]
@@ -72,10 +72,10 @@ def register_routes(app: Sanic):
     app.add_route(update_department, "/api/department/update", methods=['POST'])  # tags=["更新部门"]
     app.add_route(delete_department, "/api/department/delete", methods=['POST'])  # tags=["删除部门"]
     app.add_route(add_user_to_department, "/api/department/add_user", methods=['POST'])  # tags=["添加用户到部门"]
-    app.add_route(get_users_by_department, "/api/department/users", methods=['GET'])  # tags=["获取部门用户列表"]
+    app.add_route(get_users_by_department, "/api/department/users", methods=['POST'])  # tags=["获取部门用户列表"]
 
     # 知识库权限管理接口
-    app.add_route(get_kb_permission_data, "/api/kb/permission_data", methods=['GET'])  # tags=["获取知识库权限分配数据"]
+    app.add_route(get_kb_permission_data, "/api/kb/permission_data", methods=['POST'])  # tags=["获取知识库权限分配数据"]
     app.add_route(update_kb_permissions, "/api/kb/update_permissions", methods=['POST'])  # tags=["批量更新知识库权限"] 
     
     # 模型配置管理接口

@@ -330,8 +330,8 @@ async def login(req: request):
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     
     # 更新用户最后登录时间
-    update_query = "UPDATE User SET last_login = NOW() WHERE user_id = %s"
-    user_dao.execute_query(update_query, (user.user_id,), commit=True)
+    # update_query = "UPDATE User SET last_login = NOW() WHERE user_id = %s"
+    # user_dao.execute_query(update_query, (user.user_id,), commit=True)
 
     debug_logger.info(f"用户登录成功 - 用户ID: {user.user_id}, 角色: {user.role}")
     return sanic_json({
