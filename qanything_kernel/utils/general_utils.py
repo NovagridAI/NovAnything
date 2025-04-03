@@ -101,17 +101,11 @@ def safe_get(req: Request, attr: str, default=None):
             form_values = req.form.getlist(attr)
             if not form_values:
                 return default
-            # 如果列表只有一个元素，则返回该元素；否则返回整个列表
-            return form_values[0] if len(form_values) == 1 else form_values
+            return form_values
         
         # 检查URL参数
         if attr in req.args:
             arg_value = req.args[attr]
-            # 如果是列表，判断长度
-            if isinstance(arg_value, list):
-                if not arg_value:
-                    return default
-                return arg_value[0] if len(arg_value) == 1 else arg_value
             return arg_value
         
         # 仅当content-type包含json时尝试读取JSON数据
@@ -119,11 +113,6 @@ def safe_get(req: Request, attr: str, default=None):
             try:
                 if req.json and attr in req.json:
                     json_value = req.json[attr]
-                    # 如果是列表，判断长度
-                    if isinstance(json_value, list):
-                        if not json_value:
-                            return default
-                        return json_value[0] if len(json_value) == 1 else json_value
                     return json_value
             except BadRequest as e:
                 logging.warning(f"解析JSON时出错: {str(e)}")
