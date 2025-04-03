@@ -34,7 +34,7 @@ class QaLogDAO(BaseDAO):
                 history MEDIUMTEXT NOT NULL,
                 condense_question VARCHAR(1024) NOT NULL,
                 prompt MEDIUMTEXT NOT NULL,
-                result TEXT NOT NULL,
+                result TEXT DEFAULT NULL,
                 retrieval_documents MEDIUMTEXT NOT NULL,
                 source_documents MEDIUMTEXT NOT NULL,
                 is_favorite TINYINT(1) DEFAULT 0,

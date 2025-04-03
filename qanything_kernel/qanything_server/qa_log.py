@@ -428,8 +428,8 @@ async def create_qa_log(req: request):
             return response.json({"code": 400, "msg": "user_id不能为空", "data": None})
         if not query:
             return response.json({"code": 400, "msg": "问题内容不能为空", "data": None})
-        if not result:
-            return response.json({"code": 400, "msg": "回答内容不能为空", "data": None})
+        # if not result:
+        #     return response.json({"code": 400, "msg": "回答内容不能为空", "data": None})
         if not model:
             return response.json({"code": 400, "msg": "模型名称不能为空", "data": None})
         

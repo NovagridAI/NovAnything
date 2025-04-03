@@ -20,9 +20,9 @@ class QaLog:
     history: List[List[str]]
     condense_question: str
     prompt: str
-    result: str
     retrieval_documents: List[Dict[str, Any]]
     source_documents: List[Dict[str, Any]]
+    result: Optional[str] = None
     bot_id: Optional[str] = None
     is_favorite: Optional[bool] = False
     timestamp: Optional[datetime] = None
