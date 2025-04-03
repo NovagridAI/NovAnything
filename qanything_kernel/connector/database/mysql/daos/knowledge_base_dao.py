@@ -30,7 +30,8 @@ class KnowledgeBaseDAO(BaseDAO):
                 kb_type VARCHAR(20) DEFAULT 'personal',
                 deleted BOOL DEFAULT 0,
                 latest_qa_time TIMESTAMP NULL,
-                latest_insert_time TIMESTAMP NULL
+                latest_insert_time TIMESTAMP NULL,
+                description TEXT NULL
             );
         """
         self.execute_query(query, commit=True)
@@ -68,7 +69,7 @@ class KnowledgeBaseDAO(BaseDAO):
             else:
                 debug_logger.error(f"创建索引时出错: {e}")
 
-    def new_knowledge_base(self, kb_id: str, user_id: str, kb_name: str, kb_type: str = 'personal', ) -> Tuple[
+    def new_knowledge_base(self, kb_id: str, user_id: str, kb_name: str, kb_type: str = 'personal', description: str = None) -> Tuple[
         str, str]:
         """创建新知识库
         
@@ -77,20 +78,21 @@ class KnowledgeBaseDAO(BaseDAO):
             user_id: 用户ID
             kb_name: 知识库名称
             kb_type: 知识库类型，可选值：'personal'(个人), 'team'(团队), 'temporary'(临时)
+            description: 知识库描述
             
         Returns:
             (知识库ID, 状态消息)
         """
         # 创建知识库
-        query = "INSERT INTO KnowledgeBase (kb_id, user_id, kb_name, kb_type) VALUES (%s, %s, %s, %s)"
-        self.execute_query(query, (kb_id, user_id, kb_name, kb_type), commit=True)
+        query = "INSERT INTO KnowledgeBase (kb_id, user_id, kb_name, kb_type, description) VALUES (%s, %s, %s, %s, %s)"
+        self.execute_query(query, (kb_id, user_id, kb_name, kb_type, description), commit=True)
         
         # 设置所有者权限
         self.set_kb_access(kb_id, user_id, "user", "admin", user_id)
         
         return kb_id, "success"
 
-    def get_knowledge_bases(self, user_id: str, kb_type: Optional[str] = None) -> List[Tuple[str, str, str]]:
+    def get_knowledge_bases(self, user_id: str, kb_type: Optional[str] = None) -> List[Tuple[str, str, str, Optional[str]]]:
         """获取用户可访问的所有知识库
         
         Args:
@@ -98,16 +100,16 @@ class KnowledgeBaseDAO(BaseDAO):
             kb_type: 知识库类型筛选，如果为None则获取全部类型
             
         Returns:
-            知识库ID、名称和类型的元组列表
+            知识库ID、名称、类型和描述的元组列表
         """
         # 首先获取用户直接拥有的知识库
         if kb_type:
             query = (
-                f"SELECT kb_id, kb_name, kb_type FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND kb_type = %s AND "
+                f"SELECT kb_id, kb_name, kb_type, description FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND kb_type = %s AND "
                 f"(kb_id LIKE '%{KB_SUFFIX}' OR kb_id LIKE '%{KB_SUFFIX}_FAQ')")
             owned_kbs = self.execute_query(query, (user_id, kb_type), fetch=True)
         else:
-            query = (f"SELECT kb_id, kb_name, kb_type FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND "
+            query = (f"SELECT kb_id, kb_name, kb_type, description FROM KnowledgeBase WHERE user_id = %s AND deleted = 0 AND "
                      f"(kb_id LIKE '%{KB_SUFFIX}' OR kb_id LIKE '%{KB_SUFFIX}_FAQ')")
             owned_kbs = self.execute_query(query, (user_id,), fetch=True)
         
@@ -116,7 +118,7 @@ class KnowledgeBaseDAO(BaseDAO):
             if kb_type == 'team':
                 # 只查询团队知识库
                 query = f"""
-                    SELECT DISTINCT kb.kb_id, kb.kb_name, kb.kb_type
+                    SELECT DISTINCT kb.kb_id, kb.kb_name, kb.kb_type, kb.description
                     FROM KnowledgeBase kb
                     JOIN KnowledgeBaseAccess kba ON kb.kb_id = kba.kb_id
                     JOIN User u ON u.user_id = %s
@@ -139,7 +141,7 @@ class KnowledgeBaseDAO(BaseDAO):
         else:
             # 查询所有共享的团队知识库
             query = f"""
-                SELECT DISTINCT kb.kb_id, kb.kb_name, kb.kb_type
+                SELECT DISTINCT kb.kb_id, kb.kb_name, kb.kb_type, kb.description
                 FROM KnowledgeBase kb
                 JOIN KnowledgeBaseAccess kba ON kb.kb_id = kba.kb_id
                 JOIN User u ON u.user_id = %s
@@ -177,20 +179,20 @@ class KnowledgeBaseDAO(BaseDAO):
             
         return KnowledgeBase.from_dict(result[0])
     
-    def get_knowledge_base_name(self, kb_ids: List[str]) -> List[Tuple[str, str, str]]:
+    def get_knowledge_base_name(self, kb_ids: List[str]) -> List[Tuple[str, str, str, Optional[str]]]:
         """获取指定kb_ids的知识库信息
         
         Args:
             kb_ids: 知识库ID列表
             
         Returns:
-            (用户ID, 知识库ID, 知识库名称)的元组列表
+            (用户ID, 知识库ID, 知识库名称, 知识库描述)的元组列表
         """
         if not kb_ids:
             return []
             
         kb_ids_str = ','.join(['%s'] * len(kb_ids))
-        query = f"SELECT user_id, kb_id, kb_name FROM KnowledgeBase WHERE kb_id IN ({kb_ids_str}) AND deleted = 0"
+        query = f"SELECT user_id, kb_id, kb_name, description FROM KnowledgeBase WHERE kb_id IN ({kb_ids_str}) AND deleted = 0"
         
         return self.execute_query(query, kb_ids, fetch=True)
     
@@ -250,6 +252,17 @@ class KnowledgeBaseDAO(BaseDAO):
         """
         query = "UPDATE KnowledgeBase SET kb_name = %s WHERE kb_id = %s AND user_id = %s"
         self.execute_query(query, (kb_name, kb_id, user_id), commit=True)
+    
+    def update_knowledge_base_description(self, user_id: str, kb_id: str, description: str) -> None:
+        """更新知识库描述
+        
+        Args:
+            user_id: 用户ID
+            kb_id: 知识库ID
+            description: 新的知识库描述
+        """
+        query = "UPDATE KnowledgeBase SET description = %s WHERE kb_id = %s AND user_id = %s"
+        self.execute_query(query, (description, kb_id, user_id), commit=True)
     
     def update_knowledge_base_latest_qa_time(self, kb_id: str, timestamp: str) -> None:
         """更新知识库的最新问答时间

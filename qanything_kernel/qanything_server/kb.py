@@ -293,16 +293,18 @@ async def delete_knowledge_base(req: request):
 
 @get_time_async
 @auth_required("write", check_kb_access=True)
-async def rename_knowledge_base(req: request):
-    """重命名知识库
+async def update_knowledge_base(req: request):
+    """更新知识库信息
     
     请求参数:
     - kb_id: 知识库ID
-    - new_kb_name: 新的知识库名称
+    - new_kb_name: 新的知识库名称（可选）
+    - description: 知识库描述（可选）
     
     注意:
-    - 对于个人知识库和临时知识库，只有拥有者可以重命名
-    - 对于团队知识库，拥有者和有写权限的用户可以重命名
+    - 对于个人知识库和临时知识库，只有拥有者可以更新
+    - 对于团队知识库，拥有者和有写权限的用户可以更新
+    - 名称和描述至少提供一个进行更新
     """
     local_doc_qa = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
@@ -310,12 +312,13 @@ async def rename_knowledge_base(req: request):
     kb_id = safe_get(req, 'kb_id')
     kb_id = correct_kb_id(kb_id)
     new_kb_name = safe_get(req, 'new_kb_name')
+    description = safe_get(req, 'description')
     
     if not kb_id:
         return sanic_json({"code": 400, "msg": "知识库ID不能为空"})
         
-    if not new_kb_name:
-        return sanic_json({"code": 400, "msg": "新知识库名称不能为空"})
+    if not new_kb_name and description is None:
+        return sanic_json({"code": 400, "msg": "新知识库名称或描述至少提供一个"})
 
     try:
         # 检查知识库是否存在
@@ -332,32 +335,46 @@ async def rename_knowledge_base(req: request):
         is_owner = kb.user_id == user_id
         kb_type = kb.kb_type or 'personal'
         
-        # 个人知识库和临时知识库只有拥有者可以重命名
+        # 个人知识库和临时知识库只有拥有者可以更新
         if kb_type in ['personal', 'temporary'] and not is_owner:
-            return sanic_json({"code": 403, "msg": f"没有权限重命名该知识库: {kb_id}"})
+            return sanic_json({"code": 403, "msg": f"没有权限更新该知识库: {kb_id}"})
             
         # 团队知识库，不是拥有者需要检查是否有写权限
         if kb_type == 'team' and not is_owner:
             has_write = local_doc_qa.milvus_summary.kb_dao.check_kb_access(user_id, kb_id, 'write')
             if not has_write:
-                return sanic_json({"code": 403, "msg": f"没有权限重命名该知识库: {kb_id}"})
+                return sanic_json({"code": 403, "msg": f"没有权限更新该知识库: {kb_id}"})
 
-        # 重命名知识库
-        local_doc_qa.milvus_summary.kb_dao.rename_knowledge_base(user_id, kb_id, new_kb_name)
-        debug_logger.info(f"知识库重命名成功 - ID: {kb_id}, 新名称: {new_kb_name}, 用户: {user_id}, 类型: {kb_type}")
+        # 更新知识库信息
+        response_data = {
+            "kb_id": kb_id,
+            "kb_type": kb_type
+        }
+        
+        # 更新知识库名称
+        if new_kb_name:
+            local_doc_qa.milvus_summary.kb_dao.rename_knowledge_base(user_id, kb_id, new_kb_name)
+            response_data["kb_name"] = new_kb_name
+            debug_logger.info(f"知识库重命名成功 - ID: {kb_id}, 新名称: {new_kb_name}, 用户: {user_id}, 类型: {kb_type}")
+        else:
+            response_data["kb_name"] = kb.kb_name
+            
+        # 更新知识库描述
+        if description is not None:
+            local_doc_qa.milvus_summary.kb_dao.update_knowledge_base_description(user_id, kb_id, description)
+            response_data["description"] = description
+            debug_logger.info(f"知识库描述更新成功 - ID: {kb_id}, 描述: {description}, 用户: {user_id}, 类型: {kb_type}")
+        else:
+            response_data["description"] = kb.description
         
         return sanic_json({
             "code": 200, 
-            "msg": f"知识库重命名成功", 
-            "data": {
-                "kb_id": kb_id,
-                "kb_name": new_kb_name,
-                "kb_type": kb_type
-            }
+            "msg": "知识库更新成功", 
+            "data": response_data
         })
     except Exception as e:
-        debug_logger.error(f"知识库重命名失败: {str(e)}")
-        return sanic_json({"code": 500, "msg": f"知识库重命名失败: {str(e)}"})
+        debug_logger.error(f"知识库更新失败: {str(e)}")
+        return sanic_json({"code": 500, "msg": f"知识库更新失败: {str(e)}"})
 
 
 @get_time_async
