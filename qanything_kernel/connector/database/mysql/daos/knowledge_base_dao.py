@@ -28,10 +28,10 @@ class KnowledgeBaseDAO(BaseDAO):
                 user_id VARCHAR(255),
                 kb_name VARCHAR(255),
                 kb_type VARCHAR(20) DEFAULT 'personal',
+                description TEXT NULL,
                 deleted BOOL DEFAULT 0,
                 latest_qa_time TIMESTAMP NULL,
-                latest_insert_time TIMESTAMP NULL,
-                description TEXT NULL
+                latest_insert_time TIMESTAMP NULL
             );
         """
         self.execute_query(query, commit=True)
