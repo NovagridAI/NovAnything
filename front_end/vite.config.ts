@@ -164,6 +164,11 @@ export default defineConfig(({ mode }) => {
       },
       cors: true,
       proxy: {
+        '/model': {
+          target: 'http://198.2.235.68:8777/api',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/model/, '/model'),
+        },
         '/group': {
           target: 'http://198.2.235.68:8777/api',
           changeOrigin: true,

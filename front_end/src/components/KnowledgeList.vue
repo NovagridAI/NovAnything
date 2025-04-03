@@ -104,7 +104,7 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
 <style lang="scss" scoped>
 .logo {
     cursor: pointer;
-    margin: 12px 16px 10px 24px;
+    display: flex;
     padding-bottom: 16px;
     background-image: linear-gradient(to right, #3b82f6, #4f46e5);
     color: transparent;
@@ -114,17 +114,23 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
 }
 
 .knowledge-list {
+    border-right: 1px solid #D8D8D8;
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
+    background-color: #fff;
     padding: 0 8px;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 :deep(.arco-collapse) {
-    padding: 0px 24px;
+    padding: 0px 12px;
     border: none;
     background-color: transparent;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 :deep(.arco-collapse-item) {
@@ -188,6 +194,8 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
 
     &:hover {
         background-color: #E0EAFF;
@@ -206,6 +214,7 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
         text-overflow: ellipsis;
         white-space: nowrap;
         color: #4e5969;
+        min-width: 0;
     }
 
     .icon-active {

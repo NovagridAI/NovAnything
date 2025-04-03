@@ -162,7 +162,7 @@
           <icon-upload class="action-icon" />
         </div>
         <div class="question-container-button">
-          <arco-button  :disabled="showLoading" @click="send"  style="border-color: #165DFF; color: #165DFF;">
+          <arco-button  :disabled="showLoading" @click="newChat"  style="border-color: #165DFF; color: #165DFF;">
             <icon-plus class="action-icon" style="margin-right: 8px;"/> 新话题
           </arco-button>
           <arco-button type="primary" :disabled="showLoading" @click="send">
@@ -220,6 +220,7 @@
         </div>
       </div>
     </div>
+    <ConversationHistory />
     <div class="scroll-btn-div">
       <img
         class="avatar"
@@ -264,6 +265,7 @@ import { IconSettings, IconUpload, IconPlus, IconSend, IconQuestionCircle } from
 import Cookies from 'js-cookie'
 import ChatAdvanceSettings from '@/components/ChatAdvanceSettings.vue';
 import ChatHeaderMenu from '@/components/ChatHeaderMenu.vue';
+import ConversationHistory from '@/components/ConversationHistory.vue';
 const common = getLanguage().common;
 
 const typewriter = new Typewriter((str: string) => {
@@ -322,6 +324,20 @@ const scrollBottom = () => {
     });
   });
 };
+
+function newChat() {
+  if (showLoading.value) {
+    return;
+  }
+  if (chatId.value === null) {
+    message.info('已切换最新对话');
+    return;
+  }
+  chatId.value = null;
+  QA_List.value = [];
+  qaPageId.value = 1;
+  pageId.value = 1;
+}
 
 // 创建 Intersection Observer 对象
 const observer = new IntersectionObserver(entries => {
@@ -924,6 +940,7 @@ $avatar-width: 96px;
 
 .container {
   position: relative;
+  display: flex;
   // padding-top: 16px;
   // height: 100%;
   // margin-top: 48px;
@@ -936,6 +953,7 @@ $avatar-width: 96px;
 .my-page {
   position: relative;
   height: 100%;
+  width: 100%;
   margin: 0 auto;
   // padding: 28px 28px 0 28px;
   //border-radius: 12px 0 0 0;
@@ -949,7 +967,7 @@ $avatar-width: 96px;
 .chat {
   margin: 0 auto;
   width: 100%;
-  max-width: 816px;
+  background-color: #F8F8F8;
   //min-width: 500px;
   padding: 28px 0 0 0;
   flex: 1;
@@ -1352,6 +1370,7 @@ $avatar-width: 96px;
   align-items: center;
   padding: 0;
   margin: 0;
+  border-top: 1px solid #D8D8D8;
   
   :deep(.full-width-textarea) {
     width: 100%;
@@ -1363,6 +1382,7 @@ $avatar-width: 96px;
     width: 100%;
     margin: 0;
     padding: 0;
+    background-color: #F8F8F8;
   }
 }
 

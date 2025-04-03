@@ -56,7 +56,7 @@ const menuRouteMap = {
   'user-settings': '/fullscreen-view/user-settings',
   'personal-knowledge': '/fullscreen-view/knowledge/personal',
   'organization-knowledge': '/fullscreen-view/knowledge/organization',
-  'organization-management': '/fullscreen-view/organization'
+  'organization-management': '/fullscreen-view/organization-management'
 };
 
 // 监听路由变化

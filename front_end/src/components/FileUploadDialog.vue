@@ -8,8 +8,8 @@
 -->
 <template>
   <Teleport to="body">
-    <a-modal
-      v-model:open="modalVisible"
+    <arco-modal
+      v-model:visible="modalVisible"
       :title="modalTitle"
       centered
       width="480px"
@@ -73,7 +73,7 @@
         </div>
       </div>
       <template #footer>
-        <a-button
+        <arco-button
           v-if="props.dialogType === 0"
           key="submit"
           type="primary"
@@ -82,8 +82,8 @@
           @click="handleOk"
         >
           {{ common.confirm }}
-        </a-button>
-        <a-button
+        </arco-button>
+        <arco-button
           v-if="props.dialogType === 1"
           key="submit"
           type="primary"
@@ -91,9 +91,9 @@
           @click="handleCancel"
         >
           {{ common.cancel }}
-        </a-button>
+        </arco-button>
       </template>
-    </a-modal>
+    </arco-modal>
   </Teleport>
 </template>
 <script lang="ts" setup>
@@ -269,6 +269,7 @@ const uplolad = async () => {
   formData.append('kb_id', currentId.value);
   formData.append('user_id', userId);
   // formData.append('user_info', userPhone);
+  console.log(chatSettingFormActive.value, 'chatSettingFormActive');
   formData.append('chunk_size', chatSettingFormActive.value.chunkSize.toString());
   // 上传模式，soft：文件名重复的文件不再上传，strong：文件名重复的文件强制上传
   formData.append('mode', 'soft');

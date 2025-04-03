@@ -30,28 +30,29 @@ export const useChatSetting = defineStore(
 
     // 配置好的模型，包括 openAi Ollama 自定义
     const chatSettingConfigured = ref<IChatSetting[]>([
-      {
-        ...chatSettingFormBase,
-        modelType: 'openAI',
-        active: true, // 默认openAi
-      },
-      {
-        ...chatSettingFormBase,
-        modelType: 'ollama',
-        apiKey: 'ollama',
-        apiBase: 'http://localhost:11434/v1',
-        apiContextLength: 2048,
-        active: false,
-      },
-      {
-        ...chatSettingFormBase,
-        modelName: '',
-        modelType: common.customModelType,
-        customId: 0,
-        active: false,
-      },
+      // {
+      //   ...chatSettingFormBase,
+      //   modelType: 'openAI',
+      //   active: true, // 默认openAi
+      // },
+      // {
+      //   ...chatSettingFormBase,
+      //   modelType: 'ollama',
+      //   apiKey: 'ollama',
+      //   apiBase: 'http://localhost:11434/v1',
+      //   apiContextLength: 2048,
+      //   active: false,
+      // },
+      // {
+      //   ...chatSettingFormBase,
+      //   modelName: '',
+      //   modelType: common.customModelType,
+      //   customId: 0,
+      //   active: false,
+      // },
     ]);
     const setChatSettingConfigured = (chatSetting: IChatSetting) => {
+      console.log(chatSetting, 'chatSetting')
       // 先把所有active设置为false;
       chatSettingConfigured.value.forEach(item => {
         item.active = false;
@@ -77,6 +78,20 @@ export const useChatSetting = defineStore(
           chatSettingConfigured.value.push({ ...chatSetting });
         }
       }
+    };
+
+    // 新增：批量设置配置的函数
+    const setAllChatSettingConfigured = (settings: IChatSetting[]) => {
+      if (!settings || settings.length === 0) return;
+      
+      // 保留至少一个active为true的配置
+      const hasActive = settings.some(item => item.active);
+      if (!hasActive && settings.length > 0) {
+        settings[0].active = true;
+      }
+      
+      // 更新整个配置数组
+      chatSettingConfigured.value = [...settings];
     };
 
     // 当前应用的设置
@@ -145,6 +160,7 @@ export const useChatSetting = defineStore(
 
     return {
       setChatSettingConfigured,
+      setAllChatSettingConfigured,
       chatSettingConfigured,
       chatSettingFormActive,
       openAISettingMap,

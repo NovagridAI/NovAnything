@@ -13,7 +13,7 @@
                 </div>
             </arco-layout-header>
             <arco-layout>
-                <arco-layout-sider width="240px">
+                <arco-layout-sider width=240>
                     <FullScreenSider />
                 </arco-layout-sider>
                 <arco-layout-content>

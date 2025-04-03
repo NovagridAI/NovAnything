@@ -41,15 +41,15 @@ export const routes: RouteRecordRaw[] = [
         name: 'UserSettings',
         component: () => import('@/components/ChatSettingPage.vue')
       },
-      // {
-      //   path: 'view3',
-      //   name: 'View3',
-      //   component: () => import('@/views/fullscreen/View3.vue')
-      // },
-      // {
-      //   path: '',
-      //   redirect: '/fullscreen-view/view1'
-      // }
+      {
+        path: 'organization-management',
+        name: 'OrganizationManagement',
+        component: () => import('@/components/FullScreenManagement.vue')
+      },
+      {
+        path: '',
+        redirect: '/fullscreen-view/view1'
+      }
     ]
   },
   {

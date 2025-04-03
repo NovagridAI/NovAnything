@@ -56,6 +56,21 @@ enum EUrlKey {
   addUserToGroup = 'addUserToGroup',
   removeUserFromGroup = 'removeUserFromGroup',
   updateUserRole = 'updateUserRole',
+  departmentUsers = 'departmentUsers',
+  getQaLogs = 'getQaLogs',
+  getQaLog = 'getQaLog',
+  createQaLog = 'createQaLog',
+  deleteQaLog = 'deleteQaLog',
+  updateQaLog = 'updateQaLog',
+  toggleQaFavorite = 'toggleQaFavorite',
+  createModel = 'createModel',
+  updateModel = 'updateModel',
+  getModelDetail = 'getModelDetail',
+  getModelList = 'getModelList',
+  deleteModel = 'deleteModel',
+  addUserToDepartment = 'addUserToDepartment',
+  getKbPermissionData = 'getKbPermissionData',
+  updateKbPermissionData = 'updateKbPermissionData',
 }
 
 interface IUrlValueConfig {
@@ -347,7 +362,10 @@ const urlConfig: IUrlConfig = {
     url: '/user/create',
     param: {
       user_id: userId,
-      user_info: userPhone,
+      user_name: '',
+      password: '',
+      role: '',
+      dept_id: ''
     },
   },
   deleteUser: {
@@ -441,7 +459,7 @@ const urlConfig: IUrlConfig = {
     showLoading: false,
     param: {
       user_id: userId,
-      target_user_id: '',
+      target_user_id: [],
       group_id: ''
     }
   },
@@ -468,7 +486,185 @@ const urlConfig: IUrlConfig = {
       target_user_id: '',
       role: ''
     }
-  }
+  },
+  // 获取部门用户列表
+  departmentUsers: {
+    type: EUrlType.POST,
+    url: '/department/users',
+    showLoading: false,
+    useBodyInGet: true,
+    body: {
+      dept_id: '',
+      user_id: userId
+    }
+  },
+  // 获取问答日志列表
+  getQaLogs: {
+    type: EUrlType.POST,
+    url: '/local_doc_qa/get_qa_logs',
+    showLoading: false,
+    useBodyInGet: true, // GET 请求使用 body
+    body: {
+      user_id: userIdD()
+    }
+  },
+
+  // 获取问答日志详情
+  getQaLog: {
+    type: EUrlType.GET,
+    url: '/local_doc_qa/get_qa_log',
+    showLoading: false,
+    param: {
+      qa_id: '',
+      user_id: userIdD()
+    }
+  },
+
+  // 创建问答日志
+  createQaLog: {
+    type: EUrlType.POST,
+    url: '/local_doc_qa/create_qa_log',
+    showLoading: false,
+    param: {
+      user_id: userIdD(),
+      kb_ids: '',
+      query: '',
+      result: '',
+      model: '',
+      is_favorite: false,
+      time_record: {
+        total_time: 0,
+        retrieval_time: 0,
+        llm_time: 0
+      },
+      history: [],
+      condense_question: '',
+      prompt: '',
+      retrieval_documents: [],
+      source_documents: []
+    }
+  },
+
+  // 删除问答日志
+  deleteQaLog: {
+    type: EUrlType.POST,
+    url: '/local_doc_qa/delete_qa_log',
+    showLoading: false,
+    param: {
+      user_id: userIdD(),
+      qa_id: ''
+    }
+  },
+
+  // 更新问答日志
+  updateQaLog: {
+    type: EUrlType.POST,
+    url: '/local_doc_qa/update_qa_log',
+    showLoading: false,
+    param: {
+      qa_id: '',
+      user_id: userIdD(),
+      update_data: {}
+    }
+  },
+
+  // 切换问答日志收藏状态
+  toggleQaFavorite: {
+    type: EUrlType.POST,
+    url: '/local_doc_qa/toggle_qa_favorite',
+    showLoading: false,
+    param: {
+      user_id: userIdD(),
+      qa_id: '',
+      is_favorite: false
+    }
+  },
+
+  // 创建模型
+  createModel: {
+    type: EUrlType.POST,
+    url: '/model/create',
+    showLoading: true,
+    param: {
+    }
+  },
+
+  // 更新模型
+  updateModel: {
+    type: EUrlType.POST,
+    url: '/model/update',
+    param: {
+      user_id: userIdD(),
+      config_id: '',
+      creativity: 1.0,
+      thinking_depth: 1.0,
+      expression_style: 1.0,
+      vocabulary_richness: 1.0,
+      token_limit: 1.0,
+      reasoning_strength: '中'
+    }
+  },
+
+  // 获取模型详情
+  getModelDetail: {
+    type: EUrlType.GET,
+    url: '/model/get',
+    showLoading: false,
+    param: {
+      user_id: userIdD(),
+      config_id: ''
+    }
+  },
+
+  // 获取模型列表
+  getModelList: {
+    type: EUrlType.GET,
+    url: '/model/list',
+    showLoading: false,
+    param: {
+      user_id: userIdD()
+    }
+  },
+
+  // 删除模型
+  deleteModel: {
+    type: EUrlType.POST,
+    url: '/model/delete',
+    showLoading: true,
+    param: {
+      user_id: userIdD(),
+      config_id: ''
+    }
+  },
+
+  // 添加用户到部门
+  addUserToDepartment: {
+    type: EUrlType.POST,
+    url: '/department/add_user',
+    showLoading: true,
+    param: {
+      user_id: userIdD(),       // 目标部门ID
+    }
+  },
+
+  // 获取知识库权限数据
+  getKbPermissionData: {
+    type: EUrlType.POST,
+    url: '/kb/permission_data',
+    showLoading: false,
+    param: {
+      user_id: userIdD(),       // 目标部门ID
+    }
+  },
+
+  // 更新知识库权限数据
+  updateKbPermissionData: {
+    type: EUrlType.POST,
+    url: '/kb/update_permissions',
+    param: {
+      user_id: userIdD(),       // 目标部门ID
+    }
+  },
 };
 
 // 使用映射类型来创建一个类型，该类型将urlConfig中的每个键映射到IRequestMethod类型
