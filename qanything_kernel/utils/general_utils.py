@@ -101,6 +101,9 @@ def safe_get(req: Request, attr: str, default=None):
             form_values = req.form.getlist(attr)
             if not form_values:
                 return default
+            # 如果只有一个值，直接返回该值而不是列表
+            if len(form_values) == 1:
+                return form_values[0]
             return form_values
         
         # 检查URL参数
@@ -202,7 +205,7 @@ def read_files_with_extensions():
 
     directory = project_dir + '/data'
 
-    extensions = ['.md', '.txt', '.pdf', '.jpg', '.docx', '.xlsx', '.eml', '.csv', 'pptx', 'jpeg', 'png']
+    extensions = ['.md', '.txt', '.pdf', '.jpg', '.docx', '.xlsx', '.eml', '.csv', '.pptx', '.jpeg', '.png']
 
     files = []
     for root, dirs, files_list in os.walk(directory):
