@@ -50,6 +50,19 @@ async def local_doc_chat(req: request):
     preprocess_start = time.perf_counter()
     local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
     user_id = safe_get(req, 'user_id')
+    # 获取qa_id参数，用于确定是更新已有对话还是创建新对话
+    qa_id = safe_get(req, 'qa_id', '')
+    qa_log_exists = False
+    
+    # 如果提供了qa_id，检查对应的对话记录是否存在
+    if qa_id:
+        existing_qa_log = local_doc_qa.milvus_summary.get_qa_log_by_id(qa_id)
+        if existing_qa_log:
+            qa_log_exists = True
+            debug_logger.info(f"找到已存在的对话记录: qa_id={qa_id}")
+        else:
+            debug_logger.info(f"未找到对话记录: qa_id={qa_id}，将创建新记录")
+    
     # local_cluster = get_milvus_cluster_by_user_info(user_info)
     # user_id = user_id + '__' + user_info
     # local_doc_qa.milvus_summary.update_user_cluster(user_id, [get_milvus_cluster_by_user_info(user_info)])
@@ -158,6 +171,8 @@ async def local_doc_chat(req: request):
     debug_logger.info("temperature: %s", temperature)
     debug_logger.info("hybrid_search: %s", hybrid_search)
     debug_logger.info("chunk_size: %s", chunk_size)
+    debug_logger.info("qa_id: %s", qa_id)
+    debug_logger.info("qa_log_exists: %s", qa_log_exists)
 
     time_record = {}
     if kb_ids:
@@ -230,25 +245,44 @@ async def local_doc_chat(req: request):
                                  'result': result, 'retrieval_documents': retrieval_documents,
                                  'source_documents': source_documents, 'bot_id': bot_id}
                     
-                    # 创建QaLog对象
-                    qa_log = QaLog(
-                        qa_id="",  # 会自动生成
-                        user_id=user_id,
-                        kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
-                        query=question,
-                        model=model,
-                        product_source=request_source,
-                        time_record=formatted_time_record,
-                        history=history,
-                        condense_question=resp['condense_question'],
-                        prompt=resp['prompt'],
-                        result=result,
-                        retrieval_documents=retrieval_documents,
-                        source_documents=source_documents,
-                        bot_id=bot_id
-                    )
-                    
-                    local_doc_qa.milvus_summary.add_qa_log(qa_log)
+                    if qa_log_exists:
+                        # 如果存在qa_id，更新已有记录
+                        debug_logger.info(f"更新已有QA记录: qa_id={qa_id}")
+                        update_data = {
+                            "query": question,
+                            "result": result,
+                            "model": model,
+                            "product_source": request_source,
+                            "time_record": formatted_time_record,
+                            "history": next_history,
+                            "condense_question": resp['condense_question'],
+                            "prompt": resp['prompt'],
+                            "retrieval_documents": retrieval_documents,
+                            "source_documents": source_documents
+                        }
+                        local_doc_qa.milvus_summary.update_qa_log(qa_id, update_data)
+                    else:
+                        # 创建新的QA记录
+                        debug_logger.info("创建新的QA记录")
+                        # 创建QaLog对象
+                        qa_log = QaLog(
+                            qa_id=qa_id,  # 如果为空，会自动生成
+                            user_id=user_id,
+                            kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
+                            query=question,
+                            model=model,
+                            product_source=request_source,
+                            time_record=formatted_time_record,
+                            history=next_history,
+                            condense_question=resp['condense_question'],
+                            prompt=resp['prompt'],
+                            result=result,
+                            retrieval_documents=retrieval_documents,
+                            source_documents=source_documents,
+                            bot_id=bot_id
+                        )
+                        # 确保不使用await调用同步方法
+                        qa_id = local_doc_qa.milvus_summary.add_qa_log(qa_log)
                     
                     qa_logger.info("chat_data: %s", chat_data)
                     debug_logger.info("response: %s", chat_data['result'])
@@ -263,7 +297,8 @@ async def local_doc_chat(req: request):
                         "source_documents": source_documents,
                         "retrieval_documents": retrieval_documents,
                         "time_record": formatted_time_record,
-                        "show_images": resp.get('show_images', [])
+                        "show_images": resp.get('show_images', []),
+                        "qa_id": qa_id  # 返回qa_id给客户端
                     }
                 else:
                     time_record['rollback_length'] = resp.get('rollback_length', 0)
@@ -318,38 +353,57 @@ async def local_doc_chat(req: request):
         source_documents = format_source_documents(resp["source_documents"])
         formatted_time_record = format_time_record(time_record)
         
-        # 创建QaLog对象
-        qa_log = QaLog(
-            qa_id="",  # 会自动生成
-            user_id=user_id,
-            kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
-            query=question,
-            model=model,
-            product_source=request_source,
-            time_record=formatted_time_record,
-            history=history,
-            condense_question=resp['condense_question'],
-            prompt=resp['prompt'],
-            result=resp['result'],
-            retrieval_documents=retrieval_documents,
-            source_documents=source_documents,
-            bot_id=bot_id
-        )
-        
-        await local_doc_qa.milvus_summary.add_qa_log(qa_log)
+        if qa_log_exists:
+            # 如果存在qa_id，更新已有记录
+            debug_logger.info(f"更新已有QA记录: qa_id={qa_id}")
+            update_data = {
+                "query": question,
+                "result": resp['result'],
+                "model": model,
+                "product_source": request_source,
+                "time_record": formatted_time_record,
+                "history": history,
+                "condense_question": resp['condense_question'],
+                "prompt": resp['prompt'],
+                "retrieval_documents": retrieval_documents,
+                "source_documents": source_documents
+            }
+            local_doc_qa.milvus_summary.update_qa_log(qa_id, update_data)
+        else:
+            # 创建新的QA记录
+            debug_logger.info("创建新的QA记录")
+            # 创建QaLog对象
+            qa_log = QaLog(
+                qa_id=qa_id,  # 如果为空，会自动生成
+                user_id=user_id,
+                kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
+                query=question,
+                model=model,
+                product_source=request_source,
+                time_record=formatted_time_record,
+                history=history,
+                condense_question=resp['condense_question'],
+                prompt=resp['prompt'],
+                result=resp['result'],
+                retrieval_documents=retrieval_documents,
+                source_documents=source_documents,
+                bot_id=bot_id
+            )
+            # 确保不使用await调用同步方法
+            qa_id = local_doc_qa.milvus_summary.add_qa_log(qa_log)
         
         chat_data = {'user_id': user_id, 'kb_ids': kb_ids, 'query': question, 'time_record': formatted_time_record,
                      'history': history, "condense_question": resp['condense_question'], "model": model,
                      "product_source": request_source,
                      'retrieval_documents': retrieval_documents, 'prompt': resp['prompt'], 'result': resp['result'],
-                     'source_documents': source_documents, 'bot_id': bot_id}
+                     'source_documents': source_documents, 'bot_id': bot_id, 'qa_id': qa_id}
         qa_logger.info("chat_data: %s", chat_data)
         debug_logger.info("response: %s", chat_data['result'])
         return sanic_json({"code": 200, "msg": "success no stream chat", "question": question,
                            "response": resp["result"], "model": model,
                            "history": history, "condense_question": resp['condense_question'],
                            "source_documents": source_documents, "retrieval_documents": retrieval_documents,
-                           "time_record": formatted_time_record})
+                           "time_record": formatted_time_record, "qa_id": qa_id})
 
 
 @get_time_async
