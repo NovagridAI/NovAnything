@@ -41,12 +41,12 @@ async def create_model_config(request: Request):
         model_endpoint = safe_get(request, 'model_endpoint')
 
         # 获取可选字段
-        creativity = float(safe_get(request, 'creativity', 1.0))
-        thinking_depth = float(safe_get(request, 'thinking_depth', 1.0))
-        expression_style = float(safe_get(request, 'expression_style', 1.0))
-        vocabulary_richness = float(safe_get(request, 'vocabulary_richness', 1.0))
-        token_limit = float(safe_get(request, 'token_limit', 1.0))
-        reasoning_strength = safe_get(request, 'reasoning_strength', "中")
+        temperature = float(safe_get(request, 'temperature', 1.0))
+        topk = int(safe_get(request, 'topk', 1))
+        api_context_length = int(safe_get(request, 'api_context_length', 1024))
+        top_p = float(safe_get(request, 'top_p', 1.0))
+        max_token = int(safe_get(request, 'max_token', 1024))
+        context_length = int(safe_get(request, 'context_length', 10))
         is_global = bool(safe_get(request, 'is_global', False))
 
         # 检查必需字段
@@ -74,12 +74,12 @@ async def create_model_config(request: Request):
             api_key=api_key,
             api_proxy=api_proxy,
             model_endpoint=model_endpoint,
-            creativity=creativity,
-            thinking_depth=thinking_depth,
-            expression_style=expression_style,
-            vocabulary_richness=vocabulary_richness,
-            token_limit=token_limit,
-            reasoning_strength=reasoning_strength,
+            temperature=temperature,
+            topk=topk,
+            api_context_length=api_context_length,
+            top_p=top_p,
+            max_token=max_token,
+            context_length=context_length,
             is_global=is_global,
             is_deleted=False
         )
@@ -127,12 +127,12 @@ async def update_model_config(request: Request):
         api_key = safe_get(request, 'api_key')
         api_proxy = safe_get(request, 'api_proxy')
         model_endpoint = safe_get(request, 'model_endpoint')
-        creativity = safe_get(request, 'creativity')
-        thinking_depth = safe_get(request, 'thinking_depth')
-        expression_style = safe_get(request, 'expression_style')
-        vocabulary_richness = safe_get(request, 'vocabulary_richness')
-        token_limit = safe_get(request, 'token_limit')
-        reasoning_strength = safe_get(request, 'reasoning_strength')
+        temperature = safe_get(request, 'temperature')
+        topk = safe_get(request, 'topk')
+        api_context_length = safe_get(request, 'api_context_length')
+        top_p = safe_get(request, 'top_p')
+        max_token = safe_get(request, 'max_token')
+        context_length = safe_get(request, 'context_length')
         is_global = safe_get(request, 'is_global')
 
         # 获取原配置
@@ -150,8 +150,8 @@ async def update_model_config(request: Request):
         if existing_config.is_global and role not in [ROLE_ADMIN, ROLE_SUPERADMIN]:
             # 普通用户只能修改某些参数，不能修改全局模型的基本信息
             allowed_fields = [
-                "creativity", "thinking_depth", "expression_style",
-                "vocabulary_richness", "token_limit", "reasoning_strength"
+                "temperature", "topk", "api_context_length",
+                "top_p", "max_token", "context_length", "is_global"
             ]
 
             # 检查是否尝试修改不允许的字段
@@ -193,18 +193,18 @@ async def update_model_config(request: Request):
                 update_data["model_endpoint"] = model_endpoint
 
         # 所有用户都可以更新的微调参数
-        if creativity is not None:
-            update_data["creativity"] = float(creativity)
-        if thinking_depth is not None:
-            update_data["thinking_depth"] = float(thinking_depth)
-        if expression_style is not None:
-            update_data["expression_style"] = float(expression_style)
-        if vocabulary_richness is not None:
-            update_data["vocabulary_richness"] = float(vocabulary_richness)
-        if token_limit is not None:
-            update_data["token_limit"] = float(token_limit)
-        if reasoning_strength is not None:
-            update_data["reasoning_strength"] = reasoning_strength
+        if temperature is not None:
+            update_data["temperature"] = float(temperature)
+        if topk is not None:
+            update_data["topk"] = int(topk)
+        if api_context_length is not None:
+            update_data["api_context_length"] = int(api_context_length)
+        if top_p is not None:
+            update_data["top_p"] = float(top_p)
+        if max_token is not None:
+            update_data["max_token"] = int(max_token)
+        if context_length is not None:
+            update_data["context_length"] = int(context_length)
 
         # 更新数据库
         if update_data:

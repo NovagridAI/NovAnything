@@ -18,12 +18,12 @@ class ModelConfig:
     api_key: str  # API密钥
     api_proxy: str  # API代理地址
     model_endpoint: str  # 模型endpoint
-    creativity: float = 1.0  # 创意活跃度
-    thinking_depth: float = 1.0  # 思维开放度
-    expression_style: float = 1.0  # 表达发散度
-    vocabulary_richness: float = 1.0  # 词汇丰富度
-    token_limit: float = 1.0  # 单次回复限制
-    reasoning_strength: str = "中"  # 推理强度
+    temperature: float = 1.0  # 温度参数
+    topk: int = 1  # Top-K采样
+    api_context_length: int = 1024  # API上下文长度
+    top_p: float = 1.0  # Top-P采样
+    max_token: int = 1024  # 最大生成token数
+    context_length: int = 10  # 上下文长度
     is_global: bool = False  # 是否为全局模型
     is_deleted: bool = False  # 是否已删除
     create_time: str = None  # 创建时间
@@ -40,12 +40,12 @@ class ModelConfig:
             "api_key": self.api_key,
             "api_proxy": self.api_proxy,
             "model_endpoint": self.model_endpoint,
-            "creativity": self.creativity,
-            "thinking_depth": self.thinking_depth,
-            "expression_style": self.expression_style,
-            "vocabulary_richness": self.vocabulary_richness,
-            "token_limit": self.token_limit,
-            "reasoning_strength": self.reasoning_strength,
+            "temperature": self.temperature,
+            "topk": self.topk,
+            "api_context_length": self.api_context_length,
+            "top_p": self.top_p,
+            "max_token": self.max_token,
+            "context_length": self.context_length,
             "is_global": self.is_global,
             "is_deleted": self.is_deleted,
             "create_time": self.create_time,
@@ -64,14 +64,14 @@ class ModelConfig:
             api_key=data.get('api_key'),
             api_proxy=data.get('api_proxy'),
             model_endpoint=data.get('model_endpoint'),
-            creativity=data.get('creativity', 1.0),
-            thinking_depth=data.get('thinking_depth', 1.0),
-            expression_style=data.get('expression_style', 1.0),
-            vocabulary_richness=data.get('vocabulary_richness', 1.0),
-            token_limit=data.get('token_limit', 1.0),
-            reasoning_strength=data.get('reasoning_strength', '中'),
+            temperature=data.get('temperature', 1.0),
+            topk=data.get('topk', 1),
+            api_context_length=data.get('api_context_length', 1024),
+            top_p=data.get('top_p', 1.0),
+            max_token=data.get('max_token', 1024),
+            context_length=data.get('context_length', 10),
             is_global=data.get('is_global', False),
             is_deleted=data.get('is_deleted', False),
             create_time=data.get('create_time'),
             update_time=data.get('update_time')
-        ) 
+        )
