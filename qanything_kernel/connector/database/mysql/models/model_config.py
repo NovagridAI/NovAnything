@@ -19,7 +19,7 @@ class ModelConfig:
     api_proxy: str  # API代理地址
     model_endpoint: str  # 模型endpoint
     temperature: float = 1.0  # 温度参数
-    topk: int = 1  # Top-K采样
+    top_k: int = 1  # Top-K采样
     api_context_length: int = 1024  # API上下文长度
     top_p: float = 1.0  # Top-P采样
     max_token: int = 1024  # 最大生成token数
@@ -41,7 +41,7 @@ class ModelConfig:
             "api_proxy": self.api_proxy,
             "model_endpoint": self.model_endpoint,
             "temperature": self.temperature,
-            "topk": self.topk,
+            "top_k": self.top_k,
             "api_context_length": self.api_context_length,
             "top_p": self.top_p,
             "max_token": self.max_token,
@@ -65,7 +65,7 @@ class ModelConfig:
             api_proxy=data.get('api_proxy'),
             model_endpoint=data.get('model_endpoint'),
             temperature=data.get('temperature', 1.0),
-            topk=data.get('topk', 1),
+            top_k=data.get('top_k', 1),
             api_context_length=data.get('api_context_length', 1024),
             top_p=data.get('top_p', 1.0),
             max_token=data.get('max_token', 1024),

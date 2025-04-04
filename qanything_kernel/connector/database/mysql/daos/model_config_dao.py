@@ -32,7 +32,7 @@ class ModelConfigDAO(BaseDAO):
                 api_proxy VARCHAR(512) NOT NULL,
                 model_endpoint VARCHAR(255) NOT NULL,
                 temperature FLOAT DEFAULT 1.0,
-                topk INT DEFAULT 1,
+                top_k INT DEFAULT 1,
                 api_context_length INT DEFAULT 1024,
                 top_p FLOAT DEFAULT 1.0,
                 max_token INT DEFAULT 1024,

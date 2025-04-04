@@ -42,7 +42,7 @@ async def create_model_config(request: Request):
 
         # 获取可选字段
         temperature = float(safe_get(request, 'temperature', 1.0))
-        topk = int(safe_get(request, 'topk', 1))
+        top_k = int(safe_get(request, 'top_k', 1))
         api_context_length = int(safe_get(request, 'api_context_length', 1024))
         top_p = float(safe_get(request, 'top_p', 1.0))
         max_token = int(safe_get(request, 'max_token', 1024))
@@ -75,7 +75,7 @@ async def create_model_config(request: Request):
             api_proxy=api_proxy,
             model_endpoint=model_endpoint,
             temperature=temperature,
-            topk=topk,
+            top_k=top_k,
             api_context_length=api_context_length,
             top_p=top_p,
             max_token=max_token,
@@ -128,7 +128,7 @@ async def update_model_config(request: Request):
         api_proxy = safe_get(request, 'api_proxy')
         model_endpoint = safe_get(request, 'model_endpoint')
         temperature = safe_get(request, 'temperature')
-        topk = safe_get(request, 'topk')
+        top_k = safe_get(request, 'top_k')
         api_context_length = safe_get(request, 'api_context_length')
         top_p = safe_get(request, 'top_p')
         max_token = safe_get(request, 'max_token')
@@ -150,7 +150,7 @@ async def update_model_config(request: Request):
         if existing_config.is_global and role not in [ROLE_ADMIN, ROLE_SUPERADMIN]:
             # 普通用户只能修改某些参数，不能修改全局模型的基本信息
             allowed_fields = [
-                "temperature", "topk", "api_context_length",
+                "temperature", "top_k", "api_context_length",
                 "top_p", "max_token", "context_length", "is_global"
             ]
 
@@ -195,8 +195,8 @@ async def update_model_config(request: Request):
         # 所有用户都可以更新的微调参数
         if temperature is not None:
             update_data["temperature"] = float(temperature)
-        if topk is not None:
-            update_data["topk"] = int(topk)
+        if top_k is not None:
+            update_data["top_k"] = int(top_k)
         if api_context_length is not None:
             update_data["api_context_length"] = int(api_context_length)
         if top_p is not None:
