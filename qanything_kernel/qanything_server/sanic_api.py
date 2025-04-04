@@ -43,7 +43,7 @@ Extend(app)
 app.config.REQUEST_MAX_SIZE = 128 * 1024 * 1024
 
 # 将 /qanything 路径映射到 ./dist/qanything 文件夹，并指定路由名称
-app.static('/novanything', 'qanything_kernel/qanything_server/dist/novanything/', name='novanything', index="index.html")
+app.static('/novanything', 'qanything_kernel/qanything_server/dist/qanything/', name='novanything', index="index.html")
 
 
 @app.before_server_start
