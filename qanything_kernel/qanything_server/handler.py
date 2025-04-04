@@ -240,7 +240,7 @@ async def local_doc_chat(req: request):
                     formatted_time_record = format_time_record(time_record)
                     chat_data = {'user_id': user_id, 'kb_ids': kb_ids, 'query': question, "model": model,
                                  "product_source": request_source, 'time_record': formatted_time_record,
-                                 'history': history,
+                                 'history': next_history,
                                  'condense_question': resp['condense_question'], 'prompt': resp['prompt'],
                                  'result': result, 'retrieval_documents': retrieval_documents,
                                  'source_documents': source_documents, 'bot_id': bot_id}
@@ -309,9 +309,9 @@ async def local_doc_chat(req: request):
                     stream_res = {
                         "code": 200,
                         "msg": "success",
-                        "question": "",
+                        "question": question,
                         "response": delta_answer,
-                        "history": [],
+                        "history": history,
                         "source_documents": [],
                         "retrieval_documents": [],
                         "time_record": format_time_record(time_record),
