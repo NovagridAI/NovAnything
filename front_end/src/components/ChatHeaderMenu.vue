@@ -27,12 +27,12 @@ import routeController from '@/controller/router';
 import { useChatSetting } from '@/store/useChatSetting';
 import { storeToRefs } from 'pinia';
 import { useHomeChat } from '@/store/useHomeChat';
-const { chatList, chatId, QA_List, qaPageId, pageId, historyList } = storeToRefs(useHomeChat());
+const { chatId, historyList } = storeToRefs(useHomeChat());
 
 const { chatSettingConfigured } = storeToRefs(useChatSetting());
 const defaultOption = chatSettingConfigured.value.find(item => item.active === true);
 const { changePage } = routeController();
-const selectedOption = ref(defaultOption.modelName);
+const selectedOption = ref(defaultOption?.modelName || '');
 const currentChatTitle = computed(() => {
   const currentChatTitle = historyList.value.find(item => item.historyId === chatId.value);
   return currentChatTitle?.title || '新对话';

@@ -24,76 +24,43 @@
               <img class="avatar" src="../assets/home/novLogo.png" alt="头像" />
               <div class="ai-content">
                 <div class="ai-right">
-                  <p
-                    class="question-text"
-                    :class="[
-                      !item.source.length && !item?.picList?.length ? 'change-radius' : '',
-                      item.showTools ? '' : 'flashing',
-                    ]"
-                  >
+                  <p class="question-text" :class="[
+                    !item.source.length && !item?.picList?.length ? 'change-radius' : '',
+                    item.showTools ? '' : 'flashing',
+                  ]">
                     <HighLightMarkDown :content="item.answer.toString()" />
-                    <ChatInfoPanel
-                      v-if="Object.keys(item?.itemInfo?.tokenInfo || {}).length"
-                      :chat-item-info="item.itemInfo"
-                    />
+                    <ChatInfoPanel v-if="Object.keys(item?.itemInfo?.tokenInfo || {}).length"
+                      :chat-item-info="item.itemInfo" />
                   </p>
                   <template v-if="item.source.length">
-                    <div
-                      :class="[
-                        'source-total',
-                        !showSourceIdxs.includes(index) ? 'source-total-last' : '',
-                      ]"
-                    >
+                    <div :class="[
+                      'source-total',
+                      !showSourceIdxs.includes(index) ? 'source-total-last' : '',
+                    ]">
                       <span v-if="language === 'zh'">
                         找到了{{ item.source.length }}个信息来源：
                       </span>
                       <span v-else> Found {{ item.source.length }} source of information </span>
-                      <SvgIcon
-                        v-show="!showSourceIdxs.includes(index)"
-                        name="down"
-                        @click="showSourceList(index)"
-                      />
-                      <SvgIcon
-                        v-show="showSourceIdxs.includes(index)"
-                        name="up"
-                        @click="hideSourceList(index)"
-                      />
+                      <SvgIcon v-show="!showSourceIdxs.includes(index)" name="down" @click="showSourceList(index)" />
+                      <SvgIcon v-show="showSourceIdxs.includes(index)" name="up" @click="hideSourceList(index)" />
                     </div>
                     <div v-show="showSourceIdxs.includes(index)" class="source-list">
-                      <div
-                        v-for="(sourceItem, sourceIndex) in item.source"
-                        :key="sourceIndex"
-                        class="data-source"
-                      >
+                      <div v-for="(sourceItem, sourceIndex) in item.source" :key="sourceIndex" class="data-source">
                         <p v-show="sourceItem.file_name" class="control">
                           <span class="tips">{{ common.dataSource }}{{ sourceIndex + 1 }}:</span>
-                          <a
-                            v-if="sourceItem.file_url.startsWith('http')"
-                            :href="sourceItem.file_url"
-                            target="_blank"
-                          >
+                          <a v-if="sourceItem.file_url.startsWith('http')" :href="sourceItem.file_url" target="_blank">
                             {{ sourceItem.file_name }}
                           </a>
-                          <span
-                            v-else
-                            :class="[
-                              'file',
-                              checkFileType(sourceItem.file_name) ? 'filename-active' : '',
-                            ]"
-                            @click="handleChatSource(sourceItem)"
-                          >
+                          <span v-else :class="[
+                            'file',
+                            checkFileType(sourceItem.file_name) ? 'filename-active' : '',
+                          ]" @click="handleChatSource(sourceItem)">
                             {{ sourceItem.file_name }}
                           </span>
-                          <SvgIcon
-                            v-show="sourceItem.showDetailDataSource"
-                            name="iconup"
-                            @click="hideDetail(item, sourceIndex)"
-                          />
-                          <SvgIcon
-                            v-show="!sourceItem.showDetailDataSource"
-                            name="icondown"
-                            @click="showDetail(item, sourceIndex)"
-                          />
+                          <SvgIcon v-show="sourceItem.showDetailDataSource" name="iconup"
+                            @click="hideDetail(item, sourceIndex)" />
+                          <SvgIcon v-show="!sourceItem.showDetailDataSource" name="icondown"
+                            @click="showDetail(item, sourceIndex)" />
                         </p>
                         <Transition name="sourceitem">
                           <div v-show="sourceItem.showDetailDataSource" class="source-content">
@@ -114,27 +81,15 @@
                       <span class="reload-text">{{ common.regenerate }}</span>
                     </div>
                     <div class="tools">
-                      <SvgIcon
-                        :style="{
-                          color: item.copied ? '#4D71FF' : '',
-                        }"
-                        name="copy"
-                        @click="myCopy(item)"
-                      ></SvgIcon>
-                      <SvgIcon
-                        :style="{
-                          color: item.like ? '#4D71FF' : '',
-                        }"
-                        name="like"
-                        @click="like(item, $event)"
-                      ></SvgIcon>
-                      <SvgIcon
-                        :style="{
-                          color: item.unlike ? '#4D71FF' : '',
-                        }"
-                        name="unlike"
-                        @click="unlike(item)"
-                      ></SvgIcon>
+                      <SvgIcon :style="{
+                        color: item.copied ? '#4D71FF' : '',
+                      }" name="copy" @click="myCopy(item)"></SvgIcon>
+                      <SvgIcon :style="{
+                        color: item.like ? '#4D71FF' : '',
+                      }" name="like" @click="like(item, $event)"></SvgIcon>
+                      <SvgIcon :style="{
+                        color: item.unlike ? '#4D71FF' : '',
+                      }" name="unlike" @click="unlike(item)"></SvgIcon>
                     </div>
                   </div>
                 </div>
@@ -153,7 +108,7 @@
       </div>
       <div class="question-container">
         <div class="icon-container">
-          <arco-popover position="top">
+          <arco-popover position="top" style="width: 800px;">
             <template #content>
               <ChatAdvanceSettings />
             </template>
@@ -162,14 +117,15 @@
           <icon-upload class="action-icon" />
         </div>
         <div class="question-container-button">
-          <arco-button  :disabled="showLoading" @click="newChat"  style="border-color: #165DFF; color: #165DFF;">
-            <icon-plus class="action-icon" style="margin-right: 8px;"/> 新话题
+          <arco-button :disabled="showLoading" @click="newChat" style="border-color: #165DFF; color: #165DFF;">
+            <icon-plus class="action-icon" style="margin-right: 8px;" /> 新话题
           </arco-button>
           <arco-button type="primary" :disabled="showLoading" @click="send">
             <icon-send class="action-icon" style="margin-right: 8px;" /> 发送消息
-        </arco-button>
+          </arco-button>
         </div>
-        <arco-textarea placeholder="输入聊天内容..." allow-clear :auto-size = {minRows:6} :resize="false" class="full-width-textarea" style="padding-top: 58px;" />
+        <arco-textarea v-model="question" placeholder="输入聊天内容..." allow-clear :auto-size="{ minRows: 6 }"
+          :resize="false" class="full-width-textarea" style="padding-top: 58px;" />
       </div>
       <div class="question-box">
         <div class="question">
@@ -222,12 +178,7 @@
     </div>
     <ConversationHistory />
     <div class="scroll-btn-div">
-      <img
-        class="avatar"
-        src="@/assets/home/scroll-down.png"
-        alt="滑到底部"
-        @click="scrollBottom"
-      />
+      <img class="avatar" src="@/assets/home/scroll-down.png" alt="滑到底部" @click="scrollBottom" />
     </div>
   </div>
   <ChatSettingDialog ref="chatSettingForDialogRef" />
@@ -275,10 +226,10 @@ const typewriter = new Typewriter((str: string) => {
 });
 
 const { selectList, knowledgeBaseList } = storeToRefs(useKnowledgeBase());
-const { QA_List, chatId, pageId, qaPageId, historyList } = storeToRefs(useHomeChat());
+const { QA_List, chatId, pageId, qaPageId, historyList, currentQaId } = storeToRefs(useHomeChat());
 const { chatSettingFormActive } = storeToRefs(useChatSetting());
 const { copy } = useClipboard();
-const { addHistoryList, updateHistoryList, addChatList, clearChatList } = useHomeChat();
+const { addHistoryList, updateHistoryList, addChatList, clearChatList, setCurrentQaId } = useHomeChat();
 const { setChatSourceVisible, setSourceType, setSourceUrl, setTextContent } = useChatSource();
 const { setCopyUrlVisible, setWebUrl } = useBots();
 const { language } = storeToRefs(useLanguage());
@@ -333,6 +284,7 @@ function newChat() {
     message.info('已切换最新对话');
     return;
   }
+  currentQaId.value = null;
   chatId.value = null;
   QA_List.value = [];
   qaPageId.value = 1;
@@ -544,24 +496,39 @@ const send = async () => {
   }
 
   checkKbSelect();
-  if (!selectList.value.length) {
-    return message.warning(common.chooseError);
-  } else {
-    // 校验选中的知识库
-    message.info({
-      content:
-        common.type === 'zh'
-          ? `已选择 ${selectList.value.length} 个知识库进行问答`
-          : ` ${selectList.value.length} knowledge base has been selected`,
-      icon: ' ',
-    });
-  }
+  // if (!selectList.value.length) {
+  //   return message.warning(common.chooseError);
+  // } else {
+  //   // 校验选中的知识库
+  //   message.info({
+  //     content:
+  //       common.type === 'zh'
+  //         ? `已选择 ${selectList.value.length} 个知识库进行问答`
+  //         : ` ${selectList.value.length} knowledge base has been selected`,
+  //     icon: ' ',
+  //   });
+  // }
   const q = question.value;
   beforeSend(q);
+
+  // 如果是新对话，创建qa_log并获取qa_id
+  if (currentQaId.value === null && QA_List.value.length === 0) {
+    try {
+      const res: any = await createQaLog({
+        query: question.value,
+        kb_ids: selectList.value,
+        model: chatSettingFormActive.value.apiModelName,
+      });
+      setCurrentQaId(res.qa_id);
+    } catch (e) {
+      console.error('创建qa_log失败', e);
+    }
+  }
+
   question.value = '';
   addQuestion(q);
   // 更新最大的chatList
-  addChatList(chatId.value, QA_List.value);
+  // addChatList(chatId.value, QA_List.value);
   showLoading.value = true;
   ctrl = new AbortController();
 
@@ -586,6 +553,7 @@ const send = async () => {
     top_p: chatSettingFormActive.value.top_P,
     top_k: chatSettingFormActive.value.top_K,
     temperature: chatSettingFormActive.value.temperature,
+    qa_id: currentQaId.value,
   };
 
   // 如果是仅检索
@@ -612,7 +580,7 @@ const send = async () => {
     showLoading.value = false;
     QA_List.value[QA_List.value.length - 1].showTools = true;
     // 更新最大的chatList
-    addChatList(chatId.value, QA_List.value);
+    // addChatList(chatId.value, QA_List.value);
     await nextTick(() => {
       scrollBottom();
     });
@@ -680,7 +648,8 @@ const send = async () => {
         // 将chat info添加进回答中
         QA_List.value.at(-1).itemInfo = chatInfoClass.getChatInfo();
         // 更新最大的chatList
-        addChatList(chatId.value, QA_List.value);
+        // addChatList(chatId.value, QA_List.value);
+        updateQaLog(QA_List.value);
         nextTick(() => {
           scrollBottom();
         });
@@ -693,13 +662,55 @@ const send = async () => {
         QA_List.value[QA_List.value.length - 1].showTools = true;
         message.error(err.msg || '出错了');
         // 更新最大的chatList
-        addChatList(chatId.value, QA_List.value);
+        // addChatList(chatId.value, QA_List.value);
+        updateQaLog(QA_List.value);
         nextTick(() => {
           scrollBottom();
         });
         throw err;
       },
     });
+  }
+};
+
+// 创建qa_log的函数
+const createQaLog = async ({ kb_ids, query, model }) => {
+  try {
+    const res = await resultControl(
+      await urlResquest.createQaLog({
+        kb_ids: kb_ids,
+        query: query,
+        model: model,
+      })
+    );
+    console.log('创建qa_log成功', res);
+    return res;
+  } catch (e) {
+    console.error('创建qa_log失败', e);
+    throw e;
+  }
+};
+
+// 更新qa_log的函数
+const updateQaLog = async (update_data) => {
+  try {
+
+    const requestData = {
+      qa_id: currentQaId.value,
+      user_id: userId,
+      update_data: {
+        history: update_data
+      }
+    }
+   
+    const res = await resultControl(
+      await urlResquest.updateQaLog(requestData)
+    );
+    console.log('更新qa_log成功', res);
+    return res;
+  } catch (e) {
+    console.error('更新qa_log失败', e);
+    throw e;
   }
 };
 
@@ -979,10 +990,12 @@ $avatar-width: 96px;
 
   #chat-ul {
     //padding-bottom: 20px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     background: $mainBgColor;
     overflow: hidden;
+    background-color: #F8F8F8;
   }
 
   .avatar {
@@ -1008,9 +1021,10 @@ $avatar-width: 96px;
       font-weight: normal;
       line-height: 22px;
       color: #222222;
-      background: lighten($baseColor, 35%);
+      background: #fff;
       border-radius: 12px;
       word-wrap: break-word;
+      box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
     }
   }
 
@@ -1029,7 +1043,7 @@ $avatar-width: 96px;
       min-width: 20%;
 
       .question-text {
-        background: darken($secondaryBgColor, 5%);
+        background: #fff;
         flex: 1;
         padding: 13px 20px;
         font-size: 14px;
@@ -1038,6 +1052,7 @@ $avatar-width: 96px;
         color: $title1;
         border-radius: 12px 12px 0 0;
         word-wrap: break-word;
+        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
       }
 
       .flashing {
@@ -1175,7 +1190,8 @@ $avatar-width: 96px;
 .stop-btn {
   display: flex;
   justify-content: center;
-  margin: 18px 0;
+  padding: 18px 0;
+  background-color: #F8F8F8;
 
   :deep(.ant-btn) {
     width: 92px;
@@ -1348,7 +1364,8 @@ $avatar-width: 96px;
   }
 }
 
-.sourceitem-leave, // 离开前,进入后透明度是1
+.sourceitem-leave,
+// 离开前,进入后透明度是1
 .sourceitem-enter-to {
   opacity: 1;
 }
@@ -1371,13 +1388,13 @@ $avatar-width: 96px;
   padding: 0;
   margin: 0;
   border-top: 1px solid #D8D8D8;
-  
+
   :deep(.full-width-textarea) {
     width: 100%;
     resize: none;
     padding-top: 20px;
   }
-  
+
   :deep(.arco-textarea-wrapper) {
     width: 100%;
     margin: 0;
@@ -1395,12 +1412,12 @@ $avatar-width: 96px;
   gap: 12px;
   margin-bottom: 8px;
   z-index: 20;
-  
+
   .action-icon {
     font-size: 20px;
     color: #666666;
     cursor: pointer;
-    
+
     &:hover {
       color: $baseColor;
     }
@@ -1416,7 +1433,6 @@ $avatar-width: 96px;
   align-items: center;
   z-index: 20;
 }
-
 </style>
 <style lang="scss">
 @keyframes shake {
@@ -1431,9 +1447,11 @@ $avatar-width: 96px;
   20% {
     transform: rotate(20deg);
   }
+
   30% {
     transform: rotate(20deg);
   }
+
   40% {
     transform: rotate(20deg);
   }
@@ -1445,12 +1463,15 @@ $avatar-width: 96px;
   60% {
     transform: rotate(0deg);
   }
+
   70% {
     transform: rotate(-15deg);
   }
+
   80% {
     transform: rotate(-30deg);
   }
+
   90% {
     transform: rotate(-15deg);
   }
@@ -1478,12 +1499,15 @@ $avatar-width: 96px;
   25% {
     transform: rotate(90deg);
   }
+
   50% {
     transform: rotate(180deg);
   }
+
   75% {
     transform: rotate(270deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

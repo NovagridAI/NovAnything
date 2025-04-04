@@ -103,6 +103,7 @@ function addAnswer(
 
 // 选择/切换对话
 async function changeChat(item) {
+  console.log(chatList.value, 'item');
   // 正在问答时禁止操作
   if (props.showLoading) {
     return;

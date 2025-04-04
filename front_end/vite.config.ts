@@ -165,37 +165,37 @@ export default defineConfig(({ mode }) => {
       cors: true,
       proxy: {
         '/model': {
-          target: 'http://198.2.235.68:8777/api',
+          target: 'http://198.200.46.147:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/model/, '/model'),
         },
         '/group': {
-          target: 'http://198.2.235.68:8777/api',
+          target: 'http://198.200.46.147:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/group/, '/group'),
         },
         '/kb': {
-          target: 'http://198.2.235.68:8777/api',
+          target: 'http://198.200.46.147:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/kb/, '/kb'),
         },
         '/user': {
-          target: 'http://198.2.235.68:8777/api',
+          target: 'http://198.200.46.147:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/user/, '/user'),
         },
         '/department': {
-          target: 'http://198.2.235.68:8777/api',
+          target: 'http://198.200.46.147:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/department/, '/department'),
         },
         '/auth': {
-          target: 'http://198.2.235.68:8777/api',
+          target: 'http://198.200.46.147:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/auth/, '/auth'),
         },
         '/local_doc_qa': {
-          target: 'http://198.2.235.68:8777/api',
+          target: 'http://198.200.46.147:8777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/local_doc_qa/, '/local_doc_qa'),
         },

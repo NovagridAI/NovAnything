@@ -8,30 +8,29 @@
 -->
 <template>
   <Teleport to="body">
-    <a-modal
-      v-model:open="urlModalVisible"
+    <arco-modal
+      v-model:visible="urlModalVisible"
       :title="modalTitle"
       centered
-      width="480px"
-      wrap-class-name="upload-file-modal"
+      :width="480"
+      modal-class="upload-file-modal"
       @ok="handleOk"
     >
       <div class="line-url">
         <UploadInput :kb-id="currentId"></UploadInput>
       </div>
       <template #footer>
-        <a-button
+        <arco-button
           key="submit"
           type="primary"
-          class="upload-btn"
           :disabled="!canSubmit"
           :loading="confirmLoading"
           @click="handleOk"
         >
           {{ common.confirm }}
-        </a-button>
+        </arco-button>
       </template>
-    </a-modal>
+    </arco-modal>
   </Teleport>
 </template>
 <script lang="ts" setup>

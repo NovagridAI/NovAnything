@@ -28,14 +28,16 @@
               {{ navIndex === 0 ? home.docSet : home.qaSet }}
             </div>
           </div> -->
-     
-          <div class="handle-btn">
-            <arco-input size="medium" placeholder="搜索文件" style="width: 220px;"/>
 
-            <arco-button v-if="navIndex === 0" class="arco-clear-upload" @click="clearUpload" style="border: 1px solid #F53F3F; color: #F53F3F; background-color: #fff;">
+          <div class="handle-btn">
+            <arco-input size="medium" placeholder="搜索文件" style="width: 220px;" />
+
+            <arco-button v-if="navIndex === 0" class="arco-clear-upload" @click="clearUpload"
+              style="border: 1px solid #F53F3F; color: #F53F3F; background-color: #fff;">
               {{ home.clearAllFile }}
             </arco-button>
-            <arco-button v-if="navIndex === 0" class="arco-clear-upload" @click="clearUpload" style="border: 1px solid #F53F3F; color: #F53F3F; background-color: #fff;">
+            <arco-button v-if="navIndex === 0" class="arco-clear-upload" @click="clearUpload"
+              style="border: 1px solid #F53F3F; color: #F53F3F; background-color: #fff;">
               批量删除
             </arco-button>
             <arco-button v-if="navIndex === 0" type="primary" class="arco-file-upload" @click="showFileUpload">
@@ -59,133 +61,62 @@
                   }
                 " />
               </template>
-              <a-button type="primary" style="margin: 0px 10px; height: 40px">所有文件一键添加tag</a-button>
-            </a-popover>
-            <a-popover v-if="navIndex === 0" trigger="click" placement="top">
-              <template #content>
+<a-button type="primary" style="margin: 0px 10px; height: 40px">所有文件一键添加tag</a-button>
+</a-popover>
+<a-popover v-if="navIndex === 0" trigger="click" placement="top">
+  <template #content>
                 <TagsInput @confirm-tag="
                   newTags => {
                     tagConfirm('fileBatch', [...selectedKeys.keys()], newTags);
                   }
                 " />
               </template>
-              <a-button type="primary" style="height: 40px">批量添加tag</a-button>
-            </a-popover> -->
+  <a-button type="primary" style="height: 40px">批量添加tag</a-button>
+</a-popover> -->
           </div>
           <div v-if="navIndex === 0" class="nav-progress">
             <UploadProgress :data-source="dataSource" />
           </div>
         </div>
         <div class="table">
-          <a-table v-if="navIndex === 0" :data-source="dataSource" :columns="columns" :pagination="kbPaginationConfig"
-            :locale="{ emptyText: home.emptyText }" :hide-on-single-page="true" :show-size-changer="false"
-            :row-selection="{ selectedRowKeys: [...selectedKeys.keys()], onSelect, onSelectAll }" @change="kbOnChange">
-            <template #headerCell="{ column }">
-              <!--            fileIdName-->
-              <template v-if="column.key === 'status'">
-                <span style="display: flex; align-items: center;">
-                  {{ home.documentStatus }}
-                  <a-tooltip color="#5a47e5">
-                    <template #title>
-                      {{ home.documentStatusNode }}
-                    </template>
-                    <QuestionCircleOutlined style="margin-left: 5px; font-size: 16px; color: #999;" />
-                  </a-tooltip>
+          <!-- 新增的Arco Design表格 -->
+          <arco-table :selectedRowKeys="[...selectedKeys.keys()]" @select="onSelect" @selectAll="onSelectAll"
+            :row-selection="{ showCheckedAll: true }" :data="dataSource" :columns="columns"
+            :pagination="kbPaginationConfig" row-key="fileId" @page-change="current => kbOnChange({ current })"
+            style="margin-top: 20px; border-radius: 12px; overflow: hidden;">
+            <template #status="{ record }">
+              <div class="status-box">
+                <span class="icon-file-status">
+                  <LoadingImg v-if="record.status === 'gray' || record.status === 'yellow'" class="file-status" />
+                  <SvgIcon v-else class="file-status" :name="record.status === 'green' ? 'success' : 'error'" />
                 </span>
-              </template>
+                <span> {{ parseStatus(record.status) }}</span>
+              </div>
             </template>
-
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'fileIdName'">
-                <a-tooltip color="#fff" placement="topLeft">
-                  <template #title>
-                    <span style="color: #666; user-select: text">{{ record.fileIdName }}</span>
-                  </template>
-                  <span>{{ record.fileIdName }}</span>
-                </a-tooltip>
-              </template>
-              <template v-else-if="column.key === 'fileTag'">
-                <!-- <Tags v-if="record.status === 'green'" :tags="record.fileTag" @update:tags="
-                  newTags => {
-                    record.fileTag = newTags;
-                  }
-                " @confirm-tag="
-                  newTags => {
-                    tagConfirm('file', [record.fileId], newTags);
-                  }
-                " /> -->
-              </template>
-              <template v-else-if="column.key === 'status'">
-                <div class="status-box">
-                  <span class="icon-file-status">
-                    <LoadingImg v-if="record.status === 'gray' || record.status === 'yellow'" class="file-status" />
-                    <SvgIcon v-else class="file-status" :name="record.status === 'green' ? 'success' : 'error'" />
-                  </span>
-                  <span> {{ parseStatus(record.status) }}</span>
-                </div>
-              </template>
-              <template v-else-if="column.key === 'remark'">
-                <div v-if="typeof record.remark === 'string'">{{ record.remark }}</div>
-                <div v-else>
-                  <p v-for="(value, key) in record.remark" :key="key">
-                    {{ `${key}: ${value}` }}
-                  </p>
-                </div>
-              </template>
-              <template v-else-if="column.key === 'options'">
-                <a-popconfirm overlay-class-name="del-pop" placement="topRight" :title="common.deleteTitle"
-                  :ok-text="common.confirm" :cancel-text="common.cancel" @confirm="confirm">
-                  <!-- :disabled="record.status == 'gray' || record.status === 'yellow'" -->
-                  <a-button type="text" class="delete-item" @click="deleteItem(record)">
-                    {{ common.delete }}
-                  </a-button>
-                </a-popconfirm>
-                <a-button type="text" class="view-item" :disabled="!(record.status === 'green')"
-                  @click="viewItem(record)">
-                  {{ common.view }}
-                </a-button>
-              </template>
+            <template #options="{ record }">
+              <arco-popconfirm class-name="del-pop" position="tr" content-class="del-pop-content"
+                :content="common.deleteTitle" @ok="confirm">
+                <!-- :disabled="record.status == 'gray' || record.status === 'yellow'" -->
+                <arco-button type="text" class="delete-item" @click="deleteItem(record)">
+                  {{ common.delete }}
+                </arco-button>
+              </arco-popconfirm>
+              <arco-button type="text" class="view-item" :disabled="!(record.status === 'green')"
+                @click="viewItem(record)">
+                {{ common.view }}
+              </arco-button>
             </template>
-          </a-table>
-          <a-table v-else :data-source="faqList" :columns="qaColumns" :locale="{ emptyText: home.emptyText }"
-            :loading="loading" :pagination="paginationConfig" @change="onChange">
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <div class="status-box">
-                  <span class="icon-file-status">
-                    <LoadingImg v-if="record.status === 'gray' || record.status === 'yellow'" class="file-status" />
-                    <SvgIcon v-else class="file-status" :name="record.status === 'green' ? 'success' : 'error'" />
-                  </span>
-                  <span> {{ parseFaqStatus(record.status) }}</span>
-                </div>
-              </template>
-              <template v-else-if="column.key === 'options'">
-                <div class="options">
-                  <a-button class="edit-item" type="link" :disabled="record.status !== 'green'"
-                    @click="editQaItem(record)">
-                    {{ bots.edit }}
-                  </a-button>
-                  <a-popconfirm overlay-class-name="qa-del-pop" placement="topRight" :title="home.deleteQaSetText"
-                    :ok-text="common.confirm" :cancel-text="common.cancel" @confirm="qaConfirm">
-                    <a-button class="delete-item" danger type="link" @click="deleteQaItem(record)">
-                      {{ common.delete }}
-                    </a-button>
-                  </a-popconfirm>
-                </div>
-              </template>
-            </template>
-          </a-table>
+          </arco-table>
+        </div>
+        <div class="table">
         </div>
       </div>
     </div>
     <ChunkViewDialog :kb-id="currentId" :file-id="fileId" :file-name="fileIdName" />
     <FileUploadDialog :dialog-type="0" />
-    <PermissionDialog
-      v-model:visible="permissionDialogVisible"
-      :kb-id="currentId"
-      @confirm="handlePermissionConfirm"
-      @cancel="handlePermissionCancel"
-    />
+    <PermissionDialog v-model:visible="permissionDialogVisible" :kb-id="currentId" @confirm="handlePermissionConfirm"
+      @cancel="handlePermissionCancel" />
+    <UrlUploadDialog />
   </a-config-provider>
 </template>
 <script lang="ts" setup>
@@ -206,6 +137,7 @@ import { LeftOutlined, QuestionCircleOutlined, UserOutlined, PlusOutlined, Minus
 import Tags from '@/components/Tags.vue';
 import TagsInput from '@/components/TagsInput.vue';
 import PermissionDialog from './PermissionDialog.vue';
+import UrlUploadDialog from '@/components/UrlUploadDialog.vue';
 
 const { setDefault } = useKnowledgeBase();
 const { currentKbName, currentId } = storeToRefs(useKnowledgeBase());
@@ -254,7 +186,7 @@ const columns = [
     title: home.documentId,
     dataIndex: 'fileId',
     key: 'fileId',
-    width: '8%',
+    width: '20%',
   },
   {
     title: home.documentName,
@@ -263,18 +195,19 @@ const columns = [
     width: '12%',
     ellipsis: true,
   },
-  {
-    title: home.documentTag,
-    dataIndex: 'fileTag',
-    key: 'fileTag',
-    width: '12%',
-  },
+  // {
+  //   title: home.documentTag,
+  //   dataIndex: 'fileTag',
+  //   key: 'fileTag',
+  //   width: '12%',
+  // },
   {
     title: home.documentStatus,
     dataIndex: 'status',
     key: 'status',
     width: '10%',
     ellipsis: true,
+    slotName: 'status',
   },
   {
     title: home.fileSize,
@@ -304,6 +237,7 @@ const columns = [
     title: home.operate,
     key: 'options',
     width: '10%',
+    slotName: 'options',
   },
 ];
 
@@ -344,6 +278,7 @@ const qaColumns = [
     title: home.operate,
     key: 'options',
     width: '10%',
+    slotName: 'options',
   },
 ];
 
@@ -551,6 +486,7 @@ const kbOnChange = pagination => {
 };
 
 const selectedKeys = ref<Map<string, string>>(new Map());
+const arcoSelectedKeys = ref<string[]>([]);
 
 const onSelect = (selectedRow: any) => {
   const key = selectedRow.fileId;
@@ -714,7 +650,7 @@ const handlePermissionCancel = () => {
   .handle-btn {
     display: flex;
     gap: 10px;
-    
+
     .upload {
       cursor: pointer;
       height: 40px;

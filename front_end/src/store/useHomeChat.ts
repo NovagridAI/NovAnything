@@ -12,6 +12,7 @@ import { IChatItem, IHistoryList } from '@/utils/types';
 interface IChatList {
   historyId: number;
   list: IChatItem[];
+  qa_id?: number;
   // list: any[];
 }
 
@@ -22,6 +23,11 @@ export const useHomeChat = defineStore(
     const QA_List = ref<IChatItem[]>([]);
     const setQaList = value => {
       QA_List.value = value;
+    };
+
+    const currentQaId = ref(null);
+    const setCurrentQaId = value => {
+      currentQaId.value = value;
     };
 
     // 历史记录列表
@@ -63,12 +69,13 @@ export const useHomeChat = defineStore(
     //   // chatList.value = value;
     //   // localStorage.setItem('chatList', JSON.stringify(chatList.value));
     // };
-    const addChatList = (historyId: number, QA_List: IChatItem[]) => {
+    const addChatList = (historyId: number, QA_List: IChatItem[], qa_id?: number) => {
       const newChat: IChatList = {
         historyId,
         list: QA_List,
+        qa_id,
       };
-      const isExist = chatList.value.some(item => item.historyId === historyId);
+      const isExist = chatList.value.some(item => item.qa_id === qa_id);
       if (isExist) {
         chatList.value.forEach(item => {
           if (item.historyId === historyId) {
@@ -80,8 +87,8 @@ export const useHomeChat = defineStore(
       }
       // setChatList();
     };
-    const getChatById = (historyId: number): IChatList => {
-      return chatList.value.filter(item => item.historyId === historyId)[0];
+    const getChatById = (qa_id: number): IChatList => {
+      return chatList.value.filter(item => item.qa_id === qa_id)[0];
     };
     const clearChatList = (historyId: number) => {
       chatList.value = chatList.value.filter(item => item.historyId !== historyId);
@@ -125,6 +132,8 @@ export const useHomeChat = defineStore(
       setPageId,
       qaPageId,
       setQaPageId,
+      currentQaId,
+      setCurrentQaId,
     };
   },
   {

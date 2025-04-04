@@ -1,8 +1,8 @@
 <template>
   <div class="mt-50px">
     <div class="basic-box">
-      <a-input
-        v-model:value="inputVal"
+      <arco-input
+        v-model="inputVal"
         :status="status"
         :placeholder="common.urlPlaceholder"
         @change="setStatus()"
@@ -10,18 +10,18 @@
         <template #suffix>
           <SvgIcon name="add" class="mt3" @click="add"></SvgIcon>
         </template>
-      </a-input>
+      </arco-input>
       <span v-show="status === 'error'" class="red-text">{{ common.errTip }}</span>
     </div>
-    <a-form :label-col="labelCol" :wrapper-col="wrapperCol">
-      <a-form-item
+    <arco-form :model="{ urlList }">
+      <arco-form-item
         v-for="(item, index) in urlList"
         :key="index"
         class="relative"
         @mouseenter="changeStatus(index, 'hover')"
         @mouseleave="changeStatus(index, 'default')"
       >
-        <a-input v-model:value="item.text" :placeholder="common.urlPlaceholder">
+        <arco-input v-model="item.text" :placeholder="common.urlPlaceholder">
           <template #suffix>
             <span v-if="item.status === 'hover'" class="mt3">
               <!-- <SvgIcon name="card-confirm" class="mr20" @click="parsing(index)"></SvgIcon>
@@ -30,7 +30,7 @@
             </span>
             <span v-else class="mt3"></span>
           </template>
-        </a-input>
+        </arco-input>
         <span v-if="item.status === 'parsing'" class="loading-line-box">
           <span
             ref="percentRef"
@@ -41,8 +41,8 @@
           >
           </span>
         </span>
-      </a-form-item>
-    </a-form>
+      </arco-form-item>
+    </arco-form>
   </div>
 </template>
 <script lang="ts" setup>
@@ -50,13 +50,11 @@ import { useKnowledgeModal } from '@/store/useKnowledgeModal';
 const { urlList } = storeToRefs(useKnowledgeModal());
 import { IUrlListItem } from '@/utils/types';
 // import urlResquest from '@/services/urlConfig';
-// import { message } from 'ant-design-vue';
+// import { Message } from '@arco-design/web-vue';
 // import { resultControl } from '@/utils/utils';
 import { getLanguage } from '@/language/index';
 
 const common = getLanguage().common;
-const labelCol = { span: 10 };
-const wrapperCol = { span: 10 };
 const percentRef = ref(null);
 const timer = ref([]);
 const inputVal = ref('');
@@ -149,11 +147,25 @@ onBeforeUnmount(() => {
 });
 </script>
 <style lang="scss" scoped>
-:deep(.ant-form-item .ant-form-item-control-input) {
-  width: 414px;
+:deep(.arco-form-item) {
+  margin-bottom: 16px;
+  padding-left: 0;
 }
 
-:deep(.ant-input-affix-wrapper) {
+:deep(.arco-form-item .arco-form-item-content-wrapper) {
+  width: 414px;
+  padding-left: 0;
+}
+
+:deep(.arco-form-item-label-col) {
+  display: none;
+}
+
+:deep(.arco-form) {
+  padding-left: 0;
+}
+
+:deep(.arco-input-wrapper) {
   width: 414px;
 }
 

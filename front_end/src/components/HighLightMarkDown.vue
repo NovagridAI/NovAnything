@@ -112,8 +112,8 @@ watch(
 }
 
 .hljs {
-  background: #333;
-  color: #f0f0f0;
+  background: #fff;
+  color: #1a1a1a;
   padding: 20px;
   overflow-x: auto;
 }

@@ -286,9 +286,11 @@ const updateModel = debounce(async () => {
       api_key: formData.apiKey,
       api_proxy: formData.apiBase,
       model_endpoint: formData.apiModelName,
-      token_limit: formData.apiContextLength,
-      creativity: formData.temperature,
-      vocabulary_richness: formData.top_P,
+      api_context_length: formData.apiContextLength,
+      temperature: formData.temperature,
+      top_P: formData.top_P,
+      top_k: formData.top_K,
+      context_length: formData.context,
       // 其他可能需要的字段
     };
     
@@ -466,10 +468,12 @@ const updateChatSettingWithModelList = (models) => {
       apiBase: model.api_proxy,
       chunkSize: model.chunk_size || 800,
       apiModelName: model.service_name,
-      apiContextLength: model.token_limit || 4096,
-      maxToken: Math.floor((model.token_limit || 4096) / TOKENRATIO),
-      temperature: model.creativity || 0.5,
-      top_P: model.vocabulary_richness || 1.0,
+      apiContextLength: model.api_context_length || 4096,
+      maxToken: Math.floor((model.max_token || 4096) / TOKENRATIO),
+      temperature: model.temperature || 0.5,
+      top_P: model.top_P || 1.0,
+      top_K: model.top_k || 40,
+      context: model.context_length || 10,
       capabilities: {
         networkSearch: false,
         mixedSearch: false,
