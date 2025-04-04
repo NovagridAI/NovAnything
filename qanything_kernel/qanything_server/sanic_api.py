@@ -36,14 +36,14 @@ parser.add_argument('--workers', type=int, default=4, help='workers')
 args = parser.parse_args()
 
 start_time = time.time()
-app = Sanic("QAnything")
+app = Sanic("NovAnything")
 app.config.CORS_ORIGINS = "*"
 Extend(app)
 # 设置请求体最大为 128MB
 app.config.REQUEST_MAX_SIZE = 128 * 1024 * 1024
 
 # 将 /qanything 路径映射到 ./dist/qanything 文件夹，并指定路由名称
-app.static('/qanything/', 'qanything_kernel/qanything_server/dist/qanything/', name='qanything', index="index.html")
+app.static('/novanything', 'qanything_kernel/qanything_server/dist/novanything/', name='novanything', index="index.html")
 
 
 @app.before_server_start
@@ -62,8 +62,8 @@ async def notify_server_started(app, loop):
 @app.after_server_start
 async def start_server_and_open_browser(app, loop):
     try:
-        print(f"Opening browser at http://{args.host}:{args.port}/qanything/")
-        webbrowser.open(f"http://{args.host}:{args.port}/qanything/")
+        print(f"Opening browser at http://{args.host}:{args.port}/novanything")
+        webbrowser.open(f"http://{args.host}:{args.port}/novanything")
     except Exception as e:
         # 记录或处理任何异常
         print(f"Failed to open browser: {e}")
