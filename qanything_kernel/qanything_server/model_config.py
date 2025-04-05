@@ -115,11 +115,13 @@ async def update_model_config(request: Request):
         # 从请求上下文获取用户信息
         user_id = request.ctx.user["user_id"]
         role = request.ctx.user["role"]
+        debug_logger.info(f"更新模型配置开始，用户ID: {user_id}，角色: {role}")
 
         # 使用safe_get获取必需字段
         config_id = safe_get(request, 'config_id')
 
         if not config_id:
+            debug_logger.warning("缺少必需字段: config_id")
             return create_error_response(400, "缺少必需字段: config_id")
 
         # 使用safe_get获取可选字段
@@ -134,6 +136,12 @@ async def update_model_config(request: Request):
         max_token = safe_get(request, 'max_token')
         context_length = safe_get(request, 'context_length')
         is_global = safe_get(request, 'is_global')
+        
+        # 记录所有请求参数
+        debug_logger.info(f"接收到的更新参数: service_name={service_name}, api_key={'已设置' if api_key else '未设置'}, "
+                         f"api_proxy={api_proxy}, model_endpoint={model_endpoint}, temperature={temperature}, "
+                         f"top_k={top_k}, api_context_length={api_context_length}, top_p={top_p}, "
+                         f"max_token={max_token}, context_length={context_length}, is_global={is_global}")
 
         # 获取原配置
         model_config_dao = ModelConfigDAO(local_doc_qa.milvus_summary.db_connection)
@@ -144,6 +152,7 @@ async def update_model_config(request: Request):
 
         # 检查权限
         if role not in [ROLE_ADMIN, ROLE_SUPERADMIN] and existing_config.user_id != user_id:
+            debug_logger.warning(f"权限不足，用户{user_id}尝试修改用户{existing_config.user_id}的配置")
             return create_error_response(403, "无权修改此模型配置")
 
         # 如果是全局模型，检查修改权限
@@ -153,6 +162,7 @@ async def update_model_config(request: Request):
                 "temperature", "top_k", "api_context_length",
                 "top_p", "max_token", "context_length", "is_global"
             ]
+            debug_logger.info(f"允许修改的字段: {allowed_fields}")
 
             # 检查是否尝试修改不允许的字段
             for field_name, field_value in [
@@ -163,6 +173,7 @@ async def update_model_config(request: Request):
                 ("is_global", is_global)
             ]:
                 if field_value is not None:
+                    debug_logger.warning(f"普通用户尝试修改不允许的字段: {field_name}={field_value}")
                     return create_error_response(403, f"普通用户不能修改全局模型的基本信息字段: {field_name}")
 
         # 准备更新数据
@@ -208,17 +219,20 @@ async def update_model_config(request: Request):
 
         # 更新数据库
         if update_data:
+            debug_logger.info(f"执行数据库更新操作，更新字段: {list(update_data.keys())}")
             success = model_config_dao.update_model_config(config_id, update_data)
 
             if success:
+                debug_logger.info(f"更新模型配置成功，config_id: {config_id}")
                 return create_success_response("更新模型配置成功")
             else:
+                debug_logger.error(f"数据库更新失败，config_id: {config_id}")
                 return create_error_response(500, "更新模型配置失败")
         else:
+            debug_logger.warning("没有有效的更新字段")
             return create_error_response(400, "无有效更新字段")
 
     except Exception as e:
-        debug_logger.error(f"更新模型配置错误: {str(e)}")
         return create_error_response(500, f"服务器错误: {str(e)}")
 
 
