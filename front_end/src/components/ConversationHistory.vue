@@ -3,11 +3,15 @@
     <div class="history-header">
       <h3 class="history-title">话题</h3>
     </div>
+    <div class="section-item active ">
+      <icon-message class="item-icon" />
+      {{ currentTitle }}
+    </div>
 
     <div class="history-section" v-if="favoriteItems.length > 0">
       <div class="section-title">收藏</div>
       <div v-for="item in favoriteItems" :key="'fav-' + item.qa_id" class="section-item"
-        :class="{ active: selectedConversation === item.qa_id }" @click="selectConversation(item)">
+        :class="{ active: chatId === item.qa_id }" @click="selectConversation(item)">
         <icon-star-fill class="item-icon favorite" @click.stop="toggleFavorite(item)" />
         <span>{{ formatTitle(item.query) }}</span>
         <icon-delete class="item-icon delete-icon" @click.stop="deleteConversation(item)" />
@@ -17,7 +21,7 @@
     <div class="history-section" v-if="weeklyItems.length > 0">
       <div class="section-title">本周</div>
       <div v-for="item in weeklyItems" :key="'week-' + item.qa_id" class="section-item"
-        :class="{ active: selectedConversation === item.qa_id }" @click="selectConversation(item)">
+        :class="{ active: chatId === item.qa_id }" @click="selectConversation(item)">
         <icon-star class="item-icon" @click.stop="toggleFavorite(item)" />
         <span>{{ formatTitle(item.query) }}</span>
         <icon-delete class="item-icon delete-icon" @click.stop="deleteConversation(item)" />
@@ -38,7 +42,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { IconStar, IconStarFill, IconDelete } from '@arco-design/web-vue/es/icon';
+import { IconStar, IconStarFill, IconDelete, IconMessage } from '@arco-design/web-vue/es/icon';
 import { Message, Modal } from '@arco-design/web-vue';
 import urlResquest from '@/services/urlConfig';
 import { useHomeChat } from '@/store/useHomeChat';
@@ -48,7 +52,8 @@ import { IChatItemInfo } from '@/utils/types';
 import { useOptiionList } from '@/store/useOptiionList';
 import { formatTimestamp, resultControl } from '@/utils/utils';
 
-const { chatList, chatId, QA_List, qaPageId } = storeToRefs(useHomeChat());
+
+const { chatList, chatId, QA_List, qaPageId, historyList } = storeToRefs(useHomeChat());
 const { addChatList, getChatById, setCurrentQaId, setHistoryList } = useHomeChat();
 const { setSelectList } = useKnowledgeBase();
 const { knowledgeBaseList } = storeToRefs(useKnowledgeBase());
@@ -56,6 +61,12 @@ const { setTempId } = useKnowledgeBase();
 const { setTempDetail } = useOptiionList();
 
 const tempList = computed(() => knowledgeBaseList.value.filter(item => item.kb_type === 'temporary'));
+const currentTitle = computed(() => {
+  if (chatId.value) {
+    return historyList.value.find(item => item.qa_id === chatId.value).title;
+  }
+  return '新对话';
+});
 
 console.log(tempList.value, 'tempList');
 
@@ -394,6 +405,12 @@ onMounted(() => {
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s;
+
+  .item-icon {
+    margin-right: 8px;
+    font-size: 18px;
+    color: #86909c;
+  }
 }
 
 .section-item:hover {
