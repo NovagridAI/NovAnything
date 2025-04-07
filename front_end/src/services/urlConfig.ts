@@ -46,6 +46,7 @@ enum EUrlKey {
   groupList = 'groupList',
   createUser = 'createUser',
   deleteUser = 'deleteUser',
+  changeUserPassword = 'changeUserPassword',
   updateDepartment = 'updateDepartment',
   deleteDepartment = 'deleteDepartment',
   updateUser = 'updateUser',
@@ -371,6 +372,13 @@ const urlConfig: IUrlConfig = {
   deleteUser: {
     type: EUrlType.POST,
     url: '/user/delete',
+    param: {
+      user_id: userId,
+    },
+  },
+  changeUserPassword: {
+    type: EUrlType.POST,
+    url: '/user/change_password',
     param: {
       user_id: userId,
     },

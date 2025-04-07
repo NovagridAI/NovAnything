@@ -106,12 +106,20 @@
           {{ common.stop }}
         </a-button>
       </div>
+      <div class="temp-file-container" v-if="tempDetail && tempDetail.length > 0">
+        <div class="temp-file-item" v-for="(item, index) in tempDetail" :key="index">
+          <div class="temp-file-item-icon">
+            <icon-file />
+          </div>
+          <div class="temp-file-item-name" :class="getStatusClass(item.status)">{{ item.fileIdName }}</div>
+        </div>
+      </div>
       <div class="question-container">
         <div class="icon-container">
           <keep-alive>
             <ChatAdvanceSettings v-if="true" />
           </keep-alive>
-          <icon-upload class="action-icon" />
+          <icon-upload class="action-icon" @click="openFileUpload" />
         </div>
         <div class="question-container-button">
           <arco-button :disabled="showLoading" @click="newChat" style="border-color: #165DFF; color: #165DFF;">
@@ -122,7 +130,7 @@
           </arco-button>
         </div>
         <arco-textarea v-model="question" placeholder="输入聊天内容..." allow-clear :auto-size="{ minRows: 6 }"
-          :resize="false" class="full-width-textarea" style="padding-top: 58px;" />
+          :resize="false" class="full-width-textarea" style="padding-top: 58px;" @keydown.enter.prevent="handleEnter" />
       </div>
       <div class="question-box">
         <div class="question">
@@ -180,6 +188,7 @@
   </div>
   <ChatSettingDialog ref="chatSettingForDialogRef" />
   <DefaultModal :content="content" :confirm-loading="confirmLoading" @ok="confirm" />
+  <FileUploadDialog ref="fileUploadDialogRef" :dialog-type="2" :temporary-id="tempId" />
   <CopyUrlDialog />
 </template>
 <script lang="ts" setup>
@@ -209,12 +218,15 @@ import ChatInfoPanel from '@/components/ChatInfoPanel.vue';
 import { useBots } from '@/store/useBots';
 import CopyUrlDialog from '@/components/Bots/CopyUrlDialog.vue';
 import ChatTextarea from '@/components/ChatTextarea.vue';
-import { IconSettings, IconUpload, IconPlus, IconSend, IconQuestionCircle } from '@arco-design/web-vue/es/icon';
+import { IconSettings, IconUpload, IconPlus, IconSend, IconFile } from '@arco-design/web-vue/es/icon';
 import Cookies from 'js-cookie'
 import ChatAdvanceSettings from '@/components/ChatAdvanceSettings.vue';
 import ChatHeaderMenu from '@/components/ChatHeaderMenu.vue';
 import ConversationHistory from '@/components/ConversationHistory.vue';
 import { useAdvanceSettings } from '@/store/useAdvanceSettings';
+import { useKnowledgeModal } from '@/store/useKnowledgeModal';
+import FileUploadDialog from '@/components/FileUploadDialog.vue';
+import { useOptiionList } from '@/store/useOptiionList';
 
 const common = getLanguage().common;
 
@@ -224,15 +236,19 @@ const typewriter = new Typewriter((str: string) => {
   }
 });
 
-const { selectList, knowledgeBaseList } = storeToRefs(useKnowledgeBase());
+const { selectList, knowledgeBaseList, tempId } = storeToRefs(useKnowledgeBase());
+const { setTempId } = useKnowledgeBase();
 const { QA_List, chatId, pageId, qaPageId, historyList, currentQaId } = storeToRefs(useHomeChat());
 const { chatSettingFormActive } = storeToRefs(useChatSetting());
-const advanceSettings = useAdvanceSettings();
+const { userSettings } = storeToRefs(useAdvanceSettings());
 const { copy } = useClipboard();
 const { addHistoryList, updateHistoryList, addChatList, clearChatList, setCurrentQaId } = useHomeChat();
 const { setChatSourceVisible, setSourceType, setSourceUrl, setTextContent } = useChatSource();
 const { setCopyUrlVisible, setWebUrl } = useBots();
 const { language } = storeToRefs(useLanguage());
+const { setModalVisible } = useKnowledgeModal();
+const { getTempDetail, setTempDetail } = useOptiionList();
+const { tempDetail } = storeToRefs(useOptiionList());
 declare module _czc {
   const push: (array: any) => void;
 }
@@ -242,7 +258,7 @@ const question = ref('');
 
 //问答的上下文
 const history = computed(() => {
-  const context = chatSettingFormActive.value.context;
+  const context = userSettings.value.context;
   if (context === 0) return [];
   const usefulChat = QA_List.value.filter(item => item.type === 'ai');
   const historyChat = context === 11 ? usefulChat : usefulChat.slice(-context);
@@ -284,11 +300,38 @@ function newChat() {
     message.info('已切换最新对话');
     return;
   }
-  currentQaId.value = null;
-  chatId.value = null;
-  QA_List.value = [];
-  qaPageId.value = 1;
-  pageId.value = 1;
+
+  // 创建临时知识库
+  createTempKnowledgeBase().then(kb_id => {
+    // 重置对话状态
+    currentQaId.value = null;
+    chatId.value = null;
+    QA_List.value = [];
+    qaPageId.value = 1;
+    pageId.value = 1;
+    setTempId(kb_id);
+  }).catch((e) => {
+    console.error('创建临时知识库失败:', e);
+    message.error('创建临时知识库失败');
+  });
+}
+
+// 创建临时知识库的函数
+async function createTempKnowledgeBase() {
+  try {
+    const timestamp = formatTimestamp(Date.now());
+    const res: any = await resultControl(
+      await urlResquest.createKb({
+        kb_name: `临时知识库-${timestamp}`,
+        description: '',
+        kb_type: 'temporary' // 标记为临时知识库
+      })
+    );
+    return res.kb_id;
+  } catch (e) {
+    console.error('创建临时知识库失败:', e);
+    throw e;
+  }
 }
 
 // 创建 Intersection Observer 对象
@@ -465,6 +508,15 @@ watch(
     deep: true,
   }
 );
+
+watch(
+  () => tempId.value,
+  () => {
+    console.log(tempId.value, 'tempId');
+    setTempDetail([])
+    getTempDetail();
+  }
+);
 // 统计几个 @ 超过10个报错
 const computedCallNumber = (question: string) => {
   const atCount = (question.match(/@/g) || []).length;
@@ -525,8 +577,10 @@ const send = async () => {
   showLoading.value = true;
   ctrl = new AbortController();
 
+  const kbIds = tempId.value ? [...selectList.value, tempId.value] : selectList.value;
+
   const sendData = {
-    kb_ids: selectList.value,
+    kb_ids: kbIds,
     history: history.value,
     question: q,
     streaming: chatSettingFormActive.value.capabilities.onlySearch === false,
@@ -537,15 +591,17 @@ const send = async () => {
     only_need_search_results: chatSettingFormActive.value.capabilities.onlySearch,
     // hybrid_search: chatSettingFormActive.value.capabilities.mixedSearch,
     hybrid_search: true,
-    max_token: chatSettingFormActive.value.maxToken,
+
+    api_context_length: userSettings.value.apiContextLength,
+    max_token: userSettings.value.maxToken,
+    top_p: userSettings.value.top_P,
+    temperature: userSettings.value.temperature,
+    top_k: userSettings.value.top_K,
+
     api_base: chatSettingFormActive.value.apiBase,
     api_key: chatSettingFormActive.value.apiKey,
     model: chatSettingFormActive.value.apiModelName,
-    api_context_length: chatSettingFormActive.value.apiContextLength,
     chunk_size: chatSettingFormActive.value.chunkSize,
-    top_p: chatSettingFormActive.value.top_P,
-    top_k: chatSettingFormActive.value.top_K,
-    temperature: chatSettingFormActive.value.temperature,
     qa_id: currentQaId.value,
   };
 
@@ -748,12 +804,12 @@ const shareChat = async () => {
         api_key: chatSettingFormActive.value.apiKey,
 
         // 使用用户本地设置
-        api_context_length: advanceSettings.apiContextLength,
-        max_token: advanceSettings.maxToken,
-        chunk_size: advanceSettings.maxToken,
-        top_p: advanceSettings.top_P,
-        temperature: advanceSettings.temperature,
-        top_k: advanceSettings.top_K,
+        api_context_length: userSettings.value.apiContextLength,
+        max_token: userSettings.value.maxToken,
+        chunk_size: userSettings.value.maxToken,
+        top_p: userSettings.value.top_P,
+        temperature: userSettings.value.temperature,
+        top_k: userSettings.value.top_K,
 
         model: chatSettingFormActive.value.apiModelName,
         hybrid_search: chatSettingFormActive.value.capabilities.mixedSearch,
@@ -935,6 +991,43 @@ function clearHistory() {
   console.log('清空');
   // history.value = [];
 }
+
+const openFileUpload = () => {
+  setModalVisible(true);
+};
+
+const handleEnter = (e: KeyboardEvent) => {
+  // 如果按下 shift + enter，则换行
+  if (e.shiftKey) {
+    return;
+  }
+  // 否则发送消息
+  send();
+};
+
+const getStatusClass = (status) => {
+  if (!status) return '';
+
+  if (status.toLowerCase() === 'green' ||
+    status.toLowerCase() === '成功' ||
+    status.toLowerCase() === 'success') {
+    return 'status-green';
+  } else if (status.toLowerCase() === 'yellow' ||
+    status.toLowerCase() === '处理中' ||
+    status.toLowerCase() === 'processing') {
+    return 'status-yellow';
+  } else if (status.toLowerCase() === 'red' ||
+    status.toLowerCase() === '失败' ||
+    status.toLowerCase() === 'failed') {
+    return 'status-red';
+  } else if (status.toLowerCase() === 'blue' ||
+    status.toLowerCase() === '等待中' ||
+    status.toLowerCase() === 'waiting') {
+    return 'status-blue';
+  }
+
+  return '';
+};
 </script>
 
 <style lang="scss" scoped>
@@ -1501,6 +1594,49 @@ $avatar-width: 96px;
 
   100% {
     transform: rotate(360deg);
+  }
+}
+
+.temp-file-container {
+  display: flex;
+  gap: 44px;
+  margin: 0px 36px;
+
+  .temp-file-item {
+
+    .temp-file-item-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+
+      .arco-icon {
+        font-size: 44px;
+        color: #666666;
+      }
+    }
+    
+    .temp-file-item-name {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 14px;
+      
+      &.status-green {
+        color: #00B42A;
+      }
+      
+      &.status-yellow {
+        color: #FF7D00;
+      }
+      
+      &.status-red {
+        color: #F53F3F;
+      }
+      
+      &.status-blue {
+        color: #165DFF;
+      }
+    }
   }
 }
 </style>

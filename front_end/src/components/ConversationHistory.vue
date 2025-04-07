@@ -49,6 +49,12 @@ import { IChatItemInfo } from '@/utils/types';
 const { chatList, chatId, QA_List, qaPageId } = storeToRefs(useHomeChat());
 const { addChatList, getChatById, setCurrentQaId, setHistoryList } = useHomeChat();
 const { setSelectList } = useKnowledgeBase();
+const { knowledgeBaseList } = storeToRefs(useKnowledgeBase());
+const { setTempId } = useKnowledgeBase();
+
+const tempList = computed(() => knowledgeBaseList.value.filter(item => item.kb_type === 'temporary'));
+
+console.log(tempList.value, 'tempList');
 
 
 // 当前选中的会话
@@ -67,6 +73,11 @@ const formatTitle = (query) => {
 
 // 选择会话
 const selectConversation = (item) => {
+  console.log(item, 'item');
+  const currentTempId = item.kb_ids.find(item => tempList.value.some(temp => temp.kb_id === item));
+  if(currentTempId) {
+    setTempId(currentTempId);
+  }
   changeChat(item);
   selectedConversation.value = item.qa_id;
   setCurrentQaId(item.qa_id);
@@ -336,8 +347,8 @@ onMounted(() => {
 .section-item {
   display: flex;
   align-items: center;
-  margin: 12px 16px;
-  padding: 8px 16px;
+  margin: 6px 16px;
+  padding: 6px 16px;
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s;

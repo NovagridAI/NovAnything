@@ -11,15 +11,11 @@
     </div>
     <arco-card :bordered="false">
       <arco-form ref="formRef" :model="formData" :rules="rules" layout="horizontal" :label-col-props="{ span: 3 }"
-        :wrapper-col-props="{ span: 18 }" :label-align="'left'" @submit="onSubmit">
+        :wrapper-col-props="{ span: 21 }" :label-align="'left'" @submit="onSubmit">
         <arco-form-item field="modelType" label="模型提供方：">
           <arco-select v-model="formData.modelType" placeholder="请选择模型提供方" @change="selectChange">
-            <arco-option 
-              v-for="item of chatSettingConfigured"
-                :key="item.modelType"
-                :value="item.modelType"
-                >
-                {{ item.modelName }}
+            <arco-option v-for="item of chatSettingConfigured" :key="item.modelType" :value="item.modelType">
+              {{ item.modelName }}
             </arco-option>
           </arco-select>
           <arco-button style="margin-left: 10px;" type="primary" @click="showAddModelDialog">
@@ -184,11 +180,14 @@ import ChatSettingForm from './ChatSettingForm.vue';
 import urlResquest from '@/services/urlConfig';
 import { IconPlus, IconLoading } from '@arco-design/web-vue/es/icon';
 import { debounce } from 'lodash-es';
+import { useUser } from '@/store/useUser';
 
 const common = getLanguage().common;
 const { chatSettingConfigured } = storeToRefs(useChatSetting());
-const { setChatSettingConfigured, openAISettingMap, setAllChatSettingConfigured } = useChatSetting();
+const { setChatSettingConfigured, openAISettingMap, setAllChatSettingConfigured, setActiveChatSetting } = useChatSetting();
+const { userInfo } = storeToRefs(useUser());
 
+console.log(userInfo.value, 'userInfo')
 console.log(chatSettingConfigured.value, 'chatSettingConfigured')
 
 const formRef = ref(null);
@@ -273,11 +272,11 @@ const updateModel = debounce(async () => {
     console.log('跳过更新：', isInitialLoad.value ? '首次加载' : '其他原因');
     return;
   }
-  
+
   try {
     // 设置保存状态为保存中
     saveStatus.value = { type: 'saving', message: '保存中' };
-    
+
     console.log('准备更新模型:', formData.customId);
     // 准备更新模型的数据
     const modelData = {
@@ -293,28 +292,29 @@ const updateModel = debounce(async () => {
       context_length: formData.context,
       // 其他可能需要的字段
     };
-    
+
     // 调用API更新模型
     const response = await urlResquest.updateModel(modelData);
-    
+
     if (response && response.code === 200) {
       console.log('模型更新成功');
+      fetchModelList();
       // 设置保存状态为已保存
       saveStatus.value = { type: 'success', message: '已保存' };
-      
+
       // 不再设置定时器清除状态
     } else {
       console.error('更新模型失败:', response?.msg);
       // 设置保存状态为失败
       saveStatus.value = { type: 'error', message: '保存失败' };
-      
+
       // 不再设置定时器清除状态
     }
   } catch (error) {
     console.error('更新模型请求失败:', error);
     // 设置保存状态为失败
     saveStatus.value = { type: 'error', message: '保存失败' };
-    
+
     // 不再设置定时器清除状态
   }
 }, 1000); // 1秒的防抖延迟
@@ -348,22 +348,13 @@ const selectChange = (value) => {
   console.log('select', value);
   openAIModelMax.value = 200;
 
-  if (value === 'openAI') {
-    Object.assign(formData, chatSettingConfigured.value.find(item => item.modelType === 'openAI'));
-  } else if (value === 'ollama') {
-    Object.assign(formData, chatSettingConfigured.value.find(item => item.modelType === 'ollama'));
-    nextTick(() => {
-      formData.apiContextLength = 2048;
-    });
-  } else {
-    console.log(chatSettingConfigured.value.find(item => item.modelType === value), value);
-    isInitialLoad.value = true;
-    Object.assign(formData, chatSettingConfigured.value.find(item => item.modelType === value));
-    nextTick(() => {
-      isInitialLoad.value = false;
-    });
-  }
-  
+  setActiveChatSetting(value);
+  isInitialLoad.value = true;
+  Object.assign(formData, chatSettingConfigured.value.find(item => item.modelType === value));
+  nextTick(() => {
+    isInitialLoad.value = false;
+  });
+
   // 选择模型后不需要立即更新，因为用户可能会继续修改其他字段
   // 如果需要立即更新，可以取消下面这行的注释
   // updateModel.cancel(); // 取消之前的防抖
@@ -401,10 +392,10 @@ const onSubmit = async () => {
 const initForm = () => {
   // 设置isInitialLoad为true，防止初始化触发更新
   isInitialLoad.value = true;
-  
+
   const activeForm = { ...chatSettingConfigured.value.find(item => item.active === true) };
   Object.assign(formData, activeForm);
-  
+
   // 设置一个较长的延时，确保所有初始化操作完成后再将isInitialLoad设为false
   nextTick(() => {
     console.log('初始化完成，允许更新');
@@ -438,7 +429,7 @@ const fetchModelList = async () => {
     if (response && response.data) {
       modelList.value = response.data.configs;
       console.log('获取到的模型列表:', modelList.value);
-      
+
       // 将API返回的模型数据映射到chatSettingConfigured格式
       updateChatSettingWithModelList(modelList.value);
     }
@@ -451,12 +442,12 @@ const fetchModelList = async () => {
 // 将API返回的模型列表更新到chatSettingConfigured
 const updateChatSettingWithModelList = (models) => {
   if (!models || models.length === 0) return;
-  
+
   // 保留原有的openAI和ollama配置
   const existingConfigs = chatSettingConfigured.value.filter(
     config => config.modelType === 'openAI' || config.modelType === 'ollama'
   );
-  
+
   // 将API返回的模型映射为chatSettingConfigured格式
   const customModels = models.map(model => {
     return {
@@ -469,7 +460,7 @@ const updateChatSettingWithModelList = (models) => {
       chunkSize: model.chunk_size || 800,
       apiModelName: model.service_name,
       apiContextLength: model.api_context_length || 4096,
-      maxToken: Math.floor((model.max_token || 4096) / TOKENRATIO),
+      maxToken: Math.floor((model.max_token || 4096)),
       temperature: model.temperature || 0.5,
       top_P: model.top_P || 1.0,
       top_K: model.top_k || 40,
@@ -500,9 +491,9 @@ onBeforeMount(() => {
 onMounted(() => {
   // 确保isInitialLoad为true
   isInitialLoad.value = true;
-  
+
   fetchModelList();
-  
+
   // 确保在获取模型列表后再将isInitialLoad设为false
   setTimeout(() => {
     console.log('组件挂载完成，允许更新');
@@ -574,7 +565,7 @@ const confirmAddModel = async () => {
       expression_style: 1.0,
       vocabulary_richness: 1.0,
       token_limit: 4096,
-      reasoning_strength: '中'
+      is_global: userInfo.value.role === 'superadmin' ? true : false
     };
 
     // 显示加载状态
@@ -627,6 +618,18 @@ const confirmAddModel = async () => {
   font-size: 24px;
   color: #1a1a1a;
   margin-left: 16px;
+}
+
+/* 添加新的样式 */
+:deep(.arco-form-item) {
+  border-bottom: 1px solid #D8D8D8;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+/* 最后一个表单项不需要边框 */
+:deep(.arco-form-item:last-child) {
+  border-bottom: none;
 }
 
 .token-input-wrapper {

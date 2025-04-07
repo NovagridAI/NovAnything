@@ -3,7 +3,7 @@
         <arco-layout>
             <arco-layout-header>
                 <div class="bac">
-                    <div class="logo">NovAnything</div>
+                    <div class="logo" @click="goToKnowledgeList">NovAnything</div>
 
                     <div class="back-button" @click="goBack">
                         <icon-close class="icon-left" />
@@ -43,6 +43,10 @@ function getPageTitle() {
         return '知识库管理';
     }
     return '全屏视图';
+}
+
+function goToKnowledgeList() {
+    router.push('/fullscreen-view/user-settings');
 }
 
 function goBack() {

@@ -12,7 +12,7 @@ import { formatDate, formatFileSize, resultControl } from '@/utils/utils';
 import { message } from 'ant-design-vue';
 import { useKnowledgeBase } from '@/store/useKnowledgeBase';
 
-const { currentId } = storeToRefs(useKnowledgeBase());
+const { currentId, tempId } = storeToRefs(useKnowledgeBase());
 
 type Status = 'green' | 'yellow' | 'red' | 'gray';
 
@@ -103,7 +103,7 @@ export const useOptiionList = defineStore(
 
     const timer = ref(null);
 
-    const getDetails = async () => {
+    const getDetails = async (keyword?: string) => {
       console.log('getDetails START');
       // try {
       if (timer.value) {
@@ -115,6 +115,7 @@ export const useOptiionList = defineStore(
           kb_id: currentId.value,
           page_id: kbPageNum.value,
           page_limit: kbPageSize.value,
+          file_id: keyword,
         })
       );
 
@@ -295,12 +296,91 @@ export const useOptiionList = defineStore(
       return Promise.all(promises);
     }
 
+    const tempDetail = ref([]);
+    const setTempDetail = (array: []) => {
+      tempDetail.value = array;
+    };
+
+    const getTempDetail = async (keyword?: string) => {
+      console.log('getTempDetail START');
+      // 清除已有的定时器
+      if (timer.value) {
+        clearTimeout(timer.value);
+      }
+
+      try {
+        const res: any = await resultControl(
+          await urlResquest.fileList({
+            kb_id: tempId.value,
+            page_id: kbPageNum.value,
+            page_limit: kbPageSize.value,
+            file_id: keyword,
+          })
+        );
+
+        // 初始化状态计数
+        Object.keys(totalStatus.value).forEach(key => {
+          totalStatus.value[key] = 0;
+        });
+
+        // 更新状态计数
+        Object.assign(totalStatus.value, res.status_count);
+
+        setTempDetail([]);
+
+        // 设置一共几个文件
+        setKbTotal(res.total);
+
+        // 格式化success
+        const computedRemark = (msg: string = '', status: string = 'green') => {
+          if (status !== 'green') return msg;
+          // stringify转不了, 只能toString()
+          return JSON.parse(msg.toString());
+        };
+
+        res?.details.forEach((item: any, index) => {
+          tempDetail.value.push({
+            key: item?.file_id,
+            id: 10000 + index,
+            fileId: item?.file_id,
+            fileIdName: item?.file_name,
+            fileTag: item?.tags,
+            status: item?.status,
+            bytes: formatFileSize(item?.bytes || 0),
+            contentLength: item?.content_length,
+            createtime: formatDate(item?.timestamp),
+            remark: item?.status === 'gray' ? '' : computedRemark(item?.msg, item?.status),
+          });
+        });
+
+        const flag = res?.details.some(item => {
+          return item.status === 'gray' || item.status === 'yellow';
+        });
+        if (flag) {
+          //有解析中的
+          timer.value = setTimeout(() => {
+            clearTimeout(timer.value);
+            getTempDetail(keyword);
+          }, 5000);
+        }
+        
+        return res;
+      } catch (error) {
+        console.error('getTempDetail error:', error);
+        message.error(error.msg || '获取临时知识库列表失败');
+        throw error;
+      }
+    };
+  
     return {
       dataSource,
       setDataSource,
       faqList,
       setFaqList,
       getDetails,
+      getTempDetail,
+      tempDetail,
+      setTempDetail,
       timer,
       editQaSet,
       setEditQaSet,

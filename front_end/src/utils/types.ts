@@ -13,6 +13,7 @@ export interface IKnowledgeItem {
   isFaq?: boolean;
   createTime?: any;
   edit?: boolean;
+  kb_type?: string;
 }
 
 export interface IDataSourceItem {
@@ -46,7 +47,7 @@ export interface IChatItem {
 
 // 历史记录
 export interface IHistoryList {
-  qa_id: number;
+  qa_id?: number;
   historyId: number;
   title: string;
   kbIds?: string[];

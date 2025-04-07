@@ -24,7 +24,9 @@
                         <div v-for="(item, index) in teamKnowledgeList" :key="index"
                             :class="['knowledge-item', { 'item-active': selectList.includes(item?.kb_id) }]"
                             @click="selectKnowledgeBase(item)">
-                            <arco-icon-file class="item-icon"
+                            <img class="item-icon" 
+                                :src="selectList.includes(item?.kb_id) ? menuActiveImg : menuDefaultImg" 
+                                alt="文件夹"
                                 :class="{ 'icon-active': selectList.includes(item?.kb_id) }" />
                             <span class="item-name" :class="{ 'text-active': selectList.includes(item?.kb_id) }">
                                 {{ item?.kb_name || '未命名知识库' }}
@@ -45,7 +47,9 @@
                         <div v-for="(item, index) in personalKnowledgeList" :key="index"
                             :class="['knowledge-item', { 'item-active': selectList.includes(item?.kb_id) }]"
                             @click="selectKnowledgeBase(item)">
-                            <arco-icon-file class="item-icon"
+                            <img class="item-icon" 
+                                :src="selectList.includes(item?.kb_id) ? menuActiveImg : menuDefaultImg" 
+                                alt="文件夹"
                                 :class="{ 'icon-active': selectList.includes(item?.kb_id) }" />
                             <span class="item-name" :class="{ 'text-active': selectList.includes(item?.kb_id) }">
                                 {{ item?.kb_name || '未命名知识库' }}
@@ -65,6 +69,10 @@ import { IKnowledgeItem } from '@/utils/types';
 import { useKnowledgeBase } from '@/store/useKnowledgeBase';
 import { storeToRefs } from 'pinia';
 
+// 导入图片资源
+import menuActiveImg from '../assets/home/menu-active.png';
+import menuDefaultImg from '../assets/home/menu-default.png';
+
 const { setCurrentId } = useKnowledgeBase();
 const { selectList, currentId } = storeToRefs(useKnowledgeBase());
 const { knowledgeBaseList = [], getList }: any = storeToRefs(useKnowledgeBase());
@@ -77,7 +85,7 @@ onMounted(async () => {
 
 // 分离团队和个人知识库
 const teamKnowledgeList = computed(() => {
-    return knowledgeBaseList.value.filter(item => item.kb_type === 'temporary')
+    return knowledgeBaseList.value.filter(item => item.kb_type === 'team')
 });
 
 const personalKnowledgeList = computed(() => {
@@ -154,7 +162,7 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
 
     .knowledge-item {
         margin-bottom: 12px;
-        padding: 12px;
+        padding: 6px 12px;
     }
 
     .arco-collapse-item-header {
@@ -216,9 +224,10 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
     }
 
     .item-icon {
-        color: #86909c;
+        width: 32px;
+        height: 32px;
         margin-right: 8px;
-        font-size: 16px;
+        opacity: 0.6;
     }
 
     .item-name {
@@ -231,7 +240,7 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
     }
 
     .icon-active {
-        color: #0256FF;
+        opacity: 1;
     }
 
     .text-active {

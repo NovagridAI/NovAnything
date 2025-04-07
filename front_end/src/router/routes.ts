@@ -20,6 +20,11 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/components/FullScreenView.vue'),
     children: [
       {
+        path: 'user-settings',
+        name: 'UserSettings',
+        component: () => import('@/components/ChatSettingPage.vue')
+      },
+      {
         path: 'knowledge',
         name: 'Knowledge',
         component: () => import('@/components/FullScreenKnowledgeList.vue'),
@@ -36,11 +41,7 @@ export const routes: RouteRecordRaw[] = [
           }
         ]
       },
-      {
-        path: 'user-settings',
-        name: 'UserSettings',
-        component: () => import('@/components/ChatSettingPage.vue')
-      },
+
       {
         path: 'organization-management',
         name: 'OrganizationManagement',
@@ -48,7 +49,7 @@ export const routes: RouteRecordRaw[] = [
       },
       {
         path: '',
-        redirect: '/fullscreen-view/view1'
+        redirect: '/fullscreen-view/user-settings'
       }
     ]
   },
@@ -113,7 +114,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'quickstart',
         component: () => import('@/views/QuickStart/index.vue'),
       },
-            {
+      {
         path: '/account',
         name: 'account',
         component: () => import('@/views/Account/index.vue'),

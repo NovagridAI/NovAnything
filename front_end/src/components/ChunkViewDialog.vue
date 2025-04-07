@@ -20,7 +20,7 @@
         @cancel="handleCancel"
       >
         <div class="container">
-          <div class="file-preview" :style="{ width: filePreviewWidth }" @mousedown="onMouseDown">
+          <!-- <div class="file-preview" :style="{ width: filePreviewWidth }" @mousedown="onMouseDown">
             <div class="scale">
               <a-button shape="circle" :icon="h(PlusCircleOutlined)" @click="enlargeHandle" />
               <span class="scale-text">{{ (zoomLevel * 100).toFixed(0) }}%</span>
@@ -30,7 +30,7 @@
               <Source :zoom-level="zoomLevel" />
             </div>
             <div class="resize-handle"></div>
-          </div>
+          </div> -->
           <div ref="tableDomRef" class="chunk-table">
             <div class="export">
               <a-tooltip color="#fff" placement="bottom">

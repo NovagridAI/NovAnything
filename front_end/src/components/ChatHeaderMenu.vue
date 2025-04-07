@@ -15,24 +15,27 @@
 
     </div>
     <div class="icon-actions">
-      <icon-list class="icon-list" @click="openFullscreenView" />
+      <icon-settings class="icon-list" @click="openFullscreenView" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { IconList } from '@arco-design/web-vue/es/icon';
+import { IconSettings } from '@arco-design/web-vue/es/icon';
 import { ref } from 'vue';
 import routeController from '@/controller/router';
 import { useChatSetting } from '@/store/useChatSetting';
 import { storeToRefs } from 'pinia';
 import { useHomeChat } from '@/store/useHomeChat';
+import { useAdvanceSettings } from '@/store/useAdvanceSettings';
 import urlResquest from '@/services/urlConfig';
 const { chatId, historyList } = storeToRefs(useHomeChat());
 
 const { chatSettingConfigured } = storeToRefs(useChatSetting());
-const { setAllChatSettingConfigured } = useChatSetting();
+const { setAllChatSettingConfigured, setActiveChatSetting } = useChatSetting();
 
+
+const { updateSettings } = useAdvanceSettings();
 
 const defaultOption = chatSettingConfigured.value.find(item => item.active === true);
 const { changePage } = routeController();
@@ -48,6 +51,8 @@ const isFullscreenViewOpen = ref(false);
 const modelList = ref([]);
 
 function handleSelect(option: string) {
+  console.log('option', option);
+  setActiveChatSetting(option);
   // 不需要手动设置selectedOption.value，因为v-model会自动处理
   // 这里可以添加其他处理逻辑
 }
@@ -56,7 +61,7 @@ function handleSelect(option: string) {
 function openFullscreenView() {
   isFullscreenViewOpen.value = true;
   // 使用路由控制器跳转到全屏视图路由
-  changePage('/fullscreen-view/knowledge');
+  changePage('/fullscreen-view/user-settings');
 }
 
 // 获取模型列表
@@ -151,11 +156,15 @@ onMounted(() => {
 }
 
 .icon-list:hover {
-  color: #5a47e5;
+  color: #3491FA;
   transform: scale(1.1);
 }
 
 .icon-actions {
+
+  .arco-icon-settings {
+    font-size: 20px;
+  }
   display: flex;
   align-items: center;
 }

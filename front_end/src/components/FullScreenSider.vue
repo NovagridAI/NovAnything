@@ -10,11 +10,11 @@
     >
       <arco-menu-item key="user-settings">
         <template #icon><icon-settings /></template>
-        用户设置
+        模型设置
       </arco-menu-item>
       
       <arco-sub-menu key="knowledge-management">
-        <template #icon><icon-storage /></template>
+        <template #icon><icon-folder /></template>
         <template #title>知识库管理</template>
         <arco-menu-item key="personal-knowledge">
           <template #icon><icon-file /></template>
@@ -22,12 +22,12 @@
         </arco-menu-item>
         <arco-menu-item key="organization-knowledge">
           <template #icon><icon-file /></template>
-          组织知识库
+          团队知识库
         </arco-menu-item>
       </arco-sub-menu>
       
       <arco-menu-item key="organization-management">
-        <template #icon><icon-user-group /></template>
+        <template #icon><icon-user /></template>
         组织管理
       </arco-menu-item>
     </arco-menu>
@@ -38,9 +38,10 @@
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { 
-  IconSettings, 
-  IconStorage, 
+  IconSettings,  
   IconUserGroup,
+  IconUser,
+  IconFolder,
   IconFile
 } from '@arco-design/web-vue/es/icon';
 

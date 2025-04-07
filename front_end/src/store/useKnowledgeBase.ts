@@ -36,6 +36,7 @@ export const useKnowledgeBase = defineStore(
     //选中的知识库id
     const selectList = ref<string[]>([]);
     const setSelectList = list => {
+      console.log(list, 'setSelectListsetSelectList');
       selectList.value = list;
     };
 
@@ -74,9 +75,9 @@ export const useKnowledgeBase = defineStore(
             setKnowledgeBaseList(list);
             setDefault(pageStatus.normal);
 
-            if (!selectList.value.length) {
-              selectList.value.push(list[0]?.kb_id);
-            }
+            // if (!selectList.value.length) {
+            //   selectList.value.push(list[0]?.kb_id);
+            // }
           } else {
             setKnowledgeBaseList([]);
             setDefault(pageStatus.default);
@@ -93,6 +94,11 @@ export const useKnowledgeBase = defineStore(
       }
     };
 
+    const tempId = ref('');
+    const setTempId = (id: string) => {
+      tempId.value = id;
+    };
+
     return {
       currentId,
       setCurrentId,
@@ -107,6 +113,8 @@ export const useKnowledgeBase = defineStore(
       setCurrentKbName,
       selectList,
       setSelectList,
+      tempId,
+      setTempId,
     };
   },
   {

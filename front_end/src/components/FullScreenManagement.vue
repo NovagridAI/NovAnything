@@ -65,8 +65,9 @@
                     <arco-table-column title="操作">
                         <template #cell="{ record }">
                             <arco-space>
-                                <arco-button type="text" size="small" @click="handleEdit(record)">编辑</arco-button>
-                                <arco-button type="text" size="small" @click="handleMove(record)">移动</arco-button>
+                                <!-- <arco-button type="text" size="small" @click="handleEdit(record)">编辑</arco-button> -->
+                                <arco-link type="text" size="small" @click="handleMove(record)">移动</arco-link>
+                                <arco-link type="text" size="small" @click="handleChangePassword(record)">修改密码</arco-link>
 
                                 <!-- 使用 Popover 替换直接删除按钮 -->
                                 <arco-popover position="top" trigger="click">
@@ -158,6 +159,21 @@
         >
             <p>确定要删除部门 "{{ deptToDelete?.title }}" 吗？</p>
             <p style="color: var(--color-text-3);">此操作不可撤销，请谨慎操作。</p>
+        </arco-modal>
+
+        <!-- 修改密码弹窗 -->
+        <arco-modal v-model:visible="changePasswordModalVisible" title="修改密码" @ok="confirmChangePassword" @cancel="cancelChangePassword">
+            <arco-form :model="passwordForm" layout="vertical">
+                <arco-form-item field="oldPassword" label="当前密码">
+                    <arco-input-password v-model="passwordForm.oldPassword" placeholder="请输入当前密码" />
+                </arco-form-item>
+                <arco-form-item field="newPassword" label="新密码">
+                    <arco-input-password v-model="passwordForm.newPassword" placeholder="请输入新密码" />
+                </arco-form-item>
+                <arco-form-item field="confirmPassword" label="确认密码">
+                    <arco-input-password v-model="passwordForm.confirmPassword" placeholder="请再次输入新密码" />
+                </arco-form-item>
+            </arco-form>
         </arco-modal>
     </div>
 </template>
@@ -780,6 +796,71 @@ const deleteDepartment = async (deptId) => {
         Message.error('删除部门失败，请稍后重试');
     }
 };
+
+// 修改密码相关
+const changePasswordModalVisible = ref(false);
+const passwordForm = reactive({
+    newPassword: '',
+    confirmPassword: '',
+    userId: null
+});
+
+// 处理修改密码
+const handleChangePassword = (record) => {
+    passwordForm.newPassword = '';
+    passwordForm.confirmPassword = '';
+    passwordForm.userId = record.id;
+    changePasswordModalVisible.value = true;
+};
+
+// 确认修改密码
+const confirmChangePassword = async () => {
+    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
+        Message.error('请输入新密码和确认密码');
+        return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        Message.error('两次输入的密码不一致');
+        return;
+    }
+
+    try {
+        const loadingMessage = Message.loading({
+            content: '正在修改密码...',
+            duration: 0
+        });
+
+        const res = await urlResquest.changeUserPassword({
+            user_id: passwordForm.userId,
+            new_password: passwordForm.newPassword,
+            old_password: passwordForm.oldPassword
+        });
+
+        loadingMessage.close();
+
+        if (res && res.code === 200) {
+            Message.success('密码修改成功');
+            changePasswordModalVisible.value = false;
+            passwordForm.newPassword = '';
+            passwordForm.confirmPassword = '';
+            passwordForm.userId = null;
+        } else {
+            Message.error(res?.msg || '密码修改失败');
+        }
+    } catch (error) {
+        console.error('修改密码失败:', error);
+        Message.error('修改密码失败，请稍后重试');
+    }
+};
+
+// 取消修改密码
+const cancelChangePassword = () => {
+    passwordForm.newPassword = '';
+    passwordForm.confirmPassword = '';
+    passwordForm.userId = null;
+    changePasswordModalVisible.value = false;
+};
 </script>
 
 <style scoped>
@@ -804,12 +885,14 @@ const deleteDepartment = async (deptId) => {
 
 .sidebar-header h3 {
     margin: 0 0 8px 0;
-    font-size: 16px;
+    font-size: 24px;
+    font-weight: 500;
+    color: #1a1a1a;
 }
 
 .sidebar-desc {
-    color: var(--color-text-3);
-    font-size: 12px;
+    color: #767676;
+    font-size: 16px;
     margin: 0 0 16px 0;
     line-height: 1.5;
 }
@@ -826,12 +909,13 @@ const deleteDepartment = async (deptId) => {
 
 .header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-bottom: 20px;
 }
 
 .search-input {
-    width: 300px;
+    margin-right: 12px;
+    width: 220px;
 }
 
 .action-buttons {

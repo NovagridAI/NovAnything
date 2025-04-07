@@ -81,7 +81,7 @@
         <div class="table">
           <!-- 新增的Arco Design表格 -->
           <arco-table :selectedRowKeys="[...selectedKeys.keys()]" @select="onSelect" @selectAll="onSelectAll"
-            :row-selection="{ showCheckedAll: true }" :data="dataSource" :columns="columns"
+            :loading="loading" :row-selection="{ showCheckedAll: true }" :data="dataSource" :columns="columns"
             :pagination="kbPaginationConfig" row-key="fileId" @page-change="current => kbOnChange({ current })"
             style="margin-top: 20px; border-radius: 12px; overflow: hidden;">
             <template #status="{ record }">
@@ -105,6 +105,14 @@
                 @click="viewItem(record)">
                 {{ common.view }}
               </arco-button>
+            </template>
+            <template #remark="{ record }">
+              <div v-if="typeof record.remark === 'string'">{{ record.remark }}</div>
+              <div v-else>
+                <p v-for="(value, key) in record.remark" :key="key">
+                  {{ `${key}: ${value}` }}
+                </p>
+              </div>
             </template>
           </arco-table>
         </div>
@@ -232,6 +240,7 @@ const columns = [
     dataIndex: 'remark',
     key: 'remark',
     width: '15%',
+    slotName: 'remark',
   },
   {
     title: home.operate,

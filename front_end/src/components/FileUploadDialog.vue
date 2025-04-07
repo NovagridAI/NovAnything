@@ -117,7 +117,7 @@ import Cookies from 'js-cookie';
 const common = getLanguage().common;
 const { setKnowledgeName, setModalVisible } = useKnowledgeModal();
 const { setDefault } = useKnowledgeBase();
-const { getDetails } = useOptiionList();
+const { getDetails, getTempDetail } = useOptiionList();
 const { modalVisible, modalTitle } = storeToRefs(useKnowledgeModal());
 const { currentId, currentKbName } = storeToRefs(useKnowledgeBase());
 const { uploadFileList, uploadFileListQuick } = storeToRefs(useUploadFiles()); // 上传的文件列表
@@ -130,6 +130,12 @@ const props = defineProps({
     type: Number,
     require: true,
     default: 0,
+  },
+
+  temporaryId: {
+    type: String,
+    require: false,
+    default: '',
   },
 });
 
@@ -266,13 +272,19 @@ const uplolad = async () => {
   for (let i = 0; i < list.length; i++) {
     formData.append('files', list[i]?.file);
   }
-  formData.append('kb_id', currentId.value);
+  
+  // 根据dialogType决定上传目标
+  if (props.dialogType === 2) {
+    formData.append('kb_id', props.temporaryId);
+  } else {
+    formData.append('kb_id', currentId.value);
+  }
+  
   formData.append('user_id', userId);
-  // formData.append('user_info', userPhone);
-  console.log(chatSettingFormActive.value, 'chatSettingFormActive');
   formData.append('chunk_size', chatSettingFormActive.value.chunkSize.toString());
   // 上传模式，soft：文件名重复的文件不再上传，strong：文件名重复的文件强制上传
   formData.append('mode', 'soft');
+  
   openNotification(0);
   fetch(apiBase + '/local_doc_qa/upload_files', {
     method: 'POST',
@@ -334,7 +346,11 @@ const uplolad = async () => {
       notification.close('upload');
     })
     .finally(() => {
-      getDetails();
+      if (props.dialogType === 2) {
+        getTempDetail();
+      } else {
+        getDetails();
+      }
     });
 };
 

@@ -25,7 +25,7 @@ const updateKbType = () => {
   const lastPart = pathParts[pathParts.length - 1];
 
   if (lastPart === 'organization') {
-    kbType.value = 'temporary';
+    kbType.value = 'team';
   } else {
     kbType.value = 'personal';
   }
@@ -38,25 +38,32 @@ watch(() => route.path, () => {
 
 // 计算标题
 const headerTitle = computed(() => {
-  return kbType.value === 'personal' ? '个人知识库管理' : '组织知识库管理';
+  return kbType.value === 'personal' ? '个人知识库管理' : '团队知识库管理';
 });
 
 // 计算描述
 const headerDesc = computed(() => {
-  return kbType.value === 'personal' ? '管理个人的知识库' : '管理组织的知识库';
+  return kbType.value === 'personal' ? '管理个人的知识库' : '管理团队的知识库';
 });
 
 const filterKnowledgeBaseList = computed(() => {
   return knowledgeBaseList.value.filter(item => item.kb_type === kbType.value)
 })
 
-console.log(knowledgeBaseList)
+
 
 const manage = item => {
   console.log(item)
   setCurrentId(item.kb_id);
   setCurrentKbName(item.kb_name);
 };
+
+watch(kbType, () => {
+  console.log(kbType.value)
+  if (filterKnowledgeBaseList.value.length > 0) {
+    manage(filterKnowledgeBaseList.value[0])
+  }
+})
 
 onMounted(() => {
   updateKbType();
@@ -122,14 +129,14 @@ const addKb = async () => {
 
 <template>
   <arco-layout class="knowledge-layout">
-    <arco-layout-sider class="knowledge-sidebar">
+    <arco-layout-sider class="knowledge-sidebar" width=312>
       <div class="knowledge-header">
         <h3>{{ headerTitle }}</h3>
         <p>{{ headerDesc }}</p>
       </div>
 
       <div class="knowledge-title">
-        <span>{{ kbType === 'personal' ? '个人知识库' : '组织知识库' }}</span>
+        <span>{{ kbType === 'personal' ? '个人知识库' : '团队知识库' }}</span>
         <icon-plus class="add-icon" @click="openCreateModal" />
       </div>
 
@@ -166,7 +173,7 @@ const addKb = async () => {
   </Modal>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .knowledge-layout {
   height: 100%;
 }
@@ -183,14 +190,15 @@ const addKb = async () => {
 
 .knowledge-header h3 {
   margin: 0;
-  font-size: 16px;
-  color: var(--color-text-1);
+  font-size: 24px;
+  font-weight: 500;
+  color: #1a1a1a;
 }
 
 .knowledge-header p {
   margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--color-text-3);
+  font-size: 16px;
+  color: #767676;
 }
 
 .knowledge-title {
@@ -212,13 +220,13 @@ const addKb = async () => {
 }
 
 :deep(.arco-menu-selected) {
-  background-color: rgb(229, 238, 255);
+  background-color: #E0EAFF;
 }
 
 :deep(.arco-layout-sider) {
-  width: 240px !important;
-  max-width: 240px !important;
-  min-width: 240px !important;
+  width: 312px !important;
+  max-width: 312px !important;
+  min-width: 312px !important;
 }
 
 .add-icon {
@@ -246,5 +254,13 @@ const addKb = async () => {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 24px;
+}
+
+:deep(.arco-menu-light .arco-menu-item.arco-menu-selected) {
+  background-color: #E0EAFF !important;
+}
+
+:deep(.arco-menu-light .arco-menu-item:hover) {
+  background-color: #E0EAFF !important;
 }
 </style>
