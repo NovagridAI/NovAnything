@@ -33,7 +33,6 @@
 html body,
 #app,
 .arco-btn,
-.arco-input,
 .arco-select,
 .arco-table,
 .arco-modal,
@@ -65,6 +64,11 @@ html body,
 
 .font-black {
   font-weight: 900;
+}
+
+/* 密码输入框使用等宽字体 */
+input[type="password"] {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 // .ant-message-notice {

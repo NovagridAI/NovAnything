@@ -1,7 +1,7 @@
 <template>
   <div class="conversation-history">
     <div class="history-header">
-      <h3>话题</h3>
+      <h3 class="history-title">话题</h3>
     </div>
 
     <div class="history-section" v-if="favoriteItems.length > 0">
@@ -293,13 +293,11 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .conversation-history {
   background-color: #F8F8F8;
   border-left: 1px solid #D8D8D8;
-  padding-left: 16px;
-  padding-right: 16px;
-  max-width: 280px;
+  max-width: 279px;
   width: 100%;
   height: 100%;
   overflow-y: auto;
@@ -312,8 +310,8 @@ onMounted(() => {
 .history-header h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: 500;
-  color: #1d2129;
+  font-weight: 400;
+  color: $mainFontColor;
 }
 
 .history-section {
@@ -321,7 +319,7 @@ onMounted(() => {
 }
 
 .section-title {
-  padding: 8px 16px;
+  margin: 8px 16px;
   font-size: 14px;
   color: #86909c;
 }
@@ -329,6 +327,7 @@ onMounted(() => {
 .section-item {
   display: flex;
   align-items: center;
+  margin: 12px 16px;
   padding: 8px 16px;
   cursor: pointer;
   border-radius: 4px;

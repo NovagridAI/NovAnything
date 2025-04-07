@@ -108,12 +108,9 @@
       </div>
       <div class="question-container">
         <div class="icon-container">
-          <arco-popover position="top" style="width: 800px;">
-            <template #content>
-              <ChatAdvanceSettings />
-            </template>
-            <icon-settings class="action-icon" />
-          </arco-popover>
+          <keep-alive>
+            <ChatAdvanceSettings v-if="true" />
+          </keep-alive>
           <icon-upload class="action-icon" />
         </div>
         <div class="question-container-button">
@@ -217,6 +214,8 @@ import Cookies from 'js-cookie'
 import ChatAdvanceSettings from '@/components/ChatAdvanceSettings.vue';
 import ChatHeaderMenu from '@/components/ChatHeaderMenu.vue';
 import ConversationHistory from '@/components/ConversationHistory.vue';
+import { useAdvanceSettings } from '@/store/useAdvanceSettings';
+
 const common = getLanguage().common;
 
 const typewriter = new Typewriter((str: string) => {
@@ -228,6 +227,7 @@ const typewriter = new Typewriter((str: string) => {
 const { selectList, knowledgeBaseList } = storeToRefs(useKnowledgeBase());
 const { QA_List, chatId, pageId, qaPageId, historyList, currentQaId } = storeToRefs(useHomeChat());
 const { chatSettingFormActive } = storeToRefs(useChatSetting());
+const advanceSettings = useAdvanceSettings();
 const { copy } = useClipboard();
 const { addHistoryList, updateHistoryList, addChatList, clearChatList, setCurrentQaId } = useHomeChat();
 const { setChatSourceVisible, setSourceType, setSourceUrl, setTextContent } = useChatSource();
@@ -294,11 +294,8 @@ function newChat() {
 // 创建 Intersection Observer 对象
 const observer = new IntersectionObserver(entries => {
   entries.forEach(entry => {
-    // 判断元素是否在可视范围内
     if (entry.isIntersecting) {
-      console.log('entry.isIntersecting');
       pageId.value++;
-      // getHistoryList(pageId.value);
     }
   });
 });
@@ -306,12 +303,8 @@ const observer = new IntersectionObserver(entries => {
 // 问答观察者
 const qaObserver = new IntersectionObserver(entries => {
   entries.forEach(entry => {
-    // 判断元素是否在可视范围内
     if (entry.isIntersecting) {
-      console.log('qa entry.isIntersecting');
       qaPageId.value++;
-      // getChatDetail(qaPageId.value);
-      // getChatDetail();
     }
   });
 });
@@ -683,10 +676,9 @@ const createQaLog = async ({ kb_ids, query, model }) => {
         model: model,
       })
     );
-    console.log('创建qa_log成功', res);
     return res;
   } catch (e) {
-    console.error('创建qa_log失败', e);
+    console.log('创建qa_log失败', e);
     throw e;
   }
 };
@@ -694,7 +686,6 @@ const createQaLog = async ({ kb_ids, query, model }) => {
 // 更新qa_log的函数
 const updateQaLog = async (update_data) => {
   try {
-
     const requestData = {
       qa_id: currentQaId.value,
       user_id: userId,
@@ -702,20 +693,18 @@ const updateQaLog = async (update_data) => {
         history: update_data
       }
     }
-   
+
     const res = await resultControl(
       await urlResquest.updateQaLog(requestData)
     );
-    console.log('更新qa_log成功', res);
     return res;
   } catch (e) {
-    console.error('更新qa_log失败', e);
+    console.log(e)
     throw e;
   }
 };
 
 const reAnswer = (item: IChatItem) => {
-  console.log('reAnswer');
   question.value = item.question;
   send();
 };
@@ -757,15 +746,18 @@ const shareChat = async () => {
         networking: chatSettingFormActive.value.capabilities.networkSearch,
         api_base: chatSettingFormActive.value.apiBase,
         api_key: chatSettingFormActive.value.apiKey,
-        api_context_length: chatSettingFormActive.value.apiContextLength,
-        top_p: chatSettingFormActive.value.top_P,
-        temperature: chatSettingFormActive.value.temperature,
-        top_k: chatSettingFormActive.value.top_K,
+
+        // 使用用户本地设置
+        api_context_length: advanceSettings.apiContextLength,
+        max_token: advanceSettings.maxToken,
+        chunk_size: advanceSettings.maxToken,
+        top_p: advanceSettings.top_P,
+        temperature: advanceSettings.temperature,
+        top_k: advanceSettings.top_K,
+
         model: chatSettingFormActive.value.apiModelName,
-        max_token: chatSettingFormActive.value.maxToken,
         hybrid_search: chatSettingFormActive.value.capabilities.mixedSearch,
         // chunk_size: chatSettingFormActive.value.chunkSize,
-        chunk_size: chatSettingFormActive.value.maxToken,
         rerank: chatSettingFormActive.value.capabilities.rerank,
       })
     );
@@ -884,7 +876,6 @@ const checkFileType = filename => {
 };
 
 const handleChatSource = file => {
-  console.log('handleChatSource', file);
   const isSupport = checkFileType(file.file_name);
   if (isSupport) {
     queryFile(file);

@@ -10,7 +10,10 @@
 <template>
   <a-config-provider :hash="false" :locale="locale" :auto-insert-space-in-button="false">
     <div class="page-app">
-      <router-view></router-view>
+      <keep-alive>
+        <router-view v-if="$route.meta.keepAlive" />
+      </keep-alive>
+      <router-view v-if="!$route.meta.keepAlive" />
       <!-- <UserPhoneDialog /> -->
     </div>
   </a-config-provider>

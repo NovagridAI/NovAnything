@@ -1,6 +1,7 @@
 <template>
     <div class="knowledge-list">
         <div class="logo">NovAnything</div>
+        <div class="logo-text">🔍  点击可多选知识库</div>
 
         <!-- 骨架屏 -->
         <template v-if="!Array.isArray(knowledgeBaseList)">
@@ -111,6 +112,16 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
     background-clip: text;
     font-size: 22px;
     font-weight: 700;
+    padding-left: 24px;
+    padding-top: 24px;
+    padding-bottom: 48px;
+}
+
+.logo-text {
+    font-size: 16px;
+    color: $mainFontColor;
+    padding-left: 24px;
+    padding-bottom: 24px;
 }
 
 .knowledge-list {
@@ -126,7 +137,7 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
 }
 
 :deep(.arco-collapse) {
-    padding: 0px 12px;
+    padding: 0px 24px;
     border: none;
     background-color: transparent;
     width: 100%;
@@ -178,8 +189,10 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
 .collapse-header {
     display: flex;
     align-items: center;
-    font-weight: 500;
+    font-weight: 400;
+    font-size: 16px;
     padding-left: 8px;
+    color: $mainFontColor;
 }
 
 .knowledge-group {

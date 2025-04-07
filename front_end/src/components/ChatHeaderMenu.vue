@@ -27,18 +27,25 @@ import routeController from '@/controller/router';
 import { useChatSetting } from '@/store/useChatSetting';
 import { storeToRefs } from 'pinia';
 import { useHomeChat } from '@/store/useHomeChat';
+import urlResquest from '@/services/urlConfig';
 const { chatId, historyList } = storeToRefs(useHomeChat());
 
 const { chatSettingConfigured } = storeToRefs(useChatSetting());
+const { setAllChatSettingConfigured } = useChatSetting();
+
+
 const defaultOption = chatSettingConfigured.value.find(item => item.active === true);
 const { changePage } = routeController();
-const selectedOption = ref(defaultOption?.modelName || '');
+const selectedOption = computed(() => {
+  return chatSettingConfigured.value.find(item => item.active === true)?.modelName || '无模型配置';
+});
 const currentChatTitle = computed(() => {
   const currentChatTitle = historyList.value.find(item => item.historyId === chatId.value);
   return currentChatTitle?.title || '新对话';
 });
 
 const isFullscreenViewOpen = ref(false);
+const modelList = ref([]);
 
 function handleSelect(option: string) {
   // 不需要手动设置selectedOption.value，因为v-model会自动处理
@@ -51,6 +58,65 @@ function openFullscreenView() {
   // 使用路由控制器跳转到全屏视图路由
   changePage('/fullscreen-view/knowledge');
 }
+
+// 获取模型列表
+const fetchModelList = async () => {
+  try {
+    const response = await urlResquest.getModelList({}, {});
+    if (response && response.data) {
+      modelList.value = response.data.configs;
+      console.log('获取到的模型列表:', modelList.value);
+
+      // 将API返回的模型数据映射到chatSettingConfigured格式
+      updateChatSettingWithModelList(modelList.value);
+    }
+  } catch (error) {
+    console.error('获取模型列表失败:', error);
+  }
+};
+
+// 将API返回的模型列表更新到chatSettingConfigured
+const updateChatSettingWithModelList = (models) => {
+  if (!models || models.length === 0) return;
+
+
+  // 将API返回的模型映射为chatSettingConfigured格式
+  const customModels = models.map(model => {
+    return {
+      modelType: model.model_endpoint,
+      modelName: model.service_name,
+      customId: model.config_id,
+      apiKey: model.api_key,
+      apiBase: model.api_proxy,
+      chunkSize: model.chunk_size || 800,
+      apiModelName: model.service_name,
+      apiContextLength: model.api_context_length || 4096,
+      maxToken: Math.floor((model.max_token || 4096)),
+      temperature: model.temperature || 0.5,
+      top_P: model.top_P || 1.0,
+      top_K: model.top_k || 40,
+      context: model.context_length || 10,
+      capabilities: {
+        networkSearch: false,
+        mixedSearch: false,
+        onlySearch: false,
+        rerank: false,
+      },
+      active: false,
+      // 保存原始数据，以便后续可能需要
+      originalData: { ...model }
+    };
+  });
+  console.log(customModels, 'customModels')
+  // 更新chatSettingConfigured，使用新的批量设置函数
+  setAllChatSettingConfigured([...customModels]);
+};
+
+
+onMounted(() => {
+  fetchModelList();
+})
+
 </script>
 
 <style scoped>
@@ -94,8 +160,13 @@ function openFullscreenView() {
   align-items: center;
 }
 
+:deep(.arco-select-view-suffix) {
+  padding: 0px 0px;
+}
+
 /* 覆写 arco-select 样式 */
 :deep(.arco-select-view-single) {
+
   background-color: #E8F7FF;
   color: #3491FA;
   padding: 4px 12px;
@@ -124,8 +195,10 @@ function openFullscreenView() {
 /* 确保下拉选项也使用相同的文字颜色 */
 :deep(.arco-select-dropdown) {
   width: 100px;
+
   .arco-select-option {
     padding: 8px 12px;
+
     &.arco-select-option-active,
     &.arco-select-option-selected {
       color: #3491FA;
