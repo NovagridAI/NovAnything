@@ -45,12 +45,15 @@ import { useHomeChat } from '@/store/useHomeChat';
 import { storeToRefs } from 'pinia';
 import { useKnowledgeBase } from '@/store/useKnowledgeBase';
 import { IChatItemInfo } from '@/utils/types';
+import { useOptiionList } from '@/store/useOptiionList';
+import { formatTimestamp, resultControl } from '@/utils/utils';
 
 const { chatList, chatId, QA_List, qaPageId } = storeToRefs(useHomeChat());
 const { addChatList, getChatById, setCurrentQaId, setHistoryList } = useHomeChat();
 const { setSelectList } = useKnowledgeBase();
 const { knowledgeBaseList } = storeToRefs(useKnowledgeBase());
 const { setTempId } = useKnowledgeBase();
+const { setTempDetail } = useOptiionList();
 
 const tempList = computed(() => knowledgeBaseList.value.filter(item => item.kb_type === 'temporary'));
 
@@ -75,8 +78,11 @@ const formatTitle = (query) => {
 const selectConversation = (item) => {
   console.log(item, 'item');
   const currentTempId = item.kb_ids.find(item => tempList.value.some(temp => temp.kb_id === item));
-  if(currentTempId) {
+  if (currentTempId) {
     setTempId(currentTempId);
+  } else {
+    setTempId('');
+    setTempDetail([]);
   }
   changeChat(item);
   selectedConversation.value = item.qa_id;
@@ -195,6 +201,24 @@ async function changeChat(item) {
   }
 }
 
+// 创建临时知识库的函数
+async function createTempKnowledgeBase() {
+  try {
+    const timestamp = formatTimestamp(Date.now());
+    const res: any = await resultControl(
+      await urlResquest.createKb({
+        kb_name: `临时知识库-${timestamp}`,
+        description: '',
+        kb_type: 'temporary' // 标记为临时知识库
+      })
+    );
+    return res.kb_id;
+  } catch (e) {
+    console.error('创建临时知识库失败:', e);
+    throw e;
+  }
+}
+
 
 // 使用真实API获取会话历史
 const fetchConversationHistory = async () => {
@@ -218,6 +242,24 @@ const fetchConversationHistory = async () => {
         }
       });
       setHistoryList(historyList);
+      if (response.data.qa_logs.length === 0) {
+        const tempKbId = await createTempKnowledgeBase();
+        setTempId(tempKbId);
+      }
+
+      if (response.data.qa_logs.length > 0) {
+        if (chatId.value) {
+          const selectedItem = response.data.qa_logs.find(item => item.qa_id === chatId.value);
+          if (selectedItem) {
+            selectConversation(selectedItem);
+          } else {
+            selectConversation(response.data.qa_logs[0]);
+          }
+        } else {
+          selectConversation(response.data.qa_logs[0]);
+        }
+      }
+
     } else {
       console.warn('获取会话历史返回的数据格式不正确:', response);
       Message.error(response?.msg || '获取会话历史失败');

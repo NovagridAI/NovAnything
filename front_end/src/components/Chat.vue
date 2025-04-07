@@ -108,6 +108,9 @@
       </div>
       <div class="temp-file-container" v-if="tempDetail && tempDetail.length > 0">
         <div class="temp-file-item" v-for="(item, index) in tempDetail" :key="index">
+          <div v-if="item.status !== 'green'" class="temp-file-loading-container">
+            <icon-loading class="temp-file-loading" />
+          </div>
           <div class="temp-file-item-icon">
             <icon-file />
           </div>
@@ -218,7 +221,7 @@ import ChatInfoPanel from '@/components/ChatInfoPanel.vue';
 import { useBots } from '@/store/useBots';
 import CopyUrlDialog from '@/components/Bots/CopyUrlDialog.vue';
 import ChatTextarea from '@/components/ChatTextarea.vue';
-import { IconSettings, IconUpload, IconPlus, IconSend, IconFile } from '@arco-design/web-vue/es/icon';
+import { IconSettings, IconUpload, IconPlus, IconSend, IconFile, IconLoading } from '@arco-design/web-vue/es/icon';
 import Cookies from 'js-cookie'
 import ChatAdvanceSettings from '@/components/ChatAdvanceSettings.vue';
 import ChatHeaderMenu from '@/components/ChatHeaderMenu.vue';
@@ -249,6 +252,7 @@ const { language } = storeToRefs(useLanguage());
 const { setModalVisible } = useKnowledgeModal();
 const { getTempDetail, setTempDetail } = useOptiionList();
 const { tempDetail } = storeToRefs(useOptiionList());
+const { setSelectList } = useKnowledgeBase();
 declare module _czc {
   const push: (array: any) => void;
 }
@@ -309,6 +313,7 @@ function newChat() {
     QA_List.value = [];
     qaPageId.value = 1;
     pageId.value = 1;
+    setSelectList([]);
     setTempId(kb_id);
   }).catch((e) => {
     console.error('创建临时知识库失败:', e);
@@ -1600,9 +1605,25 @@ $avatar-width: 96px;
 .temp-file-container {
   display: flex;
   gap: 44px;
-  margin: 0px 36px;
+  margin: 16px 36px;
 
   .temp-file-item {
+    position: relative;
+
+    .temp-file-loading-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+
+      .icon-loading {
+        font-size: 44px;
+        color: #666666;
+      }
+    }
 
     .temp-file-item-icon {
       display: flex;
