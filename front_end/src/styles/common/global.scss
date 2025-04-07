@@ -25,6 +25,48 @@
   background-color: #a8aaad;
 }
 
+:root {
+  --font-family: 'Noto Sans SC', Inter, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* 应用全局字体 */
+html body,
+#app,
+.arco-btn,
+.arco-input,
+.arco-select,
+.arco-table,
+.arco-modal,
+.arco-message,
+.arco-popover {
+  font-family: var(--font-family) !important;
+}
+
+/* 定义不同字重的工具类 */
+.font-thin {
+  font-weight: 100;
+}
+
+.font-light {
+  font-weight: 300;
+}
+
+.font-normal {
+  font-weight: 400;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-black {
+  font-weight: 900;
+}
+
 // .ant-message-notice {
 //   .ant-message-notice-content {
 //     background: rgba(42, 43, 46, 0.92);

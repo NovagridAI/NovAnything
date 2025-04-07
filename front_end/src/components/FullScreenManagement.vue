@@ -786,6 +786,7 @@ const deleteDepartment = async (deptId) => {
 .management-layout {
     display: flex;
     height: 100%;
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .sidebar {

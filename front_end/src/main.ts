@@ -17,6 +17,14 @@ import ArcoVue from '@arco-design/web-vue';
 import SvgIcon from '@/components/SvgIcon.vue';
 import '@arco-design/web-vue/dist/arco.css';
 
+// 导入所有字重的思源黑体
+import '@fontsource/noto-sans-sc/100.css';
+import '@fontsource/noto-sans-sc/300.css';
+import '@fontsource/noto-sans-sc/400.css';
+import '@fontsource/noto-sans-sc/500.css';
+import '@fontsource/noto-sans-sc/700.css';
+import '@fontsource/noto-sans-sc/900.css';
+
 const vueApp = createApp(App);
 
 vueApp.use(ArcoVue, {

@@ -20,6 +20,7 @@
     "@arco-design/web-vue": "^2.57.0",
     "@fingerprintjs/fingerprintjs": "^4.2.2",
     "@flyfish-group/file-viewer3": "^1.0.3",
+    "@fontsource/noto-sans-sc": "^5.2.5",
     "@vue-office/docx": "^1.6.0",
     "@vue-office/excel": "^1.7.6",
     "@vue-office/pdf": "^1.6.5",
