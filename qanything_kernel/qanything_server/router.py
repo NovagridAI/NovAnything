@@ -63,6 +63,7 @@ def register_routes(app: Sanic):
     app.add_route(create_user, "/api/user/create", methods=['POST'])  # tags=["创建用户"]
     app.add_route(list_users, "/api/user/list", methods=['GET'])  # tags=["用户列表"]
     app.add_route(delete_user, "/api/user/delete", methods=['POST'])  # tags=["删除用户"]
+    app.add_route(update_user_info, "/api/user/update", methods=['POST'])  # tags=["更新用户信息"]
     app.add_route(change_password, "/api/user/change_password", methods=['POST'])  # tags=["修改用户密码"]
     app.add_route(reset_password, "/api/user/reset_password", methods=['POST'])  # tags=["重置用户密码"]
 

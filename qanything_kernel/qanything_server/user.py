@@ -317,3 +317,78 @@ async def reset_password(req: request):
     except Exception as e:
         debug_logger.error(f"重置密码失败: {str(e)}")
         return sanic_json({"code": 500, "msg": f"重置密码失败: {str(e)}"})
+
+
+@get_time_async
+@auth_required(required_role=ROLE_SUPERADMIN)
+async def update_user_info(req: request):
+    """更新用户信息 - 仅超级管理员可操作
+    支持更新用户名、邮箱和角色，这些字段都是可选的
+    """
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    admin_user_id = safe_get(req, 'user_id')  # 当前操作用户（管理员）
+    target_user_id = safe_get(req, 'target_user_id')  # 要更新的用户ID
+    
+    # 获取要更新的字段（所有字段都是可选的）
+    username = safe_get(req, 'username', None)
+    email = safe_get(req, 'email', None)
+    role = safe_get(req, 'role', None)
+    
+    if not target_user_id:
+        return sanic_json({"code": 400, "msg": "目标用户ID不能为空"})
+    
+    # 至少需要一个要更新的字段
+    if not any([username, email, role]):
+        return sanic_json({"code": 400, "msg": "至少需要提供一个要更新的字段"})
+    
+    user_dao = UserDAO(local_doc_qa.milvus_summary.db_connection)
+    
+    # 检查目标用户是否存在
+    target_user = user_dao.get_user_by_id(target_user_id)
+    if not target_user:
+        return sanic_json({"code": 404, "msg": "用户不存在"})
+    
+    # 如果更新用户名，检查新用户名是否已存在
+    if username and username != target_user.username:
+        query = "SELECT user_id FROM User WHERE username = %s AND user_id != %s"
+        username_exists = user_dao.execute_query(query, (username, target_user_id), fetch=True)
+        if username_exists:
+            return sanic_json({"code": 400, "msg": "该用户名已被使用"})
+    
+    # 如果更新邮箱，检查新邮箱是否已存在
+    if email and email != target_user.email:
+        query = "SELECT user_id FROM User WHERE email = %s AND user_id != %s"
+        email_exists = user_dao.execute_query(query, (email, target_user_id), fetch=True)
+        if email_exists:
+            return sanic_json({"code": 400, "msg": "该邮箱已被注册"})
+    
+    # 如果更新角色，验证角色是否有效
+    valid_roles = ['user', 'admin', 'superadmin']
+    if role and role not in valid_roles:
+        return sanic_json({"code": 400, "msg": f"无效的角色，可选值: {', '.join(valid_roles)}"})
+    
+    # 更新用户信息
+    try:
+        if username:
+            target_user.username = username
+        if email:
+            target_user.email = email
+        if role:
+            target_user.role = role
+        
+        user_dao.update_user(target_user)
+        
+        # 返回更新后的用户信息
+        return sanic_json({
+            "code": 200, 
+            "msg": "用户信息更新成功", 
+            "data": {
+                "user_id": target_user.user_id,
+                "username": target_user.username,
+                "email": target_user.email,
+                "role": target_user.role
+            }
+        })
+    except Exception as e:
+        debug_logger.error(f"更新用户信息失败: {str(e)}")
+        return sanic_json({"code": 500, "msg": f"更新用户信息失败: {str(e)}"})
