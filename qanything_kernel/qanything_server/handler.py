@@ -266,7 +266,7 @@ async def local_doc_chat(req: request):
                         debug_logger.info("创建新的QA记录")
                         # 创建QaLog对象
                         qa_log = QaLog(
-                            qa_id=qa_id,  # 如果为空，会自动生成
+                            qa_id=None,  # 如果为空，会自动生成
                             user_id=user_id,
                             kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
                             query=question,
@@ -374,7 +374,7 @@ async def local_doc_chat(req: request):
             debug_logger.info("创建新的QA记录")
             # 创建QaLog对象
             qa_log = QaLog(
-                qa_id=qa_id,  # 如果为空，会自动生成
+                qa_id=None,  # 如果为空，会自动生成
                 user_id=user_id,
                 kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
                 query=question,

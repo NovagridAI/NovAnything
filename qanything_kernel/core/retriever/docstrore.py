@@ -59,6 +59,14 @@ class MysqlStore(InMemoryStore):
             if doc_json is None:
                 docs.append(None)
                 continue
+            
+            # 检查doc_json是否已经是Document对象，如果是则直接添加到结果中并继续
+            if isinstance(doc_json, Document):
+                debug_logger.info(f'Document object detected for doc_id: {doc_id}')
+                doc_json.metadata['doc_id'] = doc_id
+                docs.append(doc_json)
+                continue
+                
             # debug_logger.info(f'doc_id: {doc_id} get doc_json: {doc_json}')
             user_id, file_id, file_name, kb_id = doc_json['kwargs']['metadata']['user_id'], doc_json['kwargs']['metadata']['file_id'], doc_json['kwargs']['metadata']['file_name'], doc_json['kwargs']['metadata']['kb_id'] 
             doc_idx = doc_id.split('_')[-1]
