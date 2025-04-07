@@ -119,6 +119,7 @@ export const useHomeChat = defineStore(
       QA_List,
       setQaList,
       historyList,
+      setHistoryList,
       addHistoryList,
       deleteHistoryList,
       updateHistoryList,

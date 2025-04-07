@@ -40,7 +40,7 @@ const selectedOption = computed(() => {
   return chatSettingConfigured.value.find(item => item.active === true)?.modelName || '无模型配置';
 });
 const currentChatTitle = computed(() => {
-  const currentChatTitle = historyList.value.find(item => item.historyId === chatId.value);
+  const currentChatTitle = historyList.value.find(item => item.qa_id === chatId.value);
   return currentChatTitle?.title || '新对话';
 });
 

@@ -47,7 +47,7 @@ import { useKnowledgeBase } from '@/store/useKnowledgeBase';
 import { IChatItemInfo } from '@/utils/types';
 
 const { chatList, chatId, QA_List, qaPageId } = storeToRefs(useHomeChat());
-const { addChatList, getChatById, setCurrentQaId } = useHomeChat();
+const { addChatList, getChatById, setCurrentQaId, setHistoryList } = useHomeChat();
 const { setSelectList } = useKnowledgeBase();
 
 
@@ -198,6 +198,15 @@ const fetchConversationHistory = async () => {
       response.data.qa_logs.forEach(item => {
         addChatList(item.qa_id, item.history, item.qa_id);
       });
+
+      const historyList = response.data.qa_logs.map(item => {
+        return {
+          qa_id: item.qa_id,
+          title: item.query,
+          kb_ids: item.kb_ids,
+        }
+      });
+      setHistoryList(historyList);
     } else {
       console.warn('获取会话历史返回的数据格式不正确:', response);
       Message.error(response?.msg || '获取会话历史失败');

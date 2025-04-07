@@ -46,6 +46,7 @@ export interface IChatItem {
 
 // 历史记录
 export interface IHistoryList {
+  qa_id: number;
   historyId: number;
   title: string;
   kbIds?: string[];
