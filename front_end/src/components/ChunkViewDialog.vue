@@ -9,12 +9,11 @@
 <template>
   <Teleport to="body">
     <a-config-provider :theme="{ token: { colorPrimary: '#5a47e5' } }">
-      <a-modal
-        v-model:open="showChunkModel"
+      <arco-modal
+        v-model:visible="showChunkModel"
         title="切片分析结果"
+        :fullscreen="true"
         centered
-        width="100%"
-        wrap-class-name="chunk-modal"
         destroy-on-close
         :footer="null"
         @cancel="handleCancel"
@@ -39,9 +38,9 @@
                 </template>
                 <span class="file-path">文件与解析结果所在目录: {{ filePath }}</span>
               </a-tooltip>
-              <a-button type="primary" @click="exportSelected">
+              <arco-button type="primary" @click="exportSelected">
                 导出选中({{ selectedKeys.size }})
-              </a-button>
+              </arco-button>
             </div>
             <!--            x: tableDomWidth,-->
             <a-table
@@ -112,9 +111,9 @@
           </div>
         </div>
         <div class="footer">
-          <a-button type="primary" @click="handleCancel">{{ common.close }}</a-button>
+          <arco-button type="primary" @click="handleCancel">{{ common.close }}</arco-button>
         </div>
-      </a-modal>
+      </arco-modal>
     </a-config-provider>
   </Teleport>
 </template>
@@ -544,7 +543,6 @@ const onMouseUp = () => {
     .scale {
       display: flex;
       justify-content: flex-end;
-      border-radius: 18px;
 
       .scale-text {
         width: 40px;
@@ -564,7 +562,6 @@ const onMouseUp = () => {
       padding-right: 0;
       padding-bottom: 8px;
       //border-right: 0;
-      border-radius: 12px;
       overflow-x: auto;
       box-sizing: border-box;
 

@@ -96,6 +96,12 @@
               </div>
             </div>
           </li>
+          <div v-if="thinkingLoading" class="loading-dots">
+            <img class="avatar" src="../assets/home/novLogo.png" alt="头像" />
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
         </ul>
       </div>
       <div v-if="showLoading" class="stop-btn">
@@ -271,6 +277,9 @@ const history = computed(() => {
 
 //当前是否回答中
 const showLoading = ref(false);
+
+//当前是否在生成对话
+const thinkingLoading = ref(false);
 
 const showSourceIdxs = ref([]);
 
@@ -580,6 +589,7 @@ const send = async () => {
   // 更新最大的chatList
   // addChatList(chatId.value, QA_List.value);
   showLoading.value = true;
+  thinkingLoading.value = true;
   ctrl = new AbortController();
 
   const kbIds = tempId.value ? [...selectList.value, tempId.value] : selectList.value;
@@ -632,6 +642,7 @@ const send = async () => {
     }
     // 无论成不成功,结束后的操作
     showLoading.value = false;
+    thinkingLoading.value = false;
     QA_List.value[QA_List.value.length - 1].showTools = true;
     // 更新最大的chatList
     // addChatList(chatId.value, QA_List.value);
@@ -665,7 +676,7 @@ const send = async () => {
         }
       },
       onmessage(msg: { data: string }) {
-        console.log('message', msg);
+        thinkingLoading.value = false;
         const res: any = JSON.parse(msg.data);
         if (res?.code == 200 && res?.response && res.msg === 'success') {
           // 中间的回答
@@ -698,6 +709,7 @@ const send = async () => {
         typewriter.done();
         ctrl.abort();
         showLoading.value = false;
+        thinkingLoading.value = false;
         QA_List.value[QA_List.value.length - 1].showTools = true;
         // 将chat info添加进回答中
         QA_List.value.at(-1).itemInfo = chatInfoClass.getChatInfo();
@@ -713,6 +725,7 @@ const send = async () => {
         typewriter?.done();
         ctrl?.abort();
         showLoading.value = false;
+        thinkingLoading.value = false;
         QA_List.value[QA_List.value.length - 1].showTools = true;
         Message.error(err.msg || '出错了');
         // 更新最大的chatList
@@ -1521,6 +1534,38 @@ $avatar-width: 96px;
   display: flex;
   align-items: center;
   z-index: 20;
+}
+
+.loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background-color: #666;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% { 
+    transform: scale(0);
+  }
+  40% { 
+    transform: scale(1);
+  }
 }
 </style>
 <style lang="scss">

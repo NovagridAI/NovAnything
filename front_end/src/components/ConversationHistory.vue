@@ -5,7 +5,9 @@
     </div>
     <div class="section-item active ">
       <icon-message class="item-icon" />
-      {{ currentTitle }}
+      <span>
+        {{ currentTitle }}
+      </span>
     </div>
 
     <div class="history-section" v-if="favoriteItems.length > 0">

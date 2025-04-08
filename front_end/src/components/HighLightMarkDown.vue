@@ -44,7 +44,7 @@ const html = ref('');
 watch(
   () => props.content,
   newvalue => {
-    html.value = md.render(newvalue);
+    html.value = md.render(newvalue.replace('```markdown', ''));
   },
   { immediate: true }
 );
