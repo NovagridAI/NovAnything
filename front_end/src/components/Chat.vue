@@ -84,12 +84,12 @@
                       <SvgIcon :style="{
                         color: item.copied ? '#4D71FF' : '',
                       }" name="copy" @click="myCopy(item)"></SvgIcon>
-                      <SvgIcon :style="{
+                      <!-- <SvgIcon :style="{
                         color: item.like ? '#4D71FF' : '',
                       }" name="like" @click="like(item, $event)"></SvgIcon>
                       <SvgIcon :style="{
                         color: item.unlike ? '#4D71FF' : '',
-                      }" name="unlike" @click="unlike(item)"></SvgIcon>
+                      }" name="unlike" @click="unlike(item)"></SvgIcon> -->
                     </div>
                   </div>
                 </div>
@@ -199,7 +199,6 @@ import { apiBase } from '@/services';
 import { IChatItem } from '@/utils/types';
 import { throttle } from '@/utils/utils';
 import { useClipboard } from '@vueuse/core';
-import { message } from 'ant-design-vue';
 import SvgIcon from './SvgIcon.vue';
 import { useKnowledgeBase } from '@/store/useKnowledgeBase';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
@@ -221,7 +220,7 @@ import ChatInfoPanel from '@/components/ChatInfoPanel.vue';
 import { useBots } from '@/store/useBots';
 import CopyUrlDialog from '@/components/Bots/CopyUrlDialog.vue';
 import ChatTextarea from '@/components/ChatTextarea.vue';
-import { IconSettings, IconUpload, IconPlus, IconSend, IconFile, IconLoading } from '@arco-design/web-vue/es/icon';
+import { IconUpload, IconPlus, IconSend, IconFile, IconLoading } from '@arco-design/web-vue/es/icon';
 import Cookies from 'js-cookie'
 import ChatAdvanceSettings from '@/components/ChatAdvanceSettings.vue';
 import ChatHeaderMenu from '@/components/ChatHeaderMenu.vue';
@@ -230,6 +229,7 @@ import { useAdvanceSettings } from '@/store/useAdvanceSettings';
 import { useKnowledgeModal } from '@/store/useKnowledgeModal';
 import FileUploadDialog from '@/components/FileUploadDialog.vue';
 import { useOptiionList } from '@/store/useOptiionList';
+import { Message } from '@arco-design/web-vue';
 
 const common = getLanguage().common;
 
@@ -301,7 +301,7 @@ function newChat() {
     return;
   }
   if (chatId.value === null) {
-    message.info('已切换最新对话');
+    Message.info('已切换最新对话');
     return;
   }
 
@@ -317,7 +317,7 @@ function newChat() {
     setTempId(kb_id);
   }).catch((e) => {
     console.error('创建临时知识库失败:', e);
-    message.error('创建临时知识库失败');
+    Message.error('创建临时知识库失败');
   });
 }
 
@@ -393,14 +393,14 @@ const myCopy = (item: IChatItem) => {
   copy(item.answer)
     .then(() => {
       item.copied = !item.copied;
-      message.success(common.copySuccess, 1);
+      Message.success(common.copySuccess);
       const timer = setTimeout(() => {
         clearTimeout(timer);
         item.copied = !item.copied;
       }, 1000);
     })
     .catch(() => {
-      message.error(common.copyFailed, 1);
+      Message.error(common.copyFailed);
     });
 };
 
@@ -440,7 +440,7 @@ const updateChat = (title: string, chatId: number, knowledgeListSelect) => {
   try {
     updateHistoryList(title, chatId, knowledgeListSelect);
   } catch (e) {
-    message.error(e.msg || '更新对话失败');
+    Message.error(e.msg || '更新对话失败');
   }
 };
 
@@ -489,7 +489,7 @@ const beforeSend = title => {
     chatId.value = addHistoryList(title);
     updateChat(title, chatId.value, selectList.value);
   } catch (e) {
-    message.error(e.msg || '创建对话失败');
+    Message.error(e.msg || '创建对话失败');
   }
 };
 
@@ -533,24 +533,24 @@ const send = async () => {
     return;
   }
   if (showLoading.value) {
-    message.warn('正在聊天中...请等待结束');
+    Message.warning('正在聊天中...请等待结束');
     return;
   }
   if (!(await checkChatSetting())) {
-    message.error('模型设置错误，请先检查模型配置');
+    Message.error('模型设置错误，请先检查模型配置');
     return;
   }
   if (!computedCallNumber(question.value)) {
-    message.error('不可@超过10个');
+    Message.error('不可@超过10个');
     return;
   }
 
   checkKbSelect();
   // if (!selectList.value.length) {
-  //   return message.warning(common.chooseError);
+  //   return Message.warning(common.chooseError);
   // } else {
   //   // 校验选中的知识库
-  //   message.info({
+  //   Message.info({
   //     content:
   //       common.type === 'zh'
   //         ? `已选择 ${selectList.value.length} 个知识库进行问答`
@@ -627,7 +627,7 @@ const send = async () => {
       }
     } catch (e) {
       console.log('出错', e);
-      // message.error(e.msg || '出错了');
+      // Message.error(e.msg || '出错了');
       QA_List.value[QA_List.value.length - 1].answer = e.msg || 'error';
     }
     // 无论成不成功,结束后的操作
@@ -714,7 +714,7 @@ const send = async () => {
         ctrl?.abort();
         showLoading.value = false;
         QA_List.value[QA_List.value.length - 1].showTools = true;
-        message.error(err.msg || '出错了');
+        Message.error(err.msg || '出错了');
         // 更新最大的chatList
         // addChatList(chatId.value, QA_List.value);
         updateQaLog(QA_List.value);
@@ -826,7 +826,7 @@ const shareChat = async () => {
     const { origin, pathname } = window.location;
     setWebUrl(`${origin + pathname}#/bots/${bot_id}/share`);
   } catch (e) {
-    message.error(e?.msg || '分享失败');
+    Message.error(e?.msg || '分享失败');
   }
 };
 
@@ -869,11 +869,11 @@ const confirm = async () => {
       tempLink.click();
       document.body.removeChild(tempLink);
       window.URL.revokeObjectURL(imgUrl);
-      message.success('下载成功');
+      Message.success('下载成功');
       Promise.resolve();
     } catch (e) {
       console.log(e);
-      message.error(e.message || e.msg || '出错了');
+      Message.error(e.message || e.msg || '出错了');
     }
   } else if (type.value === 'delete') {
     console.log('delete');
@@ -963,7 +963,7 @@ async function queryFile(file) {
       setChatSourceVisible(true);
     }
   } catch (e) {
-    message.error(e.msg || '获取文件失败');
+    Message.error(e.msg || '获取文件失败');
   }
 }
 
@@ -1638,9 +1638,13 @@ $avatar-width: 96px;
     }
     
     .temp-file-item-name {
+      max-width: 120px;
       text-align: center;
       margin-top: 8px;
       font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       
       &.status-green {
         color: #00B42A;

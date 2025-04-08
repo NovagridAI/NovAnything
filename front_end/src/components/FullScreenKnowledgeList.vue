@@ -8,6 +8,9 @@ import { useRoute } from 'vue-router';
 import { Modal, Message, Input, Form, FormItem } from '@arco-design/web-vue';
 import { resultControl } from '@/utils/utils';
 import urlResquest from '@/services/urlConfig';
+// 导入图片资源
+import menuActiveImg from '../assets/home/menu-active.png';
+import menuDefaultImg from '../assets/home/menu-default.png';
 
 const { knowledgeBaseList = [], currentId }: any = storeToRefs(useKnowledgeBase());
 const { setCurrentId, setCurrentKbName, getList } = useKnowledgeBase();
@@ -141,9 +144,11 @@ const addKb = async () => {
       </div>
 
       <arco-menu :selected-keys="[currentId]">
-        <arco-menu-item v-for="(item, index) in filterKnowledgeBaseList" :key="item.kb_id" @click="manage(item)">
+        <arco-menu-item v-for="(item) in filterKnowledgeBaseList" :key="item.kb_id" @click="manage(item)"
+          style="margin: 0px 12px;">
           <template #icon>
-            <arco-icon :type="index === 0 ? 'file' : 'file-text'" />
+            <img class="item-icon" :src="currentId === item?.kb_id ? menuActiveImg : menuDefaultImg" alt="文件夹"
+              :class="{ 'icon-active': selectList.includes(item?.kb_id) }" />
           </template>
           {{ item.kb_name }}
         </arco-menu-item>

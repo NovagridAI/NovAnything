@@ -432,7 +432,7 @@ onMounted(() => {
 }
 
 .item-icon.favorite {
-  color: #ffb400;
+  color: #767676;
 }
 
 .delete-icon {
