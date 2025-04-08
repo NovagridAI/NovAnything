@@ -30,6 +30,10 @@
         <template #icon><icon-user /></template>
         组织管理
       </arco-menu-item>
+      <arco-menu-item key="account-logout" @click="handleLogout" >
+        <template #icon><icon-poweroff /></template>
+        退出登录
+      </arco-menu-item>
     </arco-menu>
   </div>
 </template>
@@ -39,14 +43,21 @@ import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { 
   IconSettings,  
-  IconUserGroup,
+  IconPoweroff,
   IconUser,
   IconFolder,
   IconFile
 } from '@arco-design/web-vue/es/icon';
+import Cookies from 'js-cookie';
+import { useUser } from '@/store/useUser';
+import { Message, Modal } from '@arco-design/web-vue';
+import routeController from '@/controller/router';
 
 const router = useRouter();
 const route = useRoute();
+const { changePage } = routeController();
+
+const { setUserInfo } = useUser();
 
 // 当前激活的菜单项
 const activeMenu = ref('personal-knowledge');
@@ -69,6 +80,28 @@ router.afterEach(() => {
 onMounted(() => {
   initActiveMenu();
 });
+
+// 退出登录
+const handleLogout = () => {
+  Modal.confirm({
+    title: '确认退出',
+    content: '您确定要退出登录吗？',
+    okText: '确认',
+    cancelText: '取消',
+    modalClass: 'logout-confirm-modal',
+    onOk: () => {
+      // 清除所有 localStorage 数据
+      localStorage.clear();
+      // 清除 token
+      Cookies.remove('token');
+      // 清除用户信息
+      setUserInfo({ token: '', userId: '', role: '' });
+      Message.success('退出成功');
+      // 跳转到登录页面
+      changePage('/login');
+    }
+  });
+};
 
 // 根据当前路由设置激活的菜单项
 const initActiveMenu = () => {
@@ -146,6 +179,17 @@ const handleSubMenuClick = (key: string) => {
   
   :deep(.arco-sub-menu-inner) {
     padding-left: 16px;
+  }
+}
+</style>
+
+<style lang="scss">
+.logout-confirm-modal {
+  .arco-modal-body {
+    text-align: center;
+  }
+  .arco-modal-title {
+    text-align: center;
   }
 }
 </style>

@@ -111,7 +111,7 @@ const { initUploadFileListQuick } = useUploadFiles();
 const { navIndex } = storeToRefs(useHeader());
 const { changePage } = routeController();
 const { setNavIndex } = useHeader();
-const { userInfo } = useUser();
+const { userInfo, setUserInfo } = useUser();
 
 const navList = [
   {
@@ -255,11 +255,12 @@ const quickClickHandle = async (type: 0 | 1, cardData?: IHistoryList) => {
 
 // 退出登录
 const handleLogout = () => {
-  // 清除token
-  localStorage.removeItem('token');
-  Cookies.remove('token');
+  // 清除所有 localStorage 数据
   localStorage.clear();
-  // 可能需要清除其他用户相关信息
+  // 清除 token
+  Cookies.remove('token');
+  // 清除用户信息
+  setUserInfo({ token: '', userId: '', role: '' });
   message.success('退出成功');
   // 跳转到登录页面
   changePage('/login');
