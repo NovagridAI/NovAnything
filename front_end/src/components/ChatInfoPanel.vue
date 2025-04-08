@@ -8,20 +8,15 @@
  -->
 <template>
   <div class="content">
-    <a-typography-text type="secondary" style="font-size: 12px">
+    <div class="content-container">
       {{ outerInfo }}
-      <a-tooltip
-        placement="bottom"
-        color="#666666"
-        overlay-class-name="tooltip-class"
-        @click="openInfoModal"
-      >
-        <template #title>
+      <arco-tooltip placement="bottom" color="#666666" overlay-class-name="tooltip-class" @click="openInfoModal">
+        <template #content>
           <span>{{ common.modelInfoView }}</span>
         </template>
-        <SvgIcon name="question" />
-      </a-tooltip>
-    </a-typography-text>
+        <icon-question-circle />
+      </arco-tooltip>
+    </div>
   </div>
 </template>
 
@@ -29,7 +24,9 @@
 import { IChatItemInfo } from '@/utils/types';
 import { formatTimestamp } from '@/utils/utils';
 import SvgIcon from '@/components/SvgIcon.vue';
-import { Modal, TypographyParagraph } from 'ant-design-vue';
+import { TypographyParagraph } from 'ant-design-vue';
+import { Modal } from '@arco-design/web-vue'
+import { IconQuestionCircle } from '@arco-design/web-vue/es/icon';
 import { getLanguage } from '@/language';
 
 const { common } = getLanguage();
@@ -46,6 +43,41 @@ const {
   settingInfo: settingInfoOrigin,
   dateInfo: dateInfoOrigin,
 } = toRefs(props.chatItemInfo);
+
+const INFO_MAP = {
+  // 时间相关
+  'preprocess': '预处理',
+  'condense_q_chain': '问题思考链',
+  'retriever_search': '检索搜索',
+  'web_search': '网络搜索',
+  'rerank': '重排序',
+  'reprocess': '重新处理',
+  'llm_first_return': '语言模型首次返回',
+  'first_return': '首次返回',
+  'llm_completed': '语言模型完成',
+  'obtain_images_time': '图片获取',
+  'chat_completed': '聊天完成',
+
+  // 模型相关
+  'apiBase': '接口地址',
+  'apiContextLength': '上下文长度',
+  'apiKey': '接口密钥',
+  'apiModelName': '模型名称',
+  'context': '上下文',
+  'maxToken': '最大令牌',
+  'temperature': '温度',
+  'top_P': '采样率',
+  'rewrite_completion_tokens': '重写完成Token数',
+  'rewrite_prompt_tokens': '重写提示Token数',
+  'tokens_per_second': '每秒Token数',
+
+  // 其他信息
+  'total_tokens': '总令牌数',
+  'prompt_tokens': '提示令牌',
+  'completion_tokens': '完成令牌',
+  'Model name': '模型名称',
+  'date': '日期'
+};
 
 // 需要展示的time信息
 const TIMEINFO = new Set([
@@ -82,7 +114,6 @@ const OUTERINFO = new Set([
   'prompt_tokens',
   'completion_tokens',
   'Model name',
-  '模型名称',
   'date',
 ]);
 
@@ -140,7 +171,7 @@ const outerInfo = computed(() => {
 
 const formatInfo = <T>(obj: T) => {
   return Object.entries(obj)
-    .map(([key, value]) => `${key}: ${value}`)
+    .map(([key, value]) => `${INFO_MAP?.[key] ?? key}: ${value}`)
     .join(', ');
 };
 
@@ -149,7 +180,7 @@ const openInfoModal = () => {
   const formatTimeInfo = (timeData, keys) => {
     let formattedString = '';
     keys.forEach((key, index) => {
-      formattedString += `${key}: ${timeData[key]}`;
+      formattedString += `${INFO_MAP?.[key] ?? key}: ${timeData[key]}`;
       if (index < keys.length - 1) {
         formattedString += ' + ';
       }
@@ -160,22 +191,24 @@ const openInfoModal = () => {
     title: `${common.modelInfoTitle}`,
     content: h('div', { style: { 'user-select': 'text' } }, [
       h(TypographyParagraph, {}, () => `${common.modelInfoTime}: ${formatInfo(timeInfo.value)}`),
-      h(
-        TypographyParagraph,
-        { mark: true },
-        () => `${common.note}：${formatTimeInfo(
-          timeInfo.value,
-          [...TIMEINFO.values()].slice(0, 7)
-        )} = first_return: ${timeInfo.value['first_return']}
-        + llm_completed：${timeInfo.value['llm_completed']}
-        + obtain_images_time: ${timeInfo.value['obtain_images_time'] || '0.00s'}
-        = chat_completed：${timeInfo.value['chat_completed']}`
-      ),
+      // h(
+      //   TypographyParagraph,
+      //   { mark: true },
+      //   () => `${common.note}：${formatTimeInfo(
+      //     timeInfo.value,
+      //     [...TIMEINFO.values()].slice(0, 7)
+      //   )} = first_return: ${timeInfo.value['first_return']}
+      //   + 语言模型完成${timeInfo.value['llm_completed']}
+      //   + obtain_images_time: ${timeInfo.value['obtain_images_time'] || '0.00s'}
+      //   = chat_completed：${timeInfo.value['chat_completed']}`
+      // ),
       h(TypographyParagraph, {}, () => `${common.modelInfoToken}: ${formatInfo(tokenInfo.value)}`),
       h(TypographyParagraph, {}, () => [
         `${common.modelInfoSetting}：`,
-        ...Object.entries(settingInfo.value).map(([key, value]) =>
-          h(TypographyParagraph, {}, () => `${key}: ${value}`)
+        ...Object.entries(settingInfo.value).map(([key, value]) => {
+          if (key === 'API密钥' || key === 'API路径') return
+          return h(TypographyParagraph, {}, () => `${key}: ${value}`)
+        }
         ),
       ]),
     ]),
@@ -188,17 +221,24 @@ const openInfoModal = () => {
 
 <style lang="scss" scoped>
 .content {
-  svg {
-    display: inline-block;
-    width: 15px;
-    height: 15px;
-    padding-top: 2px;
-    color: #c1c1c1;
 
-    &:focus {
-      outline: none;
-    }
+  .arco-icon {
+    font-size: 16px;
+    color: $baseColor;
+    cursor: pointer;
+    margin-left: 6px;
   }
+
+
+
+  .content-container {
+    display: flex;
+    font-size: 12px;
+    color: #666;
+    justify-content: center;
+    align-items: center;
+  }
+
 
   .tooltip-class {
     width: 500px !important;
