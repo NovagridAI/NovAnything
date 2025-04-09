@@ -56,16 +56,17 @@ import { formatTimestamp, resultControl } from '@/utils/utils';
 
 
 const { chatList, chatId, QA_List, qaPageId, historyList } = storeToRefs(useHomeChat());
-const { addChatList, getChatById, setCurrentQaId, setHistoryList } = useHomeChat();
+const { addChatList, getChatById, setCurrentQaId, setHistoryList, deleteChatItem } = useHomeChat();
 const { setSelectList } = useKnowledgeBase();
 const { knowledgeBaseList } = storeToRefs(useKnowledgeBase());
 const { setTempId } = useKnowledgeBase();
 const { setTempDetail } = useOptiionList();
+const { tempId } = storeToRefs(useKnowledgeBase());
 
 const tempList = computed(() => knowledgeBaseList.value.filter(item => item.kb_type === 'temporary'));
 const currentTitle = computed(() => {
   if (chatId.value) {
-    return historyList.value.find(item => item.qa_id === chatId.value).title;
+    return historyList.value.find(item => item.qa_id === chatId.value)?.title ?? '新对话';
   }
   return '新对话';
 });
@@ -90,7 +91,7 @@ const formatTitle = (query) => {
 // 选择会话
 const selectConversation = (item) => {
   console.log(item, 'item');
-  const currentTempId = item.kb_ids.find(item => tempList.value.some(temp => temp.kb_id === item));
+  const currentTempId = item?.kb_ids?.find(item => tempList.value.some(temp => temp.kb_id === item));
   if (currentTempId) {
     setTempId(currentTempId);
   } else {
@@ -104,7 +105,7 @@ const selectConversation = (item) => {
 };
 
 // 定义事件
-const emit = defineEmits(['select-conversation']);
+const emit = defineEmits(['select-conversation', 'new-chat']);
 
 // 分类会话数据
 const categorizeConversations = (conversations) => {
@@ -172,7 +173,7 @@ async function changeChat(item) {
   chatId.value = item.qa_id;
   QA_List.value = [];
   qaPageId.value = 1;
-  setSelectList([...item.kb_ids]);
+  setSelectList([...item?.kb_ids ?? []]);
   try {
     // const res: any = await resultControl(
     //   await urlResquest.chatDetail({
@@ -255,7 +256,7 @@ const fetchConversationHistory = async () => {
         }
       });
       setHistoryList(historyList);
-      if (response.data.qa_logs.length === 0) {
+      if (response.data.qa_logs.length === 0 && !tempId.value) {
         const tempKbId = await createTempKnowledgeBase();
         setTempId(tempKbId);
       }
@@ -344,10 +345,16 @@ const deleteConversation = async (item) => {
           favoriteItems.value = favoriteItems.value.filter(i => i.qa_id !== item.qa_id);
           weeklyItems.value = weeklyItems.value.filter(i => i.qa_id !== item.qa_id);
           monthlyItems.value = monthlyItems.value.filter(i => i.qa_id !== item.qa_id);
+          deleteChatItem(item.qa_id);
+
+          if(chatList.value.length === 0) {
+            createNewChat();
+            return;
+          }
 
           // 如果删除的是当前选中的会话，则重置选中状态
           if (selectedConversation.value === item.qa_id) {
-            selectConversation(null);
+            selectConversation(chatList.value[0]);
           }
 
           Message.success('删除成功');
@@ -362,9 +369,20 @@ const deleteConversation = async (item) => {
   });
 };
 
+
+// 创建新对话
+const createNewChat = () => {
+  emit('new-chat');
+};
+
 // 组件挂载时获取数据
 onMounted(() => {
   fetchConversationHistory();
+});
+
+// 导出方法供外部组件调用
+defineExpose({
+  fetchConversationHistory
 });
 </script>
 

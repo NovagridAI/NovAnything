@@ -112,17 +112,7 @@
           {{ common.stop }}
         </a-button>
       </div>
-      <div class="temp-file-container" v-if="tempDetail && tempDetail.length > 0">
-        <div class="temp-file-item" v-for="(item, index) in tempDetail" :key="index">
-          <div v-if="item.status !== 'green'" class="temp-file-loading-container">
-            <icon-loading class="temp-file-loading" />
-          </div>
-          <div class="temp-file-item-icon">
-            <icon-file />
-          </div>
-          <div class="temp-file-item-name" :class="getStatusClass(item.status)">{{ item.fileIdName }}</div>
-        </div>
-      </div>
+      <TempFileContainer/>
       <div class="question-container">
         <div class="icon-container">
           <keep-alive>
@@ -190,7 +180,7 @@
         </div>
       </div>
     </div>
-    <ConversationHistory />
+    <ConversationHistory ref="conversationHistoryRef" @new-chat="newChat" />
     <div class="scroll-btn-div">
       <img class="avatar" src="@/assets/home/scroll-down.png" alt="滑到底部" @click="scrollBottom" />
     </div>
@@ -226,7 +216,7 @@ import ChatInfoPanel from '@/components/ChatInfoPanel.vue';
 import { useBots } from '@/store/useBots';
 import CopyUrlDialog from '@/components/Bots/CopyUrlDialog.vue';
 import ChatTextarea from '@/components/ChatTextarea.vue';
-import { IconUpload, IconPlus, IconSend, IconFile, IconLoading } from '@arco-design/web-vue/es/icon';
+import { IconUpload, IconPlus, IconSend } from '@arco-design/web-vue/es/icon';
 import Cookies from 'js-cookie'
 import ChatAdvanceSettings from '@/components/ChatAdvanceSettings.vue';
 import ChatHeaderMenu from '@/components/ChatHeaderMenu.vue';
@@ -293,8 +283,8 @@ const qaObserveDom = ref(null);
 let ctrl: AbortController;
 
 const chatContainer = ref(null);
-
 const scrollDom = ref(null);
+const conversationHistoryRef = ref(null);
 
 const scrollBottom = () => {
   nextTick(() => {
@@ -716,6 +706,7 @@ const send = async () => {
         // 更新最大的chatList
         // addChatList(chatId.value, QA_List.value);
         updateQaLog(QA_List.value);
+        refreshConversationHistory();
         nextTick(() => {
           scrollBottom();
         });
@@ -731,6 +722,7 @@ const send = async () => {
         // 更新最大的chatList
         // addChatList(chatId.value, QA_List.value);
         updateQaLog(QA_List.value);
+        refreshConversationHistory();
         nextTick(() => {
           scrollBottom();
         });
@@ -1023,28 +1015,9 @@ const handleEnter = (e: KeyboardEvent) => {
   send();
 };
 
-const getStatusClass = (status) => {
-  if (!status) return '';
-
-  if (status.toLowerCase() === 'green' ||
-    status.toLowerCase() === '成功' ||
-    status.toLowerCase() === 'success') {
-    return 'status-green';
-  } else if (status.toLowerCase() === 'yellow' ||
-    status.toLowerCase() === '处理中' ||
-    status.toLowerCase() === 'processing') {
-    return 'status-yellow';
-  } else if (status.toLowerCase() === 'red' ||
-    status.toLowerCase() === '失败' ||
-    status.toLowerCase() === 'failed') {
-    return 'status-red';
-  } else if (status.toLowerCase() === 'blue' ||
-    status.toLowerCase() === '等待中' ||
-    status.toLowerCase() === 'waiting') {
-    return 'status-blue';
-  }
-
-  return '';
+// 手动刷新对话历史列表
+const refreshConversationHistory = () => {
+  conversationHistoryRef.value?.fetchConversationHistory();
 };
 </script>
 

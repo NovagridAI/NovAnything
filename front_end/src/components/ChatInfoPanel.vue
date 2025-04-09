@@ -64,7 +64,7 @@ const INFO_MAP = {
   'apiKey': '接口密钥',
   'apiModelName': '模型名称',
   'context': '上下文',
-  'maxToken': '最大令牌',
+  'maxToken': '最大Token',
   'temperature': '温度',
   'top_P': '采样率',
   'rewrite_completion_tokens': '重写完成Token数',
@@ -72,9 +72,9 @@ const INFO_MAP = {
   'tokens_per_second': '每秒Token数',
 
   // 其他信息
-  'total_tokens': '总令牌数',
-  'prompt_tokens': '提示令牌',
-  'completion_tokens': '完成令牌',
+  'total_tokens': '总Token数',
+  'prompt_tokens': '提示Token数',
+  'completion_tokens': '完成Token数',
   'Model name': '模型名称',
   'date': '日期'
 };
@@ -235,7 +235,9 @@ const openInfoModal = () => {
     display: flex;
     font-size: 12px;
     color: #666;
-    justify-content: center;
+    margin-top: 10px;
+    border-top: 1px solid #999;
+    justify-content: flex-start;
     align-items: center;
   }
 

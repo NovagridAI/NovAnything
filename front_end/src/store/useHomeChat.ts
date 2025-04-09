@@ -87,9 +87,22 @@ export const useHomeChat = defineStore(
       }
       // setChatList();
     };
+
+    const updateAllChatList = (newChatList: IChatList[]) => {
+      console.log(newChatList)
+      chatList.value = [...newChatList];
+    };
+
     const getChatById = (qa_id: number): IChatList => {
       return chatList.value.filter(item => item.qa_id === qa_id)[0];
     };
+    
+    // 删除指定qa_id的聊天项
+    const deleteChatItem = (qa_id: number) => {
+      console.log(qa_id, 'deleteChatItem')
+      chatList.value = chatList.value.filter(item => item.qa_id !== qa_id);
+    };
+    
     const clearChatList = (historyId: number) => {
       chatList.value = chatList.value.filter(item => item.historyId !== historyId);
       // setChatList();
@@ -125,7 +138,9 @@ export const useHomeChat = defineStore(
       updateHistoryList,
       chatList,
       addChatList,
+      updateAllChatList,
       getChatById,
+      deleteChatItem,
       clearChatList,
       chatId,
       setChatId,

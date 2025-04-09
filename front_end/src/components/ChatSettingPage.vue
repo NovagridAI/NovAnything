@@ -282,6 +282,7 @@ const updateModel = debounce(async () => {
     const modelData = {
       config_id: formData.customId,
       service_name: formData.modelName,
+      max_token: formData.maxToken,
       api_key: formData.apiKey,
       api_proxy: formData.apiBase,
       model_endpoint: formData.apiModelName,

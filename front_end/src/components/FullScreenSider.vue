@@ -99,6 +99,7 @@ const handleLogout = () => {
       Message.success('退出成功');
       // 跳转到登录页面
       changePage('/login');
+      location.reload();
     }
   });
 };

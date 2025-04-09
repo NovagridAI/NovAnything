@@ -93,7 +93,7 @@ import services from '.';
 
 export const userId = localUserInfo.userId;
 
-const userIdD = () => localUserInfo.userId
+export const userIdD = () => localUserInfo.userId
 export const userPhone = localUserInfo.phoneNumber;
 
 //ajax请求接口
