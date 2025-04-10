@@ -112,7 +112,7 @@
           {{ common.stop }}
         </a-button>
       </div>
-      <TempFileContainer/>
+      <TempFileContainer />
       <div class="question-container">
         <div class="icon-container">
           <keep-alive>
@@ -248,7 +248,7 @@ const { language } = storeToRefs(useLanguage());
 const { setModalVisible } = useKnowledgeModal();
 const { getTempDetail, setTempDetail } = useOptiionList();
 const { tempDetail } = storeToRefs(useOptiionList());
-const { setSelectList } = useKnowledgeBase();
+const { setSelectList, setKnowledgeBaseList } = useKnowledgeBase();
 declare module _czc {
   const push: (array: any) => void;
 }
@@ -329,8 +329,10 @@ async function createTempKnowledgeBase() {
         kb_name: `临时知识库-${timestamp}`,
         description: '',
         kb_type: 'temporary' // 标记为临时知识库
-      })
-    );
+      }));
+    const kbList = await urlResquest.kbList();
+    setKnowledgeBaseList(kbList.data);
+    console.log(kbList, 'kbList');
     return res.kb_id;
   } catch (e) {
     console.error('创建临时知识库失败:', e);
@@ -516,7 +518,6 @@ watch(
 watch(
   () => tempId.value,
   () => {
-    console.log(tempId.value, 'tempId');
     setTempDetail([])
     getTempDetail();
   }
@@ -535,10 +536,10 @@ const send = async () => {
     Message.warning('正在聊天中...请等待结束');
     return;
   }
-  if (!(await checkChatSetting())) {
-    Message.error('模型设置错误，请先检查模型配置');
-    return;
-  }
+  // if (!(await checkChatSetting())) {
+  //   Message.error('模型设置错误，请先检查模型配置');
+  //   return;
+  // }
   if (!computedCallNumber(question.value)) {
     Message.error('不可@超过10个');
     return;
@@ -605,7 +606,7 @@ const send = async () => {
 
     api_base: chatSettingFormActive.value.apiBase,
     api_key: chatSettingFormActive.value.apiKey,
-    model: chatSettingFormActive.value.apiModelName,
+    model: chatSettingFormActive.value.modelType,
     chunk_size: chatSettingFormActive.value.chunkSize,
     qa_id: currentQaId.value,
   };
@@ -705,10 +706,11 @@ const send = async () => {
         QA_List.value.at(-1).itemInfo = chatInfoClass.getChatInfo();
         // 更新最大的chatList
         // addChatList(chatId.value, QA_List.value);
-        updateQaLog(QA_List.value);
-        refreshConversationHistory();
-        nextTick(() => {
-          scrollBottom();
+        updateQaLog(QA_List.value).then(() => {
+          refreshConversationHistory();
+          nextTick(() => {
+            scrollBottom();
+          });
         });
       },
       onerror(err: any) {
@@ -721,10 +723,11 @@ const send = async () => {
         Message.error(err.msg || '出错了');
         // 更新最大的chatList
         // addChatList(chatId.value, QA_List.value);
-        updateQaLog(QA_List.value);
-        refreshConversationHistory();
-        nextTick(() => {
-          scrollBottom();
+        updateQaLog(QA_List.value).then(() => {
+          refreshConversationHistory();
+          nextTick(() => {
+            scrollBottom();
+          });
         });
         throw err;
       },
@@ -765,6 +768,7 @@ const updateQaLog = async (update_data) => {
     );
     return res;
   } catch (e) {
+    Message.error(e.msg || '更新qa_log失败');
     console.log(e)
     throw e;
   }
@@ -1099,7 +1103,6 @@ $avatar-width: 96px;
       background: #fff;
       border-radius: 12px;
       word-wrap: break-word;
-      box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
     }
   }
 
@@ -1127,7 +1130,6 @@ $avatar-width: 96px;
         color: $title1;
         border-radius: 12px 12px 0 0;
         word-wrap: break-word;
-        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
       }
 
       .flashing {
@@ -1533,10 +1535,14 @@ $avatar-width: 96px;
 }
 
 @keyframes bounce {
-  0%, 80%, 100% { 
+
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
-  40% { 
+
+  40% {
     transform: scale(1);
   }
 }
@@ -1654,7 +1660,7 @@ $avatar-width: 96px;
         color: #666666;
       }
     }
-    
+
     .temp-file-item-name {
       max-width: 120px;
       text-align: center;
@@ -1663,19 +1669,19 @@ $avatar-width: 96px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      
+
       &.status-green {
         color: #00B42A;
       }
-      
+
       &.status-yellow {
         color: #FF7D00;
       }
-      
+
       &.status-red {
         color: #F53F3F;
       }
-      
+
       &.status-blue {
         color: #165DFF;
       }

@@ -154,10 +154,6 @@ const handleSubMenuClick = (key: string) => {
     border-right: none;
   }
   
-  :deep(.arco-menu-inner) {
-    padding: 40px 20px;
-  }
-  
   :deep(.arco-menu-item) {
     height: 40px;
     line-height: 40px;

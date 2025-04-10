@@ -145,7 +145,7 @@ const addKb = async () => {
 
       <arco-menu :selected-keys="[currentId]">
         <arco-menu-item v-for="(item) in filterKnowledgeBaseList" :key="item.kb_id" @click="manage(item)"
-          style="margin: 0px 12px;">
+          style="margin: 12px 12px;">
           <template #icon>
             <img class="item-icon" :src="currentId === item?.kb_id ? menuActiveImg : menuDefaultImg" alt="文件夹"
               :class="{ 'icon-active': selectList.includes(item?.kb_id) }" />

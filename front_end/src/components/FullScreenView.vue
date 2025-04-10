@@ -76,6 +76,10 @@ function goBack() {
     animation: slide-out 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
+:deep(.arco-layout-sider-light) {
+    box-shadow: none !important;
+}
+
 .bac {
     display: flex;
     align-items: center;
@@ -165,7 +169,7 @@ function goBack() {
 
 .logo {
     cursor: pointer;
-    background-image: linear-gradient(to right, #3b82f6, #4f46e5);
+    background: linear-gradient(79deg, #0256FF 0%, #5602FF 100%);
     color: transparent;
     background-clip: text;
     font-size: 22px;

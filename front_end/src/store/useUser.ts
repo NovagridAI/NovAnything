@@ -14,7 +14,8 @@ export const useUser = defineStore(
       token: '',
       phoneNumber: '1',
       userId: '',
-      role: ''
+      role: '',
+      username: ''
     });
 
     const userPhoneDialogOpen = ref(false);
@@ -23,6 +24,7 @@ export const useUser = defineStore(
       userInfo.value.token = info.token;
       userInfo.value.userId = info.userId;
       userInfo.value.role = info.role;
+      userInfo.value.username = info.username;
     };
 
     const getCachePhone = () => {

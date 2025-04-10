@@ -9,15 +9,8 @@
 <template>
   <Teleport to="body">
     <a-config-provider :theme="{ token: { colorPrimary: '#5a47e5' } }">
-      <arco-modal
-        v-model:visible="showChunkModel"
-        title="切片分析结果"
-        :fullscreen="true"
-        centered
-        destroy-on-close
-        :footer="null"
-        @cancel="handleCancel"
-      >
+      <arco-modal v-model:visible="showChunkModel" title="切片分析结果" :fullscreen="true" centered destroy-on-close
+        :footer="null" @cancel="handleCancel">
         <div class="container">
           <!-- <div class="file-preview" :style="{ width: filePreviewWidth }" @mousedown="onMouseDown">
             <div class="scale">
@@ -43,61 +36,35 @@
               </arco-button>
             </div>
             <!--            x: tableDomWidth,-->
-            <a-table
-              :columns="columns"
-              :data-source="chunkData"
-              bordered
-              :scroll="{
-                y: 'calc(100vh - 32px - 40px - 42px - 64px - 56px - 42px - 48px)',
-              }"
-              :pagination="paginationConfig"
-              :loading="loading"
-              :row-selection="{ selectedRowKeys: [...selectedKeys.keys()], onSelect, onSelectAll }"
-              @change="changePage"
-              @resizeColumn="handleResizeColumn"
-            >
+            <a-table :columns="columns" :data-source="chunkData" bordered :scroll="{
+              y: 'calc(100vh - 32px - 40px - 42px - 64px - 56px - 42px - 48px)',
+            }" :pagination="paginationConfig" :loading="loading"
+              :row-selection="{ selectedRowKeys: [...selectedKeys.keys()], onSelect, onSelectAll }" @change="changePage"
+              @resizeColumn="handleResizeColumn">
               <template #bodyCell="{ column, record }">
                 <template v-if="column.dataIndex === 'content'">
-                  <HighLightMarkDown
-                    :content="
-                      editableData[record.key]
-                        ? editableData[record.key].editContent
-                        : record.content
-                    "
-                  />
+                  <HighLightMarkDown :content="editableData[record.key]
+                      ? editableData[record.key].editContent
+                      : record.content
+                    " />
                 </template>
                 <template v-if="column.dataIndex === 'editContent'">
                   <div>
-                    <a-textarea
-                      v-if="editableData[record.key]"
-                      v-model:value="editableData[record.key][column.dataIndex]"
-                      style="margin: -5px 0"
-                      show-count
-                      auto-size
-                    />
+                    <a-textarea v-if="editableData[record.key]"
+                      v-model:value="editableData[record.key][column.dataIndex]" style="margin: -5px 0" show-count
+                      auto-size />
                     <div v-else v-html="formattedContent(record.content)" />
                   </div>
                 </template>
                 <template v-else-if="column.dataIndex === 'operation'">
                   <div class="editable-row-operations">
                     <div v-if="editableData[record.key]" class="operation-div">
-                      <a-button
-                        class="operation-btn"
-                        size="small"
-                        :loading="isShowLoading"
-                        type="link"
-                        @click="save(record.key)"
-                      >
+                      <a-button class="operation-btn" size="small" :loading="isShowLoading" type="link"
+                        @click="save(record.key)">
                         {{ !isShowLoading ? common.save : '' }}
                       </a-button>
-                      <a-button
-                        v-if="!isShowLoading"
-                        class="operation-btn"
-                        size="small"
-                        :loading="isShowLoading"
-                        type="text"
-                        @click="cancel(record.key)"
-                      >
+                      <a-button v-if="!isShowLoading" class="operation-btn" size="small" :loading="isShowLoading"
+                        type="text" @click="cancel(record.key)">
                         {{ common.cancel }}
                       </a-button>
                     </div>
@@ -129,9 +96,10 @@ import { message } from 'ant-design-vue';
 import { useChatSetting } from '@/store/useChatSetting';
 import HighLightMarkDown from '@/components/HighLightMarkDown.vue';
 import { useChatSource } from '@/store/useChatSource';
+import { debounce } from 'lodash';
 import Source from './Source/index.vue';
 
-const { showChunkModel } = storeToRefs(useChunkView());
+const { showChunkModel, fileId, fileIdName } = storeToRefs(useChunkView());
 const { common } = getLanguage();
 const { chatSettingFormActive } = storeToRefs(useChatSetting());
 
@@ -144,7 +112,7 @@ interface IProps {
 }
 
 const props = defineProps<IProps>();
-const { kbId, fileId, fileName } = toRefs(props);
+const { kbId } = toRefs(props);
 
 const columns = ref([
   {
@@ -300,6 +268,9 @@ const cancel = (key: string) => {
 
 const handleCancel = () => {
   showChunkModel.value = false;
+  fileId.value = '';
+  kbId.value = '';
+  fileIdName.value = '';
   !isShowLoading && (editableData.value = {});
 };
 
@@ -347,11 +318,13 @@ const getChunks = async (kbId: string, fileId: string) => {
 
 watch(
   () => showChunkModel.value,
-  () => {
+  (newValue, oldValue) => {
     if (showChunkModel.value) {
+      // 确保 props 有值再执行
+      console.log('fileId:', fileId.value);
       chunkData.value = [];
       getChunks(kbId.value, fileId.value);
-      handleChatSource({ file_id: fileId.value, file_name: fileName.value });
+      handleChatSource({ file_id: fileId.value, file_name: fileIdName.value });
     } else if (!showChunkModel.value) {
       zoomLevel.value = 1;
       chunkData.value = [];
@@ -362,7 +335,7 @@ watch(
       setTextContent('');
       selectedKeys.value.clear();
     }
-  }
+  },
 );
 
 // 检查信息来源的文件是否支持窗口化渲染

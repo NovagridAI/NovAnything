@@ -8,8 +8,14 @@
  */
 export const useChunkView = defineStore('useChunkView', () => {
   const showChunkModel = ref(false);
+  const fileId = ref('');
+  const kbId = ref('');
+  const fileIdName = ref('');
 
   return {
     showChunkModel,
+    fileId,
+    kbId,
+    fileIdName,
   };
 });

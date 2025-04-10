@@ -10,12 +10,12 @@
       </div>
     </div>
     <arco-card :bordered="false">
-      <arco-form ref="formRef" :model="formData" :rules="rules" layout="horizontal" :label-col-props="{ span: 3 }"
-        :wrapper-col-props="{ span: 21 }" :label-align="'left'" @submit="onSubmit">
-        <arco-form-item field="modelType" label="模型提供方：">
-          <arco-select v-model="formData.modelType" placeholder="请选择模型提供方" @change="selectChange">
-            <arco-option v-for="item of chatSettingConfigured" :key="item.modelType" :value="item.modelType">
-              {{ item.modelName }}
+      <arco-form ref="formRef" :model="formData" :rules="rules" layout="horizontal" :label-col-props="{ span: 4 }"
+        :wrapper-col-props="{ span: 20 }" :label-align="'left'" @submit="onSubmit">
+        <arco-form-item field="serviceId" label="模型提供方：">
+          <arco-select v-model="formData.serviceId" placeholder="请选择模型提供方" @change="selectChange">
+            <arco-option v-for="item of chatSettingConfigured" :key="item.serviceId" :value="item.serviceId">
+              {{ item.apiModelName }} ({{ item.serviceId }})
             </arco-option>
           </arco-select>
           <arco-button style="margin-left: 10px;" type="primary" @click="showAddModelDialog">
@@ -24,21 +24,17 @@
           </arco-button>
         </arco-form-item>
 
-        <arco-form-item v-if="formData.modelType === '自定义模型配置'" field="modelName" label="模型名称：">
-          <arco-input v-model="formData.modelName" placeholder="请输入模型名称" />
-        </arco-form-item>
-
-        <arco-form-item v-if="formData.modelType !== 'ollama'" field="apiKey" label="API密钥：">
+        <arco-form-item field="apiKey" label="API密钥">
           <arco-input-password v-model="formData.apiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx" allow-clear />
         </arco-form-item>
 
-        <arco-form-item field="apiBase" label="API路径：">
+        <arco-form-item field="apiBase" label="API路径">
           <arco-input v-model="formData.apiBase" placeholder="请输入API路径" />
         </arco-form-item>
 
-        <arco-form-item field="apiModelName" label="模型名称：">
-          <arco-input v-if="formData.modelType !== 'openAI'" v-model="formData.apiModelName" placeholder="请输入模型名称" />
-          <arco-select v-else v-model="formData.apiModelName"
+        <arco-form-item field="modelType" label="模型名称">
+          <arco-input v-model="formData.modelType" placeholder="请输入模型名称" />
+          <!-- <arco-select v-else v-model="formData.apiModelName"
             :options="openAIModelDefault.map(item => ({ value: item }))" @change="openAIModelSelect">
             <template #dropdown-render="{ menu }">
               <div>{{ menu }}</div>
@@ -48,16 +44,16 @@
                 <arco-button type="text" @click="addItem">添加模型</arco-button>
               </arco-space>
             </template>
-          </arco-select>
+          </arco-select> -->
         </arco-form-item>
 
-        <arco-form-item field="apiContextLength" label="总Token数量：">
+        <arco-form-item field="apiContextLength" label="总Token数量">
           <div class="token-input-wrapper">
             <div class="token-input-wrapper-tip">LLM输入和输出的总token数量上限</div>
             <div class="token-input-wrapper-input">
-              <arco-slider v-model="apiContextTokenK" :min="formData.modelType === 'ollama' ? 2 : 4"
+              <arco-slider v-model="apiContextTokenK" :min="1"
                 :max="openAIModelMax || 200" :step="1" />
-              <arco-input-number v-model="apiContextTokenK" :min="formData.modelType === 'ollama' ? 2 : 4"
+              <arco-input-number v-model="apiContextTokenK" :min="1"
                 :max="openAIModelMax || 200" :step="1" :precision="0" :hide-button="true">
                 <template #append>K</template>
               </arco-input-number>
@@ -65,7 +61,7 @@
           </div>
         </arco-form-item>
 
-        <arco-form-item field="maxToken" label="输出Token数量：">
+        <arco-form-item field="maxToken" label="输出Token数量">
           <div class="token-input-wrapper">
             <div class="token-input-wrapper-tip">LLM输出的token数量上限. 最大值为: 总Token数量 / 4</div>
             <div class="token-input-wrapper-input">
@@ -77,7 +73,7 @@
           </div>
         </arco-form-item>
 
-        <arco-form-item field="temperature" label="随机性：">
+        <arco-form-item field="temperature" label="随机性">
           <div class="token-input-wrapper">
             <div class="token-input-wrapper-tip">控制输出的随机性。较低值使输出更确定，较高值增加创意性</div>
             <div class="token-input-wrapper-input">
@@ -88,7 +84,7 @@
           </div>
         </arco-form-item>
 
-        <arco-form-item field="top_P" label="累积概率阈值：">
+        <arco-form-item field="top_P" label="累积概率阈值">
           <div class="token-input-wrapper">
             <div class="token-input-wrapper-tip">限制词汇选择范围。较低值使输出更聚焦，较高值增加多样性</div>
             <div class="token-input-wrapper-input">
@@ -110,11 +106,13 @@
           </div>
         </arco-form-item>
 
-        <arco-form-item field="context" label="上下文消息数量：">
+        <arco-form-item field="context" label="上下文消息数量">
           <div class="token-input-wrapper">
             <div class="token-input-wrapper-tip">单轮对话中保留的历史消息数量上限</div>
             <div class="token-input-wrapper-input">
               <arco-slider v-model="formData.context" :min="0" :max="11" :step="1" :format-tooltip="sliderFormatter" />
+              <arco-input disabled v-model="contextDisplayValue" :min="0" :max="11" :step="1" :precision="0"
+              :hide-button="true" />
             </div>
           </div>
         </arco-form-item>
@@ -225,6 +223,14 @@ const isInitialLoad = ref(true);
 // 添加保存状态
 const saveStatus = ref(null);
 
+// 上下文显示值
+const contextDisplayValue = computed({
+  get: () => formData.context >= 11 ? '无限制' : formData.context,
+  set: (val) => {
+    formData.context = val;
+  }
+});
+
 // 验证规则
 const rules = {
   modelType: [{ message: '请选择模型提供方' }],
@@ -268,8 +274,8 @@ const sliderFormatter = (value) => {
 // 添加防抖的updateModel函数
 const updateModel = debounce(async () => {
   // 如果是首次加载或没有选择模型或者是正在创建新模型，则不更新
-  if (isInitialLoad.value || !formData.modelType || isCreatingNewModel.value) {
-    console.log('跳过更新：', isInitialLoad.value ? '首次加载' : '其他原因');
+  if (isInitialLoad.value || !formData.serviceId || isCreatingNewModel.value) {
+    console.log('跳过更新', isInitialLoad.value ? '首次加载' : '其他原因');
     return;
   }
 
@@ -285,7 +291,7 @@ const updateModel = debounce(async () => {
       max_token: formData.maxToken,
       api_key: formData.apiKey,
       api_proxy: formData.apiBase,
-      model_endpoint: formData.apiModelName,
+      model_endpoint: formData.modelType,
       api_context_length: formData.apiContextLength,
       temperature: formData.temperature,
       top_P: formData.top_P,
@@ -330,6 +336,7 @@ watch(
     temperature: formData.temperature,
     top_P: formData.top_P,
     maxToken: formData.maxToken,
+    modelType: formData.modelType,
     top_K: formData.top_K,
     context: formData.context
   }),
@@ -351,7 +358,7 @@ const selectChange = (value) => {
 
   setActiveChatSetting(value);
   isInitialLoad.value = true;
-  Object.assign(formData, chatSettingConfigured.value.find(item => item.modelType === value));
+  Object.assign(formData, chatSettingConfigured.value.find(item => item.serviceId === value));
   nextTick(() => {
     isInitialLoad.value = false;
   });
@@ -460,6 +467,7 @@ const updateChatSettingWithModelList = (models) => {
       apiBase: model.api_proxy,
       chunkSize: model.chunk_size || 800,
       apiModelName: model.service_name,
+      serviceId: model.service_id,
       apiContextLength: model.api_context_length || 4096,
       maxToken: Math.floor((model.max_token || 4096)),
       temperature: model.temperature || 0.5,
@@ -559,7 +567,7 @@ const confirmAddModel = async () => {
       api_key: newModelForm.apiKey,
       api_proxy: newModelForm.apiBase,
       model_endpoint: newModelForm.modelEndpoint,
-      request_format: newModelForm.request_format,
+      request_format: "openAI",
       // 其他默认参数
       creativity: 1.0,
       thinking_depth: 1.0,
@@ -628,6 +636,13 @@ const confirmAddModel = async () => {
   margin-bottom: 16px;
 }
 
+/* 设置表单标签样式 */
+:deep(.arco-form-item-label-col > label) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+}
+
 /* 最后一个表单项不需要边框 */
 :deep(.arco-form-item:last-child) {
   border-bottom: none;
@@ -644,11 +659,10 @@ const confirmAddModel = async () => {
   font-size: 14px;
   color: #767676;
   user-select: text;
-  width: 50%;
+  flex:1;
 }
 
 .token-input-wrapper-input {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -656,11 +670,17 @@ const confirmAddModel = async () => {
 
 .token-input-wrapper .arco-slider {
   flex: 1;
+  max-width: 200px;
   min-width: 200px;
   width: 100%;
 }
 
 .token-input-wrapper .arco-input-number {
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.token-input-wrapper .arco-input-wrapper {
   width: 100px;
   flex-shrink: 0;
 }

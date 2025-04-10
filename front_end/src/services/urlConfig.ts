@@ -373,6 +373,7 @@ const urlConfig: IUrlConfig = {
     type: EUrlType.POST,
     url: '/user/delete',
     param: {
+      target_user_id: '',
       user_id: userId,
     },
   },
@@ -592,7 +593,7 @@ const urlConfig: IUrlConfig = {
   createModel: {
     type: EUrlType.POST,
     url: '/model/create',
-    showLoading: true,
+    showLoading: false,
     param: {
     }
   },

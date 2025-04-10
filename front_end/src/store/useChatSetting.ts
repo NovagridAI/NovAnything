@@ -19,6 +19,7 @@ export const useChatSetting = defineStore(
       temperature: 0.5,
       top_P: 1,
       top_K: 30,
+      serviceId: '',
       capabilities: {
         networkSearch: false,
         mixedSearch: false,
@@ -87,7 +88,7 @@ export const useChatSetting = defineStore(
       
       // 保留至少一个active为true的配置
       if (activeChatSetting.value) {
-        settings.find(item => item.modelType === activeChatSetting.value).active = true;
+        settings.find(item => item.serviceId === activeChatSetting.value).active = true;
       } else {
         const hasActive = settings.some(item => item.active);
         if (!hasActive && settings.length > 0) {
@@ -98,13 +99,13 @@ export const useChatSetting = defineStore(
       // 更新整个配置数组
       chatSettingConfigured.value = [...settings];
     };
-
-    const setActiveChatSetting = (modelType: string) => {
+ 
+    const setActiveChatSetting = (serviceId: string) => {
       chatSettingConfigured.value.forEach(item => {
         item.active = false;
       });
-      chatSettingConfigured.value.find(item => item.modelType === modelType).active = true;
-      activeChatSetting.value = modelType;
+      chatSettingConfigured.value.find(item => item.serviceId === serviceId).active = true;
+      activeChatSetting.value = serviceId;
     };
 
     // 当前应用的设置

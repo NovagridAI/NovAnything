@@ -83,7 +83,7 @@
           <arco-table :selectedRowKeys="[...selectedKeys.keys()]" @select="onSelect" @selectAll="onSelectAll"
             :loading="loading" :row-selection="{ showCheckedAll: true }" :data="dataSource" :columns="columns"
             :pagination="kbPaginationConfig" row-key="fileId" @page-change="current => kbOnChange({ current })"
-            style="margin-top: 20px; border-radius: 12px; overflow: hidden;">
+            style="margin-top: 20px; overflow: hidden;">
             <template #status="{ record }">
               <div class="status-box">
                 <span class="icon-file-status">
@@ -136,6 +136,7 @@ import { useOptiionList } from '@/store/useOptiionList';
 import { pageStatus } from '@/utils/enum';
 import { resultControl } from '@/utils/utils';
 import { message, Modal } from 'ant-design-vue';
+import { Message } from '@arco-design/web-vue';
 import { getLanguage } from '@/language';
 import LoadingImg from '@/components/LoadingImg.vue';
 import UploadProgress from '@/components/UploadProgress.vue';
@@ -150,7 +151,7 @@ import UrlUploadDialog from '@/components/UrlUploadDialog.vue';
 const { setDefault } = useKnowledgeBase();
 const { currentKbName, currentId } = storeToRefs(useKnowledgeBase());
 const { setModalVisible, setUrlModalVisible, setModalTitle } = useKnowledgeModal();
-const { showChunkModel } = storeToRefs(useChunkView());
+const { showChunkModel, fileId, kbId, fileIdName } = storeToRefs(useChunkView());
 const {
   getDetails,
   setEditQaSet,
@@ -305,7 +306,7 @@ const tagConfirm = async (
         is_replace: true,
       })
     );
-    message.success('成功修改标签');
+    Message.success('成功修改标签');
   } else if (type === 'fileBatch') {
     await resultControl(
       await urlResquest.updateTags({
@@ -314,7 +315,7 @@ const tagConfirm = async (
         is_replace: false,
       })
     );
-    message.success('成功批量添加标签');
+    Message.success('成功批量添加标签');
     selectedKeys.value.clear();
     await getDetails();
   } else if (type === 'kb') {
@@ -326,7 +327,7 @@ const tagConfirm = async (
         is_replace: false,
       })
     );
-    message.success('成功为所有文件添加标签');
+    Message.success('成功为所有文件添加标签');
     await getDetails();
   }
 };
@@ -353,13 +354,14 @@ const deleteItem = item => {
   optionItem = item;
 };
 
-const fileId = ref('');
-const fileIdName = ref('');
+// const fileId = ref('');
+// const fileIdName = ref('');
+
 const viewItem = async item => {
-  console.log(item)
   fileId.value = item.fileId;
   fileIdName.value = item.fileIdName;
   showChunkModel.value = true;
+  console.log(fileId.value)
 };
 
 const confirm = async () => {
@@ -367,14 +369,14 @@ const confirm = async () => {
     await resultControl(
       await urlResquest.deleteFile({ file_ids: [optionItem.fileId], kb_id: currentId.value })
     );
-    message.success('删除成功');
+    Message.success('删除成功');
     await getDetails();
     if (kbPageNum.value !== 1 && dataSource.value.length === 0) {
       kbPageNum.value -= 1;
       await getDetails();
     }
   } catch (e) {
-    message.error(e.msg || '删除失败');
+    Message.error(e.msg || '删除失败');
   }
 };
 
@@ -392,14 +394,14 @@ const qaConfirm = async () => {
         file_ids: [qaOptionItem.faqId],
       })
     );
-    message.success('删除成功');
+    Message.success('删除成功');
     await getFaqList();
     if (pageNum.value !== 1 && faqList.value.length === 0) {
       pageNum.value -= 1;
       await getFaqList();
     }
   } catch (e) {
-    message.error(e.msg || '删除失败');
+    Message.error(e.msg || '删除失败');
   }
 };
 
@@ -438,10 +440,10 @@ const clearUpload = () => {
     async onOk() {
       try {
         await resultControl(await urlResquest.clearUpload({ status: 'gray', kb_ids: [] }));
-        message.success('操作成功');
+        Message.success('操作成功');
         getDetails();
       } catch (e) {
-        message.error(e.msg || '操作失败');
+        Message.error(e.msg || '操作失败');
       }
     },
   });
@@ -548,7 +550,7 @@ const showPermissionDialog = () => {
 
 const handlePermissionConfirm = (data) => {
   console.log('权限设置确认:', data);
-  message.success('权限设置已保存');
+  Message.success('权限设置已保存');
 };
 
 const handlePermissionCancel = () => {

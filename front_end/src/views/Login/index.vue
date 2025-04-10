@@ -97,7 +97,8 @@ const onFinish = async (values: any) => {
       setUserInfo({
         userId: res.data.user_id,
         token: res.data.token,
-        role: res.data.role
+        role: res.data.role,
+        username: res.data.username
       });
       console.log(res.data, res.data.user_id)
       await nextTick();
@@ -126,7 +127,6 @@ const onFinish = async (values: any) => {
   padding: 40px;
   background: var(--color-bg-2);
   border-radius: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   text-align: center;
 
   .login-icon {

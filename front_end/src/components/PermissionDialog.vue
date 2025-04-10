@@ -28,7 +28,7 @@
               <arco-tree
                 :data="availableTreeData"
                 :default-expanded-keys="availableExpandedKeys"
-                :expanded-keys="availableExpandedKeys"
+                v-model:expanded-keys="availableExpandedKeys"
                 :checkable="true"
                 v-model:checked-keys="availableCheckedKeys"
                 :check-strictly="true"
@@ -69,7 +69,7 @@
               <arco-tree
                 :data="assignedTreeData"
                 :default-expanded-keys="assignedExpandedKeys"
-                :expanded-keys="assignedExpandedKeys"
+                v-model:expanded-keys="assignedExpandedKeys"
                 :checkable="true"
                 v-model:checked-keys="assignedCheckedKeys"
                 :check-strictly="true"

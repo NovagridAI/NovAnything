@@ -7,14 +7,15 @@
           <template #arrow-icon>
             <!-- 空元素替代箭头 -->
           </template>
-          <arco-option v-for="(option) in chatSettingConfigured" :key="option.modelName" :value="option.modelName">
-            {{ option.modelName }}
+          <arco-option v-for="(option) in chatSettingConfigured" :key="option.serviceId" :value="option.serviceId">
+            {{ option.apiModelName }} ({{ option.serviceId }})
           </arco-option>
         </arco-select>
       </div>
 
     </div>
     <div class="icon-actions">
+      <div style="margin-right: 10px;">{{ userInfo.username }}</div>
       <icon-settings class="icon-list" @click="openFullscreenView" />
     </div>
   </div>
@@ -29,7 +30,10 @@ import { storeToRefs } from 'pinia';
 import { useHomeChat } from '@/store/useHomeChat';
 import { useAdvanceSettings } from '@/store/useAdvanceSettings';
 import urlResquest from '@/services/urlConfig';
+import { useUser } from '@/store/useUser';
+
 const { chatId, historyList } = storeToRefs(useHomeChat());
+const { userInfo } = storeToRefs(useUser());
 
 const { chatSettingConfigured } = storeToRefs(useChatSetting());
 const { setAllChatSettingConfigured, setActiveChatSetting } = useChatSetting();
@@ -40,7 +44,7 @@ const { updateSettings } = useAdvanceSettings();
 const defaultOption = chatSettingConfigured.value.find(item => item.active === true);
 const { changePage } = routeController();
 const selectedOption = computed(() => {
-  return chatSettingConfigured.value.find(item => item.active === true)?.modelName || '无模型配置';
+  return chatSettingConfigured.value.find(item => item.active === true)?.serviceId || '无模型配置';
 });
 const currentChatTitle = computed(() => {
   const currentChatTitle = historyList.value.find(item => item.qa_id === chatId.value);
@@ -95,6 +99,7 @@ const updateChatSettingWithModelList = (models) => {
       apiBase: model.api_proxy,
       chunkSize: model.chunk_size || 800,
       apiModelName: model.service_name,
+      serviceId: model.service_id,
       apiContextLength: model.api_context_length || 4096,
       maxToken: Math.floor((model.max_token || 4096)),
       temperature: model.temperature || 0.5,

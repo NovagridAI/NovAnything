@@ -12,8 +12,8 @@
             </div>
 
             <div class="sidebar-tree">
-                <arco-tree blockNode :data="departmentTree" :default-expanded-keys="['product']"
-                    :selected-keys="selectedDepartment" @select="handleDepartmentSelect">
+                <arco-tree blockNode :data="departmentTree" :expanded-keys="expandedKeys"
+                    :selected-keys="selectedDepartment" @select="handleDepartmentSelect" @expand="handleExpand">
                     <template #title="{ title }">
                         <span>{{ title }}</span>
                     </template>
@@ -24,6 +24,11 @@
                             </div>
                             <template #content>
                                 <div class="tree-node-actions no-padding">
+                                    <arco-button class="action-button danger" type="text" size="small"
+                                        @click.stop="handleEditDepartment(nodeData)">
+                                        <template #icon><icon-edit /></template>
+                                        编辑部门
+                                    </arco-button>
                                     <arco-button class="action-button danger" type="text" size="small" status="danger"
                                         @click.stop="handleDeleteDepartment(nodeData)">
                                         <template #icon><icon-delete /></template>
@@ -67,7 +72,8 @@
                             <arco-space>
                                 <!-- <arco-button type="text" size="small" @click="handleEdit(record)">编辑</arco-button> -->
                                 <arco-link type="text" size="small" @click="handleMove(record)">移动</arco-link>
-                                <arco-link type="text" size="small" @click="handleChangePassword(record)">修改密码</arco-link>
+                                <arco-link type="text" size="small"
+                                    @click="handleChangePassword(record)">修改密码</arco-link>
 
                                 <!-- 使用 Popover 替换直接删除按钮 -->
                                 <arco-popover position="top" trigger="click">
@@ -122,7 +128,7 @@
             <!-- 移动用户弹窗 -->
             <arco-modal v-model:visible="moveUserModalVisible" title="移动用户" @ok="confirmMoveUser"
                 @cancel="cancelMoveUser">
-                <p>请选择移动到的部门</p>
+                <p style="margin-bottom: 8px;">请选择移动到的部门</p>
                 <arco-select v-model="moveTargetDeptId" placeholder="请选择目标部门" style="width: 100%">
                     <arco-option v-for="dept in flatDepartments" :key="dept.key" :value="dept.key" :label="dept.title">
                         {{ dept.displayTitle }}
@@ -150,19 +156,33 @@
         </arco-modal>
 
         <!-- 删除部门确认弹窗 -->
-        <arco-modal 
-            v-model:visible="deleteDeptModalVisible" 
-            title="删除部门" 
-            @cancel="deleteDeptModalVisible = false"
-            @ok="confirmDeleteDepartment"
-            ok-text="确认删除"
-        >
+        <arco-modal v-model:visible="deleteDeptModalVisible" title="删除部门" @cancel="deleteDeptModalVisible = false"
+            @ok="confirmDeleteDepartment" ok-text="确认删除">
             <p>确定要删除部门 "{{ deptToDelete?.title }}" 吗？</p>
             <p style="color: var(--color-text-3);">此操作不可撤销，请谨慎操作。</p>
         </arco-modal>
 
+        <!-- 编辑部门弹窗 -->
+        <arco-modal v-model:visible="editDepartmentModalVisible" title="编辑部门" @cancel="cancelEditDepartment"
+            @ok="confirmEditDepartment">
+            <arco-form :model="editDepartmentForm" layout="vertical">
+                <arco-form-item field="name" label="部门名称">
+                    <arco-input v-model="editDepartmentForm.name" placeholder="请输入部门名称" />
+                </arco-form-item>
+                <arco-form-item field="parentId" label="上级部门">
+                    <arco-select v-model="editDepartmentForm.parentId" placeholder="请选择上级部门(可选)" allow-clear>
+                        <arco-option v-for="dept in filteredDepartments" :key="dept.key" :value="dept.key"
+                            :label="dept.title">
+                            {{ dept.displayTitle }}
+                        </arco-option>
+                    </arco-select>
+                </arco-form-item>
+            </arco-form>
+        </arco-modal>
+
         <!-- 修改密码弹窗 -->
-        <arco-modal v-model:visible="changePasswordModalVisible" title="修改密码" @ok="confirmChangePassword" @cancel="cancelChangePassword">
+        <arco-modal v-model:visible="changePasswordModalVisible" title="修改密码" @ok="confirmChangePassword"
+            @cancel="cancelChangePassword">
             <arco-form :model="passwordForm" layout="vertical">
                 <arco-form-item field="oldPassword" label="当前密码">
                     <arco-input-password v-model="passwordForm.oldPassword" placeholder="请输入当前密码" />
@@ -180,7 +200,7 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { IconPlus, IconSwap, IconDelete, IconMoreVertical, IconUser } from '@arco-design/web-vue/es/icon';
+import { IconPlus, IconSwap, IconDelete, IconMoreVertical, IconUser, IconEdit } from '@arco-design/web-vue/es/icon';
 import urlResquest from '@/services/urlConfig'
 import { Message, Modal } from '@arco-design/web-vue';
 
@@ -190,11 +210,22 @@ const departmentTree = ref([]);
 // 当前选中的部门
 const selectedDepartment = ref([]);
 
+// 存储所有部门ID，用于全部展开
+const allDeptKeys = ref([]);
+
+// 新增的expandedKeys
+const expandedKeys = ref([]);
+
 // 获取部门列表数据
 const fetchDepartmentList = async () => {
     try {
         const res = await urlResquest.departmentList();
         if (res && res.data) {
+            // 收集所有部门ID用于默认展开
+            allDeptKeys.value = res.data.map(dept => dept.dept_id);
+            // 初始化expandedKeys
+            expandedKeys.value = [...allDeptKeys.value];
+
             // 将平面数据转换为树形结构
             departmentTree.value = buildDepartmentTree(res.data);
 
@@ -566,7 +597,7 @@ const handleDelete = async (record) => {
 // 确认删除用户
 const confirmDelete = async (record) => {
     try {
-        const res = await urlResquest.deleteUser({ user_id: record.id });
+        const res = await urlResquest.deleteUser({ target_user_id: record.id });
 
         if (res && res.code === 200) {
             Message.success('用户删除成功');
@@ -639,6 +670,14 @@ const departmentForm = reactive({
     parentId: ''
 });
 
+// 编辑部门相关
+const editDepartmentModalVisible = ref(false);
+const editDepartmentForm = reactive({
+    key: '',
+    name: '',
+    parentId: ''
+});
+
 // 将树形结构扁平化为列表，用于上级部门选择
 const flatDepartments = computed(() => {
     const result = [];
@@ -662,6 +701,11 @@ const flatDepartments = computed(() => {
 
     flatten(departmentTree.value);
     return result;
+});
+
+// 编辑部门时过滤掉当前部门，避免选择自己作为父部门
+const filteredDepartments = computed(() => {
+    return flatDepartments.value.filter(dept => dept.key !== editDepartmentForm.key);
 });
 
 // 显示添加部门弹窗
@@ -724,21 +768,21 @@ const deptToDelete = ref(null);
 // 处理删除部门
 const handleDeleteDepartment = (nodeData) => {
     console.log('删除部门数据:', nodeData);
-    
+
     if (!nodeData || !nodeData.key) {
         console.error('无效的节点数据');
         Message.error('无法获取部门信息，请刷新页面后重试');
         return;
     }
-    
+
     // 安全地检查children属性
     const hasChildren = nodeData.children && Array.isArray(nodeData.children) && nodeData.children.length > 0;
-    
+
     if (hasChildren) {
         Message.warning('该部门下有子部门，无法直接删除');
         return;
     }
-    
+
     // 使用确认对话框
     Modal.confirm({
         title: '删除部门',
@@ -861,6 +905,85 @@ const cancelChangePassword = () => {
     passwordForm.userId = null;
     changePasswordModalVisible.value = false;
 };
+
+// 处理expand事件
+const handleExpand = (keys) => {
+    expandedKeys.value = keys;
+};
+
+// 显示编辑部门弹窗
+const handleEditDepartment = (nodeData) => {
+    if (!nodeData || !nodeData.key) {
+        Message.error('无法获取部门信息，请刷新页面后重试');
+        return;
+    }
+
+    editDepartmentForm.key = nodeData.key;
+    editDepartmentForm.name = nodeData.title;
+
+    // 查找父部门ID
+    let parentId = null;
+    const findParent = (nodes) => {
+        if (!nodes) return false;
+
+        for (const node of nodes) {
+            if (node.children && node.children.some(child => child.key === nodeData.key)) {
+                parentId = node.key;
+                return true;
+            }
+            if (node.children && findParent(node.children)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    findParent(departmentTree.value);
+    editDepartmentForm.parentId = parentId;
+
+    editDepartmentModalVisible.value = true;
+};
+
+// 确认编辑部门
+const confirmEditDepartment = async () => {
+    if (!editDepartmentForm.name) {
+        Message.error('请输入部门名称');
+        return;
+    }
+
+    try {
+        const loadingMessage = Message.loading({
+            content: '正在更新部门...',
+            duration: 0
+        });
+
+        const res = await urlResquest.updateDepartment({
+            dept_id: editDepartmentForm.key,
+            dept_name: editDepartmentForm.name,
+            parent_dept_id: editDepartmentForm.parentId || null
+        });
+
+        loadingMessage.close();
+
+        if (res && res.code === 200) {
+            Message.success('部门更新成功');
+            editDepartmentModalVisible.value = false;
+
+            // 刷新部门列表
+            fetchDepartmentList();
+        } else {
+            Message.error(res?.msg || '更新部门失败');
+        }
+    } catch (error) {
+        console.error('更新部门失败:', error);
+        Message.error('更新部门失败，请稍后重试');
+    }
+};
+
+// 取消编辑部门
+const cancelEditDepartment = () => {
+    editDepartmentModalVisible.value = false;
+};
 </script>
 
 <style scoped>
@@ -879,7 +1002,6 @@ const cancelChangePassword = () => {
 
 .sidebar-header {
     padding: 0 16px 16px;
-    border-bottom: 1px solid var(--color-border);
     margin-bottom: 8px;
 }
 

@@ -57,12 +57,13 @@ import { formatTimestamp, resultControl } from '@/utils/utils';
 
 const { chatList, chatId, QA_List, qaPageId, historyList } = storeToRefs(useHomeChat());
 const { addChatList, getChatById, setCurrentQaId, setHistoryList, deleteChatItem } = useHomeChat();
-const { setSelectList } = useKnowledgeBase();
+const { setSelectList, setKnowledgeBaseList } = useKnowledgeBase();
 const { knowledgeBaseList } = storeToRefs(useKnowledgeBase());
 const { setTempId } = useKnowledgeBase();
 const { setTempDetail } = useOptiionList();
 const { tempId } = storeToRefs(useKnowledgeBase());
 
+const currentKbid = ref([]);
 const tempList = computed(() => knowledgeBaseList.value.filter(item => item.kb_type === 'temporary'));
 const currentTitle = computed(() => {
   if (chatId.value) {
@@ -71,7 +72,6 @@ const currentTitle = computed(() => {
   return '新对话';
 });
 
-console.log(tempList.value, 'tempList');
 
 
 // 当前选中的会话
@@ -90,7 +90,7 @@ const formatTitle = (query) => {
 
 // 选择会话
 const selectConversation = (item) => {
-  console.log(item, 'item');
+  currentKbid.value = item?.kb_ids;
   const currentTempId = item?.kb_ids?.find(item => tempList.value.some(temp => temp.kb_id === item));
   if (currentTempId) {
     setTempId(currentTempId);
@@ -168,7 +168,8 @@ function addAnswer(
 
 // 选择/切换对话
 async function changeChat(item) {
-  console.log(chatList.value, 'item');
+  console.log(item, 'changeChat changeChat');
+
   // 正在问答时禁止操作
   chatId.value = item.qa_id;
   QA_List.value = [];
@@ -376,7 +377,9 @@ const createNewChat = () => {
 };
 
 // 组件挂载时获取数据
-onMounted(() => {
+onMounted(async () => {
+  const kbList = await urlResquest.kbList();
+  setKnowledgeBaseList(kbList.data);
   fetchConversationHistory();
 });
 

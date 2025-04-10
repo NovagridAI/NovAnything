@@ -150,6 +150,9 @@ export interface IChatSetting {
   capabilities: ICapabilities;
   /* 是否开启（只有一个） */
   active: boolean;
+
+  /* 模型提供方 */
+  serviceId?: string;
 }
 
 // 第一个对象类型，第二个参数联合类型，把联合类型里面的参数设定为可选

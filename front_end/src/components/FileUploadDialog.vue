@@ -161,7 +161,7 @@ watch(
     if (props.dialogType === 1) {
       uploadFileList.value = uploadFileListQuick.value;
     }
-    if (!modalVisible.value && props.dialogType === 0) {
+    if (!modalVisible.value && (props.dialogType === 0 || props.dialogType === 2)) {
       initUploadFileList();
     }
   }

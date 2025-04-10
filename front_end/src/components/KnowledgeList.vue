@@ -115,7 +115,7 @@ const selectKnowledgeBase = (item: IKnowledgeItem) => {
     cursor: pointer;
     display: flex;
     padding-bottom: 16px;
-    background-image: linear-gradient(to right, #3b82f6, #4f46e5);
+    background: linear-gradient(79deg, #0256FF 0%, #5602FF 100%);
     color: transparent;
     background-clip: text;
     font-size: 22px;
