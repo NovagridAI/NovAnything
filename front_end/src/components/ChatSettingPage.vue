@@ -303,6 +303,10 @@ const updateModel = debounce(async () => {
     // 调用API更新模型
     const response = await urlResquest.updateModel(modelData);
 
+    if (response && response.code === 403) {
+      Message.error('您没有权限修改此模型');
+    }
+
     if (response && response.code === 200) {
       console.log('模型更新成功');
       fetchModelList();
