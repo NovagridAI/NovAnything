@@ -1,1 +1,0 @@
-import{d as s,a,c as e,C as t,o,l as r}from"./index-tYAasl7j.js";const d={class:"page"},c=r(s({__name:"Bots",setup:s=>(s,r)=>{const c=t("router-view");return o(),a("div",d,[e(c)])}}),[["__scopeId","data-v-e9413bee"]]);export{c as default};

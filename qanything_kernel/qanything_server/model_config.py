@@ -273,8 +273,6 @@ async def get_model_config(request: Request):
 
         # 脱敏敏感信息
         config_data = config.to_dict()
-        if role not in [ROLE_ADMIN, ROLE_SUPERADMIN] and config.user_id != user_id:
-            config_data["api_key"] = "******"  # 对其他用户的配置隐藏API密钥
 
         return create_success_response("获取模型配置成功", config_data)
 
@@ -319,9 +317,6 @@ async def list_model_configs(request: Request):
         config_list = []
         for config in configs:
             config_data = config.to_dict()
-            # 脱敏非当前用户创建的配置，且当前用户不是管理员
-            if config.user_id != user_id and role not in [ROLE_ADMIN, ROLE_SUPERADMIN]:
-                config_data["api_key"] = "******"
             config_list.append(config_data)
 
         return create_success_response("获取模型配置列表成功", {

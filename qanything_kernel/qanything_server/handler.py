@@ -186,17 +186,21 @@ async def local_doc_chat(req: request):
         kb_ids += exist_faq_kb_ids
 
     file_infos = []
+    # 保存原始的kb_ids用于后续更新QA日志
+    original_kb_ids = kb_ids.copy()
+    
     for kb_id in kb_ids:
         file_infos.extend(local_doc_qa.milvus_summary.get_files(user_id, kb_id))
     valid_files = [fi for fi in file_infos if fi[2] == 'green']
     if len(valid_files) == 0:
         debug_logger.info("valid_files is empty, use only chat mode.")
+        # 对话时使用空列表
         kb_ids = []
     preprocess_end = time.perf_counter()
     time_record['preprocess'] = round(preprocess_end - preprocess_start, 2)
     # 获取格式为'2021-08-01 00:00:00'的时间戳
     qa_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-    for kb_id in kb_ids:
+    for kb_id in original_kb_ids:  # 使用原始的kb_ids更新知识库时间
         local_doc_qa.milvus_summary.update_knowledge_base_latest_qa_time(kb_id, qa_timestamp)
     debug_logger.info("streaming: %s", streaming)
     if streaming:
@@ -204,9 +208,12 @@ async def local_doc_chat(req: request):
 
         async def generate_answer(response):
             debug_logger.info("start generate...")
+            # 在生成答案函数中提前声明qa_id变量，避免在使用前未定义的错误
+            new_qa_id = qa_id  # 初始值设为外部传入的qa_id
+            
             async for resp, next_history in local_doc_qa.get_knowledge_based_answer(model=model,
                                                                                     max_token=max_token,
-                                                                                    kb_ids=kb_ids,
+                                                                                    kb_ids=kb_ids,  # 这里使用可能为空的kb_ids
                                                                                     query=question,
                                                                                     retriever=local_doc_qa.retriever,
                                                                                     chat_history=history,
@@ -238,7 +245,7 @@ async def local_doc_chat(req: request):
                         time_record['tokens_per_second'] = round(
                             len(result) / time_record['llm_completed'], 2)
                     formatted_time_record = format_time_record(time_record)
-                    chat_data = {'user_id': user_id, 'kb_ids': kb_ids, 'query': question, "model": model,
+                    chat_data = {'user_id': user_id, 'kb_ids': original_kb_ids, 'query': question, "model": model,
                                  "product_source": request_source, 'time_record': formatted_time_record,
                                  'history': next_history,
                                  'condense_question': resp['condense_question'], 'prompt': resp['prompt'],
@@ -247,7 +254,7 @@ async def local_doc_chat(req: request):
                     
                     if qa_log_exists:
                         # 如果存在qa_id，更新已有记录
-                        debug_logger.info(f"更新已有QA记录: qa_id={qa_id}")
+                        debug_logger.info(f"更新已有QA记录: qa_id={new_qa_id}")
                         update_data = {
                             "query": question,
                             "result": result,
@@ -258,9 +265,10 @@ async def local_doc_chat(req: request):
                             "condense_question": resp['condense_question'],
                             "prompt": resp['prompt'],
                             "retrieval_documents": retrieval_documents,
-                            "source_documents": source_documents
+                            "source_documents": source_documents,
+                            "kb_ids": original_kb_ids  # 使用原始的kb_ids
                         }
-                        local_doc_qa.milvus_summary.update_qa_log(qa_id, update_data)
+                        local_doc_qa.milvus_summary.update_qa_log(new_qa_id, update_data)
                     else:
                         # 创建新的QA记录
                         debug_logger.info("创建新的QA记录")
@@ -268,7 +276,7 @@ async def local_doc_chat(req: request):
                         qa_log = QaLog(
                             qa_id=None,  # 如果为空，会自动生成
                             user_id=user_id,
-                            kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
+                            kb_ids=original_kb_ids,
                             query=question,
                             model=model,
                             product_source=request_source,
@@ -281,8 +289,7 @@ async def local_doc_chat(req: request):
                             source_documents=source_documents,
                             bot_id=bot_id
                         )
-                        # 确保不使用await调用同步方法
-                        qa_id = local_doc_qa.milvus_summary.add_qa_log(qa_log)
+                        new_qa_id = local_doc_qa.milvus_summary.add_qa_log(qa_log)
                     
                     qa_logger.info("chat_data: %s", chat_data)
                     debug_logger.info("response: %s", chat_data['result'])
@@ -298,7 +305,7 @@ async def local_doc_chat(req: request):
                         "retrieval_documents": retrieval_documents,
                         "time_record": formatted_time_record,
                         "show_images": resp.get('show_images', []),
-                        "qa_id": qa_id  # 返回qa_id给客户端
+                        "qa_id": new_qa_id  # 使用新的qa_id变量
                     }
                 else:
                     time_record['rollback_length'] = resp.get('rollback_length', 0)
@@ -366,7 +373,8 @@ async def local_doc_chat(req: request):
                 "condense_question": resp['condense_question'],
                 "prompt": resp['prompt'],
                 "retrieval_documents": retrieval_documents,
-                "source_documents": source_documents
+                "source_documents": source_documents,
+                "kb_ids": original_kb_ids  # 使用原始的kb_ids
             }
             local_doc_qa.milvus_summary.update_qa_log(qa_id, update_data)
         else:
@@ -376,7 +384,7 @@ async def local_doc_chat(req: request):
             qa_log = QaLog(
                 qa_id=None,  # 如果为空，会自动生成
                 user_id=user_id,
-                kb_ids=kb_ids.split(',') if isinstance(kb_ids, str) else kb_ids,
+                kb_ids=original_kb_ids,  # 使用原始的kb_ids
                 query=question,
                 model=model,
                 product_source=request_source,
@@ -392,7 +400,7 @@ async def local_doc_chat(req: request):
             # 确保不使用await调用同步方法
             qa_id = local_doc_qa.milvus_summary.add_qa_log(qa_log)
         
-        chat_data = {'user_id': user_id, 'kb_ids': kb_ids, 'query': question, 'time_record': formatted_time_record,
+        chat_data = {'user_id': user_id, 'kb_ids': original_kb_ids, 'query': question, 'time_record': formatted_time_record,
                      'history': history, "condense_question": resp['condense_question'], "model": model,
                      "product_source": request_source,
                      'retrieval_documents': retrieval_documents, 'prompt': resp['prompt'], 'result': resp['result'],

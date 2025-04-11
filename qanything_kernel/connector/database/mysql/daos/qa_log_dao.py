@@ -5,6 +5,7 @@ import json
 import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
+from venv import logger
 from qanything_kernel.utils.custom_log import debug_logger, insert_logger
 from qanything_kernel.connector.database.mysql.daos.base_dao import BaseDAO
 from qanything_kernel.connector.database.mysql.models.qa_log import QaLog
@@ -563,7 +564,6 @@ class QaLogDAO(BaseDAO):
             return False
             
         data_to_update = {}
-        
         for key, value in update_data.items():
             # 对于JSON字段进行处理
             if key in ['kb_ids', 'time_record', 'history', 'retrieval_documents', 'source_documents'] and not isinstance(value, str):

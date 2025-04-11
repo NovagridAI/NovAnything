@@ -1,1 +1,0 @@
-import{a5 as t,h as e,t as s}from"./index-DV_zQdWl.js";const a=t("useHeader",(()=>{const t=e(),a=new Map([["statistics",-1],["home",0],["bot",1],["quickstart",2]]),n=s((()=>{const e=t.currentRoute.value.path;return a.get(e.split("/")[1])})());return{navIndex:n,setNavIndex:t=>{n.value=t}}}));export{a as u};

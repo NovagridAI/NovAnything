@@ -53,12 +53,20 @@ class MysqlStore(InMemoryStore):
             If a key is not found, the corresponding value will be None.
         """
        
+        debug_logger.info(f"mget called with {len(keys)} keys: {keys[:5]}...")
         docs = []
         for doc_id in keys:
             doc_json = self.mysql_client.get_document_by_doc_id(doc_id)
             if doc_json is None:
                 docs.append(None)
                 continue
+            
+            debug_logger.info(f'doc_id: {doc_id} get doc_json: {doc_json}')
+            
+            # 处理MySQL Document对象(临时知识库的情况)
+            if hasattr(doc_json, 'json_data') and isinstance(doc_json.json_data, dict):
+                if 'kwargs' in doc_json.json_data:
+                    doc_json = doc_json.json_data
             
             # 检查doc_json是否已经是Document对象，如果是则直接添加到结果中并继续
             if isinstance(doc_json, Document):
@@ -67,7 +75,6 @@ class MysqlStore(InMemoryStore):
                 docs.append(doc_json)
                 continue
                 
-            # debug_logger.info(f'doc_id: {doc_id} get doc_json: {doc_json}')
             user_id, file_id, file_name, kb_id = doc_json['kwargs']['metadata']['user_id'], doc_json['kwargs']['metadata']['file_id'], doc_json['kwargs']['metadata']['file_name'], doc_json['kwargs']['metadata']['kb_id'] 
             doc_idx = doc_id.split('_')[-1]
             upload_path = os.path.join(UPLOAD_ROOT_PATH, user_id)

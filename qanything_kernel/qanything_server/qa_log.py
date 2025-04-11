@@ -149,7 +149,7 @@ async def get_qa_log(req: request):
         问答日志详情的全部数据
     """
     try:
-        debug_logger.info("收到获取问答日志详情请求")
+        debug_logger.info(f"收到获取问答日志详情请求, req: {req}")
         local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
 
         qa_id = safe_get(req, 'qa_id')
@@ -206,6 +206,7 @@ async def update_qa_log(req: request):
             - retrieval_documents (list, 可选): 检索文档
             - source_documents (list, 可选): 源文档
             - is_favorite (bool, 可选): 是否收藏
+            - kb_ids (list, 可选): 知识库ID列表
     
     返回:
         更新结果
@@ -229,21 +230,52 @@ async def update_qa_log(req: request):
                 "msg": "更新数据不能为空",
                 "data": None
             })
-
-        # 验证更新数据中的字段
-        allowed_fields = {
-            "query", "result", "model", "product_source", "time_record",
-            "history", "condense_question", "prompt", "retrieval_documents",
-            "source_documents", "is_favorite"
-        }
-
-        invalid_fields = set(update_data.keys()) - allowed_fields
-        if invalid_fields:
+            
+        debug_logger.info("update_qa_log received update_data: %s", update_data)
+        
+        # 获取当前QA日志
+        current_qa_log = local_doc_qa.milvus_summary.get_qa_log_by_id(qa_id)
+        if not current_qa_log:
             return response.json({
-                "code": 400,
-                "msg": f"包含无效的更新字段: {', '.join(invalid_fields)}",
+                "code": 404,
+                "msg": "问答日志不存在",
                 "data": None
             })
+        
+        # 处理kb_ids的更新，确保临时知识库不被丢失
+        if 'kb_ids' in update_data:
+            new_kb_ids = update_data['kb_ids']
+            debug_logger.info("update_qa_log received kb_ids: %s", new_kb_ids)
+            
+            # 处理kb_ids，确保其为列表
+            if isinstance(new_kb_ids, str):
+                if new_kb_ids:
+                    new_kb_ids = new_kb_ids.split(',')
+                else:
+                    new_kb_ids = []
+            
+            # 确保kb_ids中的元素都是字符串
+            new_kb_ids = [str(kb_id) for kb_id in new_kb_ids]
+            debug_logger.info("update_qa_log processed kb_ids: %s", new_kb_ids)
+            
+            # 检查当前QA日志中的临时知识库
+            current_temp_kb_ids = []
+            if 'kb_ids' in current_qa_log and current_qa_log['kb_ids']:
+                for kb_id in current_qa_log['kb_ids']:
+                    # 获取知识库信息
+                    kb_info = local_doc_qa.milvus_summary.kb_dao.get_knowledge_base_by_id(kb_id)
+                    if kb_info and kb_info.kb_type == 'temporary':
+                        current_temp_kb_ids.append(kb_id)
+            
+            # 将现有的临时知识库添加到新的kb_ids中
+            for temp_kb_id in current_temp_kb_ids:
+                if temp_kb_id not in new_kb_ids:
+                    debug_logger.info(f"保留临时知识库关联: {temp_kb_id}")
+                    new_kb_ids.append(temp_kb_id)
+            
+            # 更新kb_ids
+            update_data['kb_ids'] = new_kb_ids
+            debug_logger.info("update_qa_log final kb_ids: %s", update_data['kb_ids'])
 
         # 确保更新数据可以被JSON序列化
         update_data = ensure_json_serializable(update_data)
@@ -254,7 +286,9 @@ async def update_qa_log(req: request):
             return response.json({
                 "code": 200,
                 "msg": "更新问答日志成功",
-                "data": None
+                "data": {
+                    "kb_ids": update_data.get('kb_ids', current_qa_log.get('kb_ids', []))
+                }
             })
         else:
             return response.json({
@@ -302,15 +336,35 @@ async def delete_qa_log(req: request):
                 "msg": "问答日志不存在",
                 "data": None
             })
+            
+        # 检查是否有关联的临时知识库
+        temp_kb_ids = []
+        if 'kb_ids' in qa_log and qa_log['kb_ids']:
+            for kb_id in qa_log['kb_ids']:
+                # 获取知识库信息
+                kb_info = local_doc_qa.milvus_summary.kb_dao.get_knowledge_base_by_id(kb_id)
+                if kb_info and kb_info.kb_type == 'temporary':
+                    debug_logger.info(f"发现关联的临时知识库: {kb_id}")
+                    temp_kb_ids.append(kb_id)
 
         # 删除问答日志
         success = local_doc_qa.milvus_summary.delete_qa_log(qa_id)
+        
+        # 如果有关联的临时知识库，一并删除
+        deleted_kb_count = 0
+        if temp_kb_ids and success:
+            debug_logger.info(f"尝试删除关联的临时知识库: {temp_kb_ids}")
+            deleted_kb_count = local_doc_qa.milvus_summary.kb_dao.physically_delete_temporary_knowledge_base(temp_kb_ids)
+            debug_logger.info(f"成功删除 {deleted_kb_count} 个临时知识库")
 
         if success:
             return response.json({
                 "code": 200,
-                "msg": "删除问答日志成功",
-                "data": None
+                "msg": f"删除问答日志成功，同时删除了 {deleted_kb_count} 个关联的临时知识库",
+                "data": {
+                    "deleted_temp_kb_count": deleted_kb_count,
+                    "deleted_temp_kb_ids": temp_kb_ids
+                }
             })
         else:
             return response.json({
