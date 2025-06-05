@@ -1,0 +1,87 @@
+@import './reset.scss';
+@import './resetAntd.scss';
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 4px;
+  height: 8px;
+  background: transparent;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  height: 0;
+  width: 0;
+}
+::-webkit-scrollbar-thumb {
+  min-height: 50px;
+  border-radius: 20px;
+  border: 3px solid rgba(255, 255, 255, 0);
+  background-clip: content-box;
+  background-color: transparent;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a8aaad;
+}
+
+:root {
+  --font-family: 'Noto Sans SC', Inter, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* 应用全局字体 */
+html body,
+#app,
+.arco-btn,
+.arco-select,
+.arco-table,
+.arco-modal,
+.arco-message,
+.arco-popover {
+  font-family: var(--font-family) !important;
+}
+
+/* 定义不同字重的工具类 */
+.font-thin {
+  font-weight: 100;
+}
+
+.font-light {
+  font-weight: 300;
+}
+
+.font-normal {
+  font-weight: 400;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-black {
+  font-weight: 900;
+}
+
+/* 密码输入框使用等宽字体 */
+input[type="password"] {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+// .ant-message-notice {
+//   .ant-message-notice-content {
+//     background: rgba(42, 43, 46, 0.92);
+//     border-radius: 16px;
+//     color: #f5f7fa;
+//     padding: 20px 24px;
+//     box-sizing: border-box;
+//     font-size: 16px;
+//     white-space: nowrap;
+//   }
+//   .anticon {
+//     display: none;
+//   }
+// }
