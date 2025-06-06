@@ -86,8 +86,8 @@ export default defineConfig(({ mode }) => {
             importStyle: false, // 禁用 CSS-in-JS
           }),
           ArcoResolver({
-            sideEffect: true
-          })
+            sideEffect: true,
+          }),
         ],
       }),
       AutoImport({
@@ -129,6 +129,9 @@ export default defineConfig(({ mode }) => {
         '@stores': resovePath('./src/store'),
         '@plugins': resovePath('./src/plugins'),
         '@styles': resovePath('./src/styles'),
+        '@vue-office/pdf': resovePath('node_modules/@vue-office/pdf/lib/v3/index.js'),
+        '@vue-office/docx': resovePath('node_modules/@vue-office/docx/lib/v3/index.js'),
+        '@vue-office/excel': resovePath('node_modules/@vue-office/excel/lib/v3/index.js'),
       },
     },
     css: {
@@ -165,37 +168,37 @@ export default defineConfig(({ mode }) => {
       cors: true,
       proxy: {
         '/model': {
-          target: 'http://101.43.128.73:8778/api',
+          target: 'http://101.43.128.73:18777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/model/, '/model'),
         },
         '/group': {
-          target: 'http://101.43.128.73:8778/api',
+          target: 'http://101.43.128.73:18777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/group/, '/group'),
         },
         '/kb': {
-          target: 'http://101.43.128.73:8778/api',
+          target: 'http://101.43.128.73:18777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/kb/, '/kb'),
         },
         '/user': {
-          target: 'http://101.43.128.73:8778/api',
+          target: 'http://101.43.128.73:18777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/user/, '/user'),
         },
         '/department': {
-          target: 'http://101.43.128.73:8778/api',
+          target: 'http://101.43.128.73:18777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/department/, '/department'),
         },
         '/auth': {
-          target: 'http://101.43.128.73:8778/api',
+          target: 'http://101.43.128.73:18777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/auth/, '/auth'),
         },
         '/local_doc_qa': {
-          target: 'http://101.43.128.73:8778/api',
+          target: 'http://101.43.128.73:18777/api',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/local_doc_qa/, '/local_doc_qa'),
         },
