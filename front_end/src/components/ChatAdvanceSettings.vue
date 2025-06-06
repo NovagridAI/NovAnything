@@ -4,8 +4,12 @@
       <div class="settings-popover">
         <h3>高级设置</h3>
 
-        <arco-form layout="horizontal" :label-col-props="{ span: 10 }" :wrapper-col-props="{ span: 14 }"
-          :label-align="'left'">
+        <arco-form
+          layout="horizontal"
+          :label-col-props="{ span: 10 }"
+          :wrapper-col-props="{ span: 14 }"
+          :label-align="'left'"
+        >
           <arco-form-item field="apiContextLength" label="总Token数量：">
             <template #label>
               <div class="label-with-tooltip">
@@ -16,13 +20,22 @@
               </div>
             </template>
             <div class="param-control">
-              <arco-slider :model-value="userSettings.apiContextLength / 1024"
-                @update:model-value="value => userSettings.apiContextLength = value * 1024"
-                :min="modelType === 'ollama' ? 2 : 4" :max="openAIModelMax || 200" :step="1" />
-              <arco-input-number :model-value="userSettings.apiContextLength / 1024"
-                @update:model-value="value => userSettings.apiContextLength = value * 1024"
-                :min="modelType === 'ollama' ? 2 : 4" :max="openAIModelMax || 200" :step="1" :precision="0"
-                :hide-button="true">
+              <arco-slider
+                :model-value="userSettings.apiContextLength / 1024"
+                :min="modelType === 'ollama' ? 2 : 4"
+                :max="openAIModelMax || 200"
+                :step="1"
+                @update:model-value="value => (userSettings.apiContextLength = value * 1024)"
+              />
+              <arco-input-number
+                :model-value="userSettings.apiContextLength / 1024"
+                :min="modelType === 'ollama' ? 2 : 4"
+                :max="openAIModelMax || 200"
+                :step="1"
+                :precision="0"
+                :hide-button="true"
+                @update:model-value="value => (userSettings.apiContextLength = value * 1024)"
+              >
                 <template #append>K</template>
               </arco-input-number>
             </div>
@@ -38,10 +51,20 @@
               </div>
             </template>
             <div class="param-control">
-              <arco-slider v-model="userSettings.maxToken" :min="1" :max="userSettings.apiContextLength / TOKENRATIO"
-                :step="1" />
-              <arco-input-number v-model="userSettings.maxToken" :min="1"
-                :max="userSettings.apiContextLength / TOKENRATIO" :step="1" :precision="0" :hide-button="true" />
+              <arco-slider
+                v-model="userSettings.maxToken"
+                :min="1"
+                :max="userSettings.apiContextLength / TOKENRATIO"
+                :step="1"
+              />
+              <arco-input-number
+                v-model="userSettings.maxToken"
+                :min="1"
+                :max="userSettings.apiContextLength / TOKENRATIO"
+                :step="1"
+                :precision="0"
+                :hide-button="true"
+              />
             </div>
           </arco-form-item>
 
@@ -56,8 +79,14 @@
             </template>
             <div class="param-control">
               <arco-slider v-model="userSettings.temperature" :min="0" :max="1" :step="0.01" />
-              <arco-input-number v-model="userSettings.temperature" :min="0" :max="1" :step="0.01" :precision="2"
-                :hide-button="true" />
+              <arco-input-number
+                v-model="userSettings.temperature"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                :precision="2"
+                :hide-button="true"
+              />
             </div>
           </arco-form-item>
 
@@ -72,8 +101,14 @@
             </template>
             <div class="param-control">
               <arco-slider v-model="userSettings.top_P" :min="0" :max="1" :step="0.01" />
-              <arco-input-number v-model="userSettings.top_P" :min="0" :max="1" :step="0.01" :precision="2"
-                :hide-button="true" />
+              <arco-input-number
+                v-model="userSettings.top_P"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                :precision="2"
+                :hide-button="true"
+              />
             </div>
           </arco-form-item>
 
@@ -88,8 +123,14 @@
             </template>
             <div class="param-control">
               <arco-slider v-model="userSettings.top_K" :min="1" :max="100" :step="1" />
-              <arco-input-number v-model="userSettings.top_K" :min="1" :max="100" :step="1" :precision="0"
-                :hide-button="true" />
+              <arco-input-number
+                v-model="userSettings.top_K"
+                :min="1"
+                :max="100"
+                :step="1"
+                :precision="0"
+                :hide-button="true"
+              />
             </div>
           </arco-form-item>
 
@@ -103,14 +144,22 @@
               </div>
             </template>
             <div class="param-control">
-              <arco-slider v-model="userSettings.context" :min="0" :max="11" :step="1"
-                :format-tooltip="(val: number) => String(val >= 11 ? '无限制' : val)" />
+              <arco-slider
+                v-model="userSettings.context"
+                :min="0"
+                :max="11"
+                :step="1"
+                :format-tooltip="(val: number) => String(val >= 11 ? '无限制' : val)"
+              />
             </div>
           </arco-form-item>
         </arco-form>
       </div>
     </template>
-    <icon-settings class="action-icon" />
+    <icon-settings
+      v-if="userInfo?.role === 'admin' || userInfo?.role === 'superadmin'"
+      class="action-icon"
+    />
   </arco-popover>
 </template>
 
@@ -119,6 +168,7 @@ import { ref } from 'vue';
 import { IconQuestionCircle, IconSettings } from '@arco-design/web-vue/es/icon';
 import { useAdvanceSettings } from '@/store/useAdvanceSettings';
 import { useChatSetting } from '@/store/useChatSetting';
+import { useUser } from '@/store/useUser';
 
 const TOKENRATIO = 4;
 const modelType = ref('openAI');
@@ -128,33 +178,38 @@ const openAIModelMax = ref(200);
 const { userSettings } = storeToRefs(useAdvanceSettings());
 const { updateSettings } = useAdvanceSettings();
 const { chatSettingConfigured } = storeToRefs(useChatSetting());
+const { userInfo } = storeToRefs(useUser());
 
 // 上下文条数格式化
 const sliderFormatter = (value: number): string => {
   return value >= 11 ? '无限制' : String(value);
 };
 
-watch(chatSettingConfigured, (newVal) => {
-  const activeModel = newVal.find(item => item.active === true);
-  console.log('activeModel', newVal);
-  if (activeModel && userSettings.value.modelType !== activeModel.modelType) {
-    updateSettings({
-      modelType: activeModel.modelType,
-      apiContextLength: activeModel.apiContextLength,
-      maxToken: activeModel.apiContextLength  / TOKENRATIO,
-      temperature: activeModel.temperature,
-      top_P: activeModel.top_P,
-      top_K: activeModel.top_K,
-      context: activeModel.context,
-    });
+watch(
+  chatSettingConfigured,
+  newVal => {
+    const activeModel = newVal.find(item => item.active === true);
+    console.log('activeModel', newVal);
+    if (activeModel && userSettings.value.modelType !== activeModel.modelType) {
+      updateSettings({
+        modelType: activeModel.modelType,
+        apiContextLength: activeModel.apiContextLength,
+        maxToken: activeModel.apiContextLength / TOKENRATIO,
+        temperature: activeModel.temperature,
+        top_P: activeModel.top_P,
+        top_K: activeModel.top_K,
+        context: activeModel.context,
+      });
+    }
+  },
+  {
+    deep: true, // 添加深度监听
   }
-}, {
-  deep: true  // 添加深度监听
-});
+);
 
 defineOptions({
-  name: 'ChatAdvanceSettings'
-})
+  name: 'ChatAdvanceSettings',
+});
 </script>
 
 <style lang="scss" scoped>
@@ -164,7 +219,7 @@ defineOptions({
   cursor: pointer;
 
   &:hover {
-    color: #4D71FF;
+    color: #4d71ff;
   }
 }
 
@@ -183,7 +238,7 @@ defineOptions({
     padding-bottom: 8px;
     padding-top: 8px;
     margin-bottom: 0px;
-    border-bottom: 1px solid #D8D8D8;
+    border-bottom: 1px solid #d8d8d8;
   }
 
   :deep(.arco-form-item-label) {
