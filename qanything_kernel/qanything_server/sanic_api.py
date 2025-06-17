@@ -1,0 +1,87 @@
+import sys
+import os
+# 获取当前脚本的绝对路径
+current_script_path = os.path.abspath(__file__)
+
+# 获取当前脚本的父目录的路径，即`qanything_server`目录
+current_dir = os.path.dirname(current_script_path)
+
+# 获取`qanything_server`目录的父目录，即`qanything_kernel`
+parent_dir = os.path.dirname(current_dir)
+
+# 获取根目录：`qanything_kernel`的父目录
+root_dir = os.path.dirname(parent_dir)
+
+# 将项目根目录添加到sys.path
+sys.path.append(root_dir)
+
+from qanything_kernel.qanything_server.router import register_routes
+from qanything_kernel.core.local_doc_qa import LocalDocQA
+from qanything_kernel.utils.custom_log import debug_logger, qa_logger
+from sanic.worker.manager import WorkerManager
+from sanic import Sanic
+from sanic_ext import Extend
+import time
+import argparse
+import webbrowser
+
+WorkerManager.THRESHOLD = 6000
+
+# 接收外部参数mode
+parser = argparse.ArgumentParser()
+parser.add_argument('--host', type=str, default='0.0.0.0', help='host')
+parser.add_argument('--port', type=int, default=8777, help='port')
+parser.add_argument('--workers', type=int, default=4, help='workers')
+# 检查是否是local或online，不是则报错
+args = parser.parse_args()
+
+start_time = time.time()
+app = Sanic("NovAnything")
+app.config.CORS_ORIGINS = "*"
+Extend(app)
+# 设置请求体最大为 128MB
+app.config.REQUEST_MAX_SIZE = 128 * 1024 * 1024
+
+# 将 /novanything 路径映射到静态文件目录
+app.static('/novanything/', 'qanything_kernel/qanything_server/dist/qanything/', name='novanything', index="index.html")
+
+# 添加中间件处理静态文件的CORS头
+@app.middleware('response')
+async def add_cors_headers(request, response):
+    # 为静态文件添加CORS头，特别是图片文件
+    if request.path.startswith('/novanything/assets/file_images/'):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = '*'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+
+
+@app.before_server_start
+async def init_local_doc_qa(app, loop):
+    start = time.time()
+    local_doc_qa = LocalDocQA(args.port)
+    local_doc_qa.init_cfg(args)
+    end = time.time()
+    print(f'init local_doc_qa cost {end - start}s', flush=True)
+    app.ctx.local_doc_qa = local_doc_qa
+
+@app.after_server_start
+async def notify_server_started(app, loop):
+    print(f"Server Start Cost {time.time() - start_time} seconds", flush=True)
+
+@app.after_server_start
+async def start_server_and_open_browser(app, loop):
+    try:
+        print(f"Opening browser at http://{args.host}:{args.port}/novanything/")
+        webbrowser.open(f"http://{args.host}:{args.port}/novanything/")
+    except Exception as e:
+        # 记录或处理任何异常
+        print(f"Failed to open browser: {e}")
+
+# 注册所有路由
+register_routes(app)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=args.port, workers=args.workers, access_log=False)

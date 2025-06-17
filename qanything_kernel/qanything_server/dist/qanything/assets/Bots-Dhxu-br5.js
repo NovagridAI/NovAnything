@@ -1,0 +1,1 @@
+import{d as a,c as s,f as t,j as e,o,t as r}from"./index-BuiMO87m.js";const d={class:"page"},c=r(a({__name:"Bots",setup:a=>(a,r)=>{const c=e("router-view");return o(),s("div",d,[t(c)])}}),[["__scopeId","data-v-125a7a08"]]);export{c as default};

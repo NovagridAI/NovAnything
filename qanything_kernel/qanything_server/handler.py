@@ -1,0 +1,598 @@
+import asyncio
+import json
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+from sanic import request
+from sanic.response import ResponseStream
+from sanic.response import json as sanic_json
+from sanic.response import text as sanic_text
+
+from qanything_kernel.configs.model_config import (DEFAULT_PARENT_CHUNK_SIZE, VECTOR_SEARCH_TOP_K)
+from qanything_kernel.core.local_doc_qa import LocalDocQA
+from qanything_kernel.utils.custom_log import debug_logger, qa_logger
+from qanything_kernel.utils.general_utils import *
+from qanything_kernel.connector.database.mysql.manager import DatabaseManager
+from qanything_kernel.connector.database.mysql.models.qa_log import QaLog
+
+INVALID_USER_ID = f"fail, Invalid user_id: . user_id 必须只含有字母，数字和下划线且字母开头"
+
+# 获取环境变量GATEWAY_IP
+GATEWAY_IP = os.getenv("GATEWAY_IP", "localhost")
+debug_logger.info(f"GATEWAY_IP: {GATEWAY_IP}")
+
+# 异步包装器，用于在后台执行带有参数的同步函数
+async def run_in_background(func, *args):
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        await loop.run_in_executor(pool, func, *args)
+
+
+# 使用aiohttp异步请求另一个API
+async def fetch(session, url, input_json):
+    headers = {'Content-Type': 'application/json'}
+    async with session.post(url, json=input_json, headers=headers) as response:
+        return await response.json()
+
+
+# 定义一个需要参数的同步函数
+def sync_function_with_args(arg1, arg2):
+    # 模拟耗时操作
+    import time
+    time.sleep(5)
+    print(f"同步函数执行完毕，参数值：arg1={arg1}, arg2={arg2}")
+    
+
+
+@get_time_async
+async def local_doc_chat(req: request):
+    preprocess_start = time.perf_counter()
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    user_id = safe_get(req, 'user_id')
+    # 获取qa_id参数，用于确定是更新已有对话还是创建新对话
+    qa_id = safe_get(req, 'qa_id', '')
+    qa_log_exists = False
+    
+    # 如果提供了qa_id，检查对应的对话记录是否存在
+    if qa_id:
+        existing_qa_log = local_doc_qa.milvus_summary.get_qa_log_by_id(qa_id)
+        if existing_qa_log:
+            qa_log_exists = True
+            debug_logger.info(f"找到已存在的对话记录: qa_id={qa_id}")
+        else:
+            debug_logger.info(f"未找到对话记录: qa_id={qa_id}，将创建新记录")
+    
+    # local_cluster = get_milvus_cluster_by_user_info(user_info)
+    # user_id = user_id + '__' + user_info
+    # local_doc_qa.milvus_summary.update_user_cluster(user_id, [get_milvus_cluster_by_user_info(user_info)])
+    debug_logger.info('local_doc_chat %s', user_id)
+    bot_id = safe_get(req, 'bot_id')
+    if bot_id:
+        if not local_doc_qa.milvus_summary.check_bot_exist(bot_id):
+            return sanic_json({"code": 2003, "msg": "fail, Bot {} not found".format(bot_id)})
+        bot_info = local_doc_qa.milvus_summary.get_bot_by_id(bot_id)
+        bot_id, bot_name, desc, image, prompt, welcome, kb_ids_str, upload_time, user_id, llm_setting = bot_info
+        kb_ids = kb_ids_str.split(',')
+        if not kb_ids:
+            return sanic_json({"code": 2003, "msg": "fail, Bot {} unbound knowledge base.".format(bot_id)})
+        custom_prompt = prompt
+        if not llm_setting:
+            return sanic_json({"code": 2003, "msg": "fail, Bot {} llm_setting is empty.".format(bot_id)})
+        llm_setting = json.loads(llm_setting)
+        rerank = llm_setting.get('rerank', True)
+        only_need_search_results = llm_setting.get('only_need_search_results', False)
+        need_web_search = llm_setting.get('networking', False)
+        api_base = llm_setting.get('api_base', '')
+        api_key = llm_setting.get('api_key', 'ollama')
+        api_context_length = llm_setting.get('api_context_length', 4096)
+        top_p = llm_setting.get('top_p', 0.99)
+        temperature = llm_setting.get('temperature', 0.5)
+        top_k = llm_setting.get('top_k', VECTOR_SEARCH_TOP_K)
+        model = llm_setting.get('model', 'gpt-4o-mini')
+        max_token = llm_setting.get('max_token')
+        hybrid_search = llm_setting.get('hybrid_search', False)
+        chunk_size = llm_setting.get('chunk_size', DEFAULT_PARENT_CHUNK_SIZE)
+    else:
+        kb_ids = safe_get(req, 'kb_ids')
+        custom_prompt = safe_get(req, 'custom_prompt', None)
+        rerank = safe_get(req, 'rerank', default=True)
+        only_need_search_results = safe_get(req, 'only_need_search_results', False)
+        need_web_search = safe_get(req, 'networking', False)
+        api_base = safe_get(req, 'api_base', '')
+        # 如果api_base中包含0.0.0.0或127.0.0.1或localhost，替换为GATEWAY_IP
+        api_base = api_base.replace('0.0.0.0', GATEWAY_IP).replace('127.0.0.1', GATEWAY_IP).replace('localhost',
+                                                                                                    GATEWAY_IP)
+        api_key = safe_get(req, 'api_key', 'ollama')
+        api_context_length = safe_get(req, 'api_context_length', 4096)
+        top_p = safe_get(req, 'top_p', 0.99)
+        temperature = safe_get(req, 'temperature', 0.5)
+        top_k = safe_get(req, 'top_k', VECTOR_SEARCH_TOP_K)
+
+        model = safe_get(req, 'model', 'gpt-4o-mini')
+        max_token = safe_get(req, 'max_token')
+
+        hybrid_search = safe_get(req, 'hybrid_search', False)
+        chunk_size = safe_get(req, 'chunk_size', DEFAULT_PARENT_CHUNK_SIZE)
+
+    debug_logger.info('rerank %s', rerank)
+
+    if len(kb_ids) > 20:
+        return sanic_json({"code": 2005, "msg": "fail, kb_ids length should less than or equal to 20"})
+    kb_ids = [correct_kb_id(kb_id) for kb_id in kb_ids]
+    question = safe_get(req, 'question')
+    streaming = safe_get(req, 'streaming', False)
+    history = safe_get(req, 'history', [])
+
+    if top_k > 100:
+        return sanic_json({"code": 2003, "msg": "fail, top_k should less than or equal to 100"})
+
+    missing_params = []
+    if not api_base:
+        missing_params.append('api_base')
+    if not api_key:
+        missing_params.append('api_key')
+    if not api_context_length:
+        missing_params.append('api_context_length')
+    if not top_p:
+        missing_params.append('top_p')
+    if not top_k:
+        missing_params.append('top_k')
+    if top_p == 1.0:
+        top_p = 0.99
+    if not temperature:
+        missing_params.append('temperature')
+
+    if missing_params:
+        missing_params_str = " and ".join(missing_params) if len(missing_params) > 1 else missing_params[0]
+        return sanic_json({"code": 2003, "msg": f"fail, {missing_params_str} is required"})
+
+    if only_need_search_results and streaming:
+        return sanic_json(
+            {"code": 2006, "msg": "fail, only_need_search_results and streaming can't be True at the same time"})
+    request_source = safe_get(req, 'source', 'unknown')
+
+    debug_logger.info("history: %s ", history)
+    debug_logger.info("question: %s", question)
+    debug_logger.info("kb_ids: %s", kb_ids)
+    debug_logger.info("user_id: %s", user_id)
+    debug_logger.info("custom_prompt: %s", custom_prompt)
+    debug_logger.info("model: %s", model)
+    debug_logger.info("max_token: %s", max_token)
+    debug_logger.info("request_source: %s", request_source)
+    debug_logger.info("only_need_search_results: %s", only_need_search_results)
+    debug_logger.info("bot_id: %s", bot_id)
+    debug_logger.info("need_web_search: %s", need_web_search)
+    debug_logger.info("api_base: %s", api_base)
+    debug_logger.info("api_key: %s", api_key)
+    debug_logger.info("api_context_length: %s", api_context_length)
+    debug_logger.info("top_p: %s", top_p)
+    debug_logger.info("top_k: %s", top_k)
+    debug_logger.info("temperature: %s", temperature)
+    debug_logger.info("hybrid_search: %s", hybrid_search)
+    debug_logger.info("chunk_size: %s", chunk_size)
+    debug_logger.info("qa_id: %s", qa_id)
+    debug_logger.info("qa_log_exists: %s", qa_log_exists)
+
+    time_record = {}
+    if kb_ids:
+        not_exist_kb_ids = local_doc_qa.milvus_summary.check_kb_exist(kb_ids)
+        if not_exist_kb_ids:
+            return sanic_json({"code": 2003, "msg": "fail, knowledge Base {} not found".format(not_exist_kb_ids)})
+        faq_kb_ids = [kb + '_FAQ' for kb in kb_ids]
+        not_exist_faq_kb_ids = local_doc_qa.milvus_summary.check_kb_exist(faq_kb_ids)
+        exist_faq_kb_ids = [kb for kb in faq_kb_ids if kb not in not_exist_faq_kb_ids]
+        debug_logger.info("exist_faq_kb_ids: %s", exist_faq_kb_ids)
+        kb_ids += exist_faq_kb_ids
+
+    file_infos = []
+    # 保存原始的kb_ids用于后续更新QA日志
+    original_kb_ids = kb_ids.copy()
+    
+    for kb_id in kb_ids:
+        file_infos.extend(local_doc_qa.milvus_summary.get_files(user_id, kb_id))
+    valid_files = [fi for fi in file_infos if fi[2] == 'green']
+    if len(valid_files) == 0:
+        debug_logger.info("valid_files is empty, use only chat mode.")
+        # 对话时使用空列表
+        kb_ids = []
+    preprocess_end = time.perf_counter()
+    time_record['preprocess'] = round(preprocess_end - preprocess_start, 2)
+    # 获取格式为'2021-08-01 00:00:00'的时间戳
+    qa_timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    for kb_id in original_kb_ids:  # 使用原始的kb_ids更新知识库时间
+        local_doc_qa.milvus_summary.update_knowledge_base_latest_qa_time(kb_id, qa_timestamp)
+    debug_logger.info("streaming: %s", streaming)
+    if streaming:
+        debug_logger.info("start generate answer")
+
+        async def generate_answer(response):
+            debug_logger.info("start generate...")
+            # 在生成答案函数中提前声明qa_id变量，避免在使用前未定义的错误
+            new_qa_id = qa_id  # 初始值设为外部传入的qa_id
+            
+            async for resp, next_history in local_doc_qa.get_knowledge_based_answer(model=model,
+                                                                                    max_token=max_token,
+                                                                                    kb_ids=kb_ids,  # 这里使用可能为空的kb_ids
+                                                                                    query=question,
+                                                                                    retriever=local_doc_qa.retriever,
+                                                                                    chat_history=history,
+                                                                                    streaming=True,
+                                                                                    rerank=rerank,
+                                                                                    custom_prompt=custom_prompt,
+                                                                                    time_record=time_record,
+                                                                                    need_web_search=need_web_search,
+                                                                                    hybrid_search=hybrid_search,
+                                                                                    web_chunk_size=chunk_size,
+                                                                                    temperature=temperature,
+                                                                                    api_base=api_base,
+                                                                                    api_key=api_key,
+                                                                                    api_context_length=api_context_length,
+                                                                                    top_p=top_p,
+                                                                                    top_k=top_k
+                                                                                    ):
+                chunk_data = resp["result"]
+                if not chunk_data:
+                    continue
+                chunk_str = chunk_data[6:]
+                if chunk_str.startswith("[DONE]"):
+                    retrieval_documents = format_source_documents(resp["retrieval_documents"])
+                    source_documents = format_source_documents(resp["source_documents"])
+                    result = next_history[-1][1]
+                    # result = resp['result']
+                    time_record['chat_completed'] = round(time.perf_counter() - preprocess_start, 2)
+                    if time_record.get('llm_completed', 0) > 0:
+                        time_record['tokens_per_second'] = round(
+                            len(result) / time_record['llm_completed'], 2)
+                    formatted_time_record = format_time_record(time_record)
+                    chat_data = {'user_id': user_id, 'kb_ids': original_kb_ids, 'query': question, "model": model,
+                                 "product_source": request_source, 'time_record': formatted_time_record,
+                                 'history': next_history,
+                                 'condense_question': resp['condense_question'], 'prompt': resp['prompt'],
+                                 'result': result, 'retrieval_documents': retrieval_documents,
+                                 'source_documents': source_documents, 'bot_id': bot_id}
+                    
+                    if qa_log_exists:
+                        # 如果存在qa_id，更新已有记录
+                        debug_logger.info(f"更新已有QA记录: qa_id={new_qa_id}")
+                        update_data = {
+                            "query": question,
+                            "result": result,
+                            "model": model,
+                            "product_source": request_source,
+                            "time_record": formatted_time_record,
+                            "history": next_history,
+                            "condense_question": resp['condense_question'],
+                            "prompt": resp['prompt'],
+                            "retrieval_documents": retrieval_documents,
+                            "source_documents": source_documents,
+                            "kb_ids": original_kb_ids  # 使用原始的kb_ids
+                        }
+                        local_doc_qa.milvus_summary.update_qa_log(new_qa_id, update_data)
+                    else:
+                        # 创建新的QA记录
+                        debug_logger.info("创建新的QA记录")
+                        # 创建QaLog对象
+                        qa_log = QaLog(
+                            qa_id=None,  # 如果为空，会自动生成
+                            user_id=user_id,
+                            kb_ids=original_kb_ids,
+                            query=question,
+                            model=model,
+                            product_source=request_source,
+                            time_record=formatted_time_record,
+                            history=next_history,
+                            condense_question=resp['condense_question'],
+                            prompt=resp['prompt'],
+                            result=result,
+                            retrieval_documents=retrieval_documents,
+                            source_documents=source_documents,
+                            bot_id=bot_id
+                        )
+                        new_qa_id = local_doc_qa.milvus_summary.add_qa_log(qa_log)
+                    
+                    qa_logger.info("chat_data: %s", chat_data)
+                    debug_logger.info("response: %s", chat_data['result'])
+                    stream_res = {
+                        "code": 200,
+                        "msg": "success stream chat",
+                        "question": question,
+                        "response": result,
+                        "model": model,
+                        "history": next_history,
+                        "condense_question": resp['condense_question'],
+                        "source_documents": source_documents,
+                        "retrieval_documents": retrieval_documents,
+                        "time_record": formatted_time_record,
+                        "show_images": resp.get('show_images', []),
+                        "qa_id": new_qa_id  # 使用新的qa_id变量
+                    }
+                else:
+                    time_record['rollback_length'] = resp.get('rollback_length', 0)
+                    if 'first_return' not in time_record:
+                        time_record['first_return'] = round(time.perf_counter() - preprocess_start, 2)
+                    chunk_js = json.loads(chunk_str)
+                    delta_answer = chunk_js["answer"]
+                    stream_res = {
+                        "code": 200,
+                        "msg": "success",
+                        "question": question,
+                        "response": delta_answer,
+                        "history": history,
+                        "source_documents": [],
+                        "retrieval_documents": [],
+                        "time_record": format_time_record(time_record),
+                    }
+                await response.write(f"data: {json.dumps(stream_res, ensure_ascii=False)}\n\n")
+                if chunk_str.startswith("[DONE]"):
+                    await response.eof()
+                await asyncio.sleep(0.001)
+
+        response_stream = ResponseStream(generate_answer, content_type='text/event-stream')
+        return response_stream
+
+    else:
+        async for resp, history in local_doc_qa.get_knowledge_based_answer(model=model,
+                                                                           max_token=max_token,
+                                                                           kb_ids=kb_ids,
+                                                                           query=question,
+                                                                           retriever=local_doc_qa.retriever,
+                                                                           chat_history=history, streaming=False,
+                                                                           rerank=rerank,
+                                                                           custom_prompt=custom_prompt,
+                                                                           time_record=time_record,
+                                                                           only_need_search_results=only_need_search_results,
+                                                                           need_web_search=need_web_search,
+                                                                           hybrid_search=hybrid_search,
+                                                                           web_chunk_size=chunk_size,
+                                                                           temperature=temperature,
+                                                                           api_base=api_base,
+                                                                           api_key=api_key,
+                                                                           api_context_length=api_context_length,
+                                                                           top_p=top_p,
+                                                                           top_k=top_k
+                                                                           ):
+            pass
+        if only_need_search_results:
+            return sanic_json(
+                {"code": 200, "question": question, "source_documents": format_source_documents(resp)})
+        retrieval_documents = format_source_documents(resp["retrieval_documents"])
+        source_documents = format_source_documents(resp["source_documents"])
+        formatted_time_record = format_time_record(time_record)
+        
+        if qa_log_exists:
+            # 如果存在qa_id，更新已有记录
+            debug_logger.info(f"更新已有QA记录: qa_id={qa_id}")
+            update_data = {
+                "query": question,
+                "result": resp['result'],
+                "model": model,
+                "product_source": request_source,
+                "time_record": formatted_time_record,
+                "history": history,
+                "condense_question": resp['condense_question'],
+                "prompt": resp['prompt'],
+                "retrieval_documents": retrieval_documents,
+                "source_documents": source_documents,
+                "kb_ids": original_kb_ids  # 使用原始的kb_ids
+            }
+            local_doc_qa.milvus_summary.update_qa_log(qa_id, update_data)
+        else:
+            # 创建新的QA记录
+            debug_logger.info("创建新的QA记录")
+            # 创建QaLog对象
+            qa_log = QaLog(
+                qa_id=None,  # 如果为空，会自动生成
+                user_id=user_id,
+                kb_ids=original_kb_ids,  # 使用原始的kb_ids
+                query=question,
+                model=model,
+                product_source=request_source,
+                time_record=formatted_time_record,
+                history=history,
+                condense_question=resp['condense_question'],
+                prompt=resp['prompt'],
+                result=resp['result'],
+                retrieval_documents=retrieval_documents,
+                source_documents=source_documents,
+                bot_id=bot_id
+            )
+            # 确保不使用await调用同步方法
+            qa_id = local_doc_qa.milvus_summary.add_qa_log(qa_log)
+        
+        chat_data = {'user_id': user_id, 'kb_ids': original_kb_ids, 'query': question, 'time_record': formatted_time_record,
+                     'history': history, "condense_question": resp['condense_question'], "model": model,
+                     "product_source": request_source,
+                     'retrieval_documents': retrieval_documents, 'prompt': resp['prompt'], 'result': resp['result'],
+                     'source_documents': source_documents, 'bot_id': bot_id, 'qa_id': qa_id}
+        qa_logger.info("chat_data: %s", chat_data)
+        debug_logger.info("response: %s", chat_data['result'])
+        return sanic_json({"code": 200, "msg": "success no stream chat", "question": question,
+                           "response": resp["result"], "model": model,
+                           "history": history, "condense_question": resp['condense_question'],
+                           "source_documents": source_documents, "retrieval_documents": retrieval_documents,
+                           "time_record": formatted_time_record, "qa_id": qa_id})
+
+
+@get_time_async
+async def document(req: request):
+    description = """
+# QAnything 介绍
+[戳我看视频>>>>>【有道QAnything介绍视频.mp4】](https://docs.popo.netease.com/docs/7e512e48fcb645adadddcf3107c97e7c)
+
+**QAnything** (**Q**uestion and **A**nswer based on **Anything**) 是支持任意格式的本地知识库问答系统。
+
+您的任何格式的本地文件都可以往里扔，即可获得准确、快速、靠谱的问答体验。
+
+**目前已支持格式:**
+* PDF
+* Word(doc/docx)
+* PPT
+* TXT
+* 图片
+* 网页链接
+* ...更多格式，敬请期待
+
+# API 调用指南
+
+## API Base URL
+
+https://qanything.youdao.com
+
+## 鉴权
+目前使用微信鉴权,步骤如下:
+1. 客户端通过扫码微信二维码(首次登录需要关注公众号)
+2. 获取token
+3. 调用下面所有API都需要通过authorization参数传入这个token
+
+注意：authorization参数使用Bearer auth认证方式
+
+生成微信二维码以及获取token的示例代码下载地址：[微信鉴权示例代码](https://docs.popo.netease.com/docs/66652d1a967e4f779594aef3306f6097)
+
+## API 接口说明
+    {
+        "api": "/api/local_doc_qa/upload_files"
+        "name": "上传文件",
+        "description": "上传文件接口，支持多个文件同时上传，需要指定知识库名称",
+    },
+    {
+        "api": "/api/local_doc_qa/upload_weblink"
+        "name": "上传网页链接",
+        "description": "上传网页链接，自动爬取网页内容，需要指定知识库名称",
+    },
+    {
+        "api": "/api/local_doc_qa/local_doc_chat" 
+        "name": "问答接口",
+        "description": "知识库问答接口，指定知识库名称，上传用户问题，通过传入history支持多轮对话",
+    },
+    {
+        "api": "/api/local_doc_qa/list_files" 
+        "name": "文件列表",
+        "description": "列出指定知识库下的所有文件名，需要指定知识库名称",
+    },
+    {
+        "api": "/api/local_doc_qa/delete_files" 
+        "name": "删除文件",
+        "description": "删除指定知识库下的指定文件，需要指定知识库名称",
+    },
+
+"""
+    return sanic_text(description)
+
+
+
+@get_time_async
+async def get_user_id(req: request):
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    kb_id = safe_get(req, 'kb_id')
+    kb_id = correct_kb_id(kb_id)
+    debug_logger.info("kb_id: {}".format(kb_id))
+    user_id = local_doc_qa.milvus_summary.get_user_by_kb_id(kb_id)
+    if not user_id:
+        return sanic_json({"code": 2003, "msg": "fail, knowledge Base {} not found".format(kb_id)})
+    else:
+        return sanic_json({"code": 200, "msg": "success", "user_id": user_id})
+
+
+@get_time_async
+async def get_user_status(req: request):
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    user_id = safe_get(req, 'user_id')
+
+    debug_logger.info("get_user_status %s", user_id)
+    user_status = local_doc_qa.milvus_summary.get_user_status(user_id)
+    if user_status is None:
+        return sanic_json({"code": 2003, "msg": "fail, user {} not found".format(user_id)})
+    if user_status == 0:
+        status = 'green'
+    else:
+        status = 'red'
+    return sanic_json({"code": 200, "msg": "success", "status": status})
+
+
+@get_time_async
+async def health_check(req: request):
+    # 实现一个服务健康检查的逻辑，包括数据库状态检查
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    
+    health_status = {
+        "service": "ok", 
+        "database_connection": "unknown",
+        "user_table_exists": "unknown",
+        "admin_user_exists": "unknown"
+    }
+    
+    try:
+        # 检查数据库连接
+        db_manager = local_doc_qa.milvus_summary
+        test_query = "SELECT 1"
+        result = db_manager.user_dao.execute_query(test_query, fetch=True)
+        if result:
+            health_status["database_connection"] = "ok"
+            
+            # 检查用户表是否存在
+            check_table_query = "SHOW TABLES LIKE 'User'"
+            table_result = db_manager.user_dao.execute_query(check_table_query, fetch=True)
+            if table_result:
+                health_status["user_table_exists"] = "ok"
+                
+                # 检查是否有管理员用户
+                admin_query = "SELECT COUNT(*) FROM User WHERE role = 'superadmin'"
+                admin_result = db_manager.user_dao.execute_query(admin_query, fetch=True)
+                if admin_result and admin_result[0][0] > 0:
+                    health_status["admin_user_exists"] = "ok"
+                else:
+                    health_status["admin_user_exists"] = "no_admin_user"
+            else:
+                health_status["user_table_exists"] = "table_not_found"
+        else:
+            health_status["database_connection"] = "connection_failed"
+            
+    except Exception as e:
+        health_status["database_connection"] = f"error: {str(e)}"
+        debug_logger.error(f"Health check database error: {str(e)}")
+    
+    # 根据检查结果返回相应状态码
+    if health_status["database_connection"] == "ok" and health_status["user_table_exists"] == "ok":
+        return sanic_json({"code": 200, "msg": "success", "health": health_status})
+    else:
+        return sanic_json({"code": 500, "msg": "service_unhealthy", "health": health_status})
+
+
+@get_time_async
+async def init_database(req: request):
+    """手动初始化数据库表和管理员用户"""
+    local_doc_qa: LocalDocQA = req.app.ctx.local_doc_qa
+    
+    init_status = {
+        "database_init": "unknown",
+        "tables_created": "unknown", 
+        "admin_created": "unknown",
+        "error": None
+    }
+    
+    try:
+        # 获取数据库管理器
+        db_manager = local_doc_qa.milvus_summary
+        debug_logger.info("开始手动初始化数据库...")
+        
+        # 调用数据库表创建方法
+        db_manager.create_tables()
+        init_status["database_init"] = "ok"
+        init_status["tables_created"] = "ok"
+        
+        # 检查管理员是否创建成功
+        admin_query = "SELECT COUNT(*) FROM User WHERE role = 'superadmin'"
+        admin_result = db_manager.user_dao.execute_query(admin_query, fetch=True)
+        if admin_result and admin_result[0][0] > 0:
+            init_status["admin_created"] = "ok"
+            debug_logger.info("数据库初始化完成")
+        else:
+            init_status["admin_created"] = "failed"
+            
+        return sanic_json({"code": 200, "msg": "database_init_success", "init_status": init_status})
+        
+    except Exception as e:
+        init_status["error"] = str(e)
+        debug_logger.error(f"数据库初始化失败: {str(e)}")
+        return sanic_json({"code": 500, "msg": "database_init_failed", "init_status": init_status})
