@@ -34,3 +34,4 @@ tmp_files/
 /qanything_kernel/dependent_server/rerank_server/rerank_model_configs_v0.0.1
 /qanything_kernel/dependent_server/embedding_server/embedding_model_configs_v0.0.1
 /qanything_kernel/dependent_server/ocr_server/ocr_models
+api_key_checker.py
